@@ -1,0 +1,33 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+formatter:
+  page_width: 120
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - lib/**/*.g.dart
+    - lib/**/*.freezed.dart
+    - lib/l10n/gen/**
+    - lib/firebase_options.dart
+  errors:
+    # Freezed + json_serializable annotations on constructor params.
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    public_member_api_docs: false
+    lines_longer_than_80_chars: false
+    flutter_style_todos: false
+    # Scripts in tool/ print to the console.
+    avoid_print: false
+    # Keep classic `ClassName(...)` constructors (Dart 3.13 `new(...)` shorthand off).
+    unnecessary_type_name_in_constructor: false
+    # pubspec deps are grouped by feature, not alphabetically.
+    sort_pub_dependencies: false
+
+plugins:
+  riverpod_lint: ^3.1.9

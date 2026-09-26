@@ -1,0 +1,169 @@
+{
+  "features": {
+    "demo": {
+      "flag": "FEATURE_DEMO",
+      "paths": [
+        "lib/features/dashboard",
+        "lib/features/transactions",
+        "lib/models/transactions",
+        "lib/repositories/transactions",
+        "test/features/transactions",
+        "supabase/migrations/20260926000100_transactions.sql",
+        "test/repositories/supabase_transactions_repository_test.dart"
+      ],
+      "packages": []
+    },
+    "onboarding": {
+      "flag": "FEATURE_ONBOARDING",
+      "paths": [
+        "lib/features/onboarding"
+      ],
+      "packages": []
+    },
+    "social_login": {
+      "flag": "FEATURE_SOCIAL_LOGIN",
+      "paths": [
+        "lib/services/social_sign_in.dart",
+        "lib/features/auth/components/social_login_buttons.dart"
+      ],
+      "packages": [
+        "google_sign_in",
+        "sign_in_with_apple",
+        "crypto"
+      ]
+    },
+    "connectivity": {
+      "flag": "FEATURE_CONNECTIVITY",
+      "paths": [
+        "lib/core/providers/connectivity_provider.dart",
+        "lib/core/widgets/states/offline_banner.dart"
+      ],
+      "packages": [
+        "connectivity_plus"
+      ]
+    },
+    "app_review": {
+      "flag": "FEATURE_APP_REVIEW",
+      "paths": [],
+      "packages": [
+        "in_app_review"
+      ]
+    },
+    "feedback": {
+      "flag": "FEATURE_FEEDBACK",
+      "paths": [],
+      "packages": []
+    },
+    "biometric_lock": {
+      "flag": "FEATURE_BIOMETRIC_LOCK",
+      "paths": [
+        "lib/features/biometric_lock",
+        "lib/services/biometric_service.dart"
+      ],
+      "packages": [
+        "local_auth"
+      ]
+    },
+    "push": {
+      "flag": "FEATURE_PUSH",
+      "firebase": true,
+      "paths": [
+        "lib/features/notifications",
+        "lib/services/push_notifications_service.dart",
+        "web/firebase-messaging-sw.js"
+      ],
+      "packages": [
+        "firebase_messaging",
+        "flutter_local_notifications"
+      ]
+    },
+    "remote_config": {
+      "flag": "FEATURE_REMOTE_CONFIG",
+      "firebase": true,
+      "paths": [
+        "lib/features/app_gate",
+        "lib/services/remote_config_service.dart",
+        "test/features/app_gate"
+      ],
+      "packages": [
+        "firebase_remote_config"
+      ]
+    },
+    "analytics": {
+      "flag": "FEATURE_ANALYTICS",
+      "firebase": true,
+      "paths": [
+        "lib/services/analytics_service.dart"
+      ],
+      "packages": [
+        "firebase_analytics"
+      ]
+    },
+    "payments": {
+      "flag": "FEATURE_PAYMENTS",
+      "paths": [
+        "lib/features/payments",
+        "lib/repositories/payments"
+      ],
+      "packages": [
+        "purchases_flutter"
+      ]
+    },
+    "ai": {
+      "flag": "FEATURE_AI",
+      "firebase": true,
+      "paths": [
+        "lib/features/ai",
+        "lib/services/ai_chat_service.dart"
+      ],
+      "packages": [
+        "firebase_ai"
+      ]
+    }
+  },
+  "backends": {
+    "rest": {
+      "paths": [
+        "lib/repositories/auth/rest_auth_repository.dart",
+        "lib/repositories/transactions/rest_transactions_repository.dart",
+        "lib/repositories/session",
+        "test/repositories/rest_auth_repository_test.dart"
+      ],
+      "packages": [
+        "flutter_secure_storage"
+      ]
+    },
+    "firebase": {
+      "firebase": true,
+      "paths": [
+        "lib/repositories/auth/firebase_auth_repository.dart",
+        "lib/repositories/transactions/firestore_transactions_repository.dart"
+      ],
+      "packages": [
+        "firebase_auth",
+        "cloud_firestore",
+        "firebase_storage"
+      ]
+    },
+    "supabase": {
+      "paths": [
+        "lib/repositories/auth/supabase_auth_repository.dart",
+        "lib/repositories/transactions/supabase_transactions_repository.dart",
+        "supabase",
+        "test/repositories/supabase_auth_repository_test.dart",
+        "test/repositories/supabase_transactions_repository_test.dart"
+      ],
+      "packages": [
+        "supabase_flutter"
+      ]
+    }
+  },
+  "firebase": {
+    "paths": [
+      "lib/firebase_options.dart"
+    ],
+    "packages": [
+      "firebase_core"
+    ]
+  }
+}

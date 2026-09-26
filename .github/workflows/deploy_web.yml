@@ -1,0 +1,35 @@
+# Web -> Firebase Hosting. Runs after every release/revert when the repo
+# variable DEPLOY_WEB is "true", or manually.
+# Needs: vars.FIREBASE_PROJECT_ID, secrets.FIREBASE_SERVICE_ACCOUNT
+name: Deploy web
+
+on:
+  workflow_run:
+    workflows: [Release, Revert release]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.DEPLOY_WEB == 'true' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+
+      - run: flutter build web --release --dart-define-from-file=env/prod.json
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
+          channelId: live

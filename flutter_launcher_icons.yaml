@@ -1,0 +1,13 @@
+# Regenerate after replacing assets/images/logo.png:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: assets/images/logo.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#3F51B5"
+  adaptive_icon_foreground: assets/images/logo.png
+  web:
+    generate: true
+    background_color: "#3F51B5"
+    theme_color: "#3F51B5"

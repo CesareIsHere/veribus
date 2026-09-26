@@ -1,0 +1,13 @@
+{
+  "dart.lineLength": 120,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "search.exclude": {
+    "**/*.freezed.dart": true,
+    "**/*.g.dart": true,
+    "lib/l10n/gen/**": true
+  }
+}

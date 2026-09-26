@@ -1,0 +1,64 @@
+# Merging a PR into main bumps the version from the PR title
+# (Conventional Commits), tags it and creates a GitHub Release.
+#   feat: ...  -> minor      fix: ... -> patch      chore: ... -> build number only
+#   feat!: ... or "BREAKING CHANGE" in the title -> major
+# Add the `skip-release` label to a PR to skip it.
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      !startsWith(github.event.pull_request.title, 'Revert') &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-release')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Bump version
+        id: bump
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          CURRENT=$(grep -E '^version: ' pubspec.yaml | sed 's/version: //')
+          VERSION=${CURRENT%+*}; BUILD=${CURRENT#*+}
+          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+          if [[ "$PR_TITLE" =~ ^[a-z]+(\(.*\))?!: ]] || [[ "$PR_TITLE" == *"BREAKING CHANGE"* ]]; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0; TYPE=major
+          elif [[ "$PR_TITLE" =~ ^(feat|feature)(\(.*\))?: ]]; then
+            MINOR=$((MINOR + 1)); PATCH=0; TYPE=minor
+          elif [[ "$PR_TITLE" =~ ^chore(\(.*\))?: ]]; then
+            TYPE=build
+          else
+            PATCH=$((PATCH + 1)); TYPE=patch
+          fi
+          NEW="$MAJOR.$MINOR.$PATCH+$((BUILD + 1))"
+          sed -i "s/^version: .*/version: $NEW/" pubspec.yaml
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+
+      - name: Commit, tag and release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          VERSION: ${{ steps.bump.outputs.version }}
+          TYPE: ${{ steps.bump.outputs.type }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: bump version to $VERSION [skip ci]"
+          git tag "v$VERSION"
+          git push origin main --tags
+          gh release create "v$VERSION" --title "Release $VERSION" \
+            --notes "**$TYPE** from #$PR_NUMBER: $PR_TITLE" --generate-notes

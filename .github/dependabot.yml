@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      firebase:
+        patterns: ["firebase_*", "cloud_firestore"]
+      supabase:
+        patterns: ["supabase*"]
+      riverpod:
+        patterns: ["*riverpod*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
