@@ -1,6 +1,6 @@
-import 'package:emiliano_cesare_flutter_template/core/utils/validators.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/core/utils/validators.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
 
 /// Email input with keyboard, autofill and validation set up.
 class EmailField extends StatelessWidget {

@@ -1,6 +1,6 @@
-import 'package:emiliano_cesare_flutter_template/core/providers/shared_preferences_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:veribus/core/providers/shared_preferences_provider.dart';
 
 part 'theme_mode_notifier.g.dart';
 

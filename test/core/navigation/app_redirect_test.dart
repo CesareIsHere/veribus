@@ -1,7 +1,7 @@
-import 'package:emiliano_cesare_flutter_template/core/navigation/router.dart';
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veribus/core/navigation/router.dart';
+import 'package:veribus/models/user/user_model.dart';
 
 void main() {
   const user = UserModel(id: '1', email: 'a@b.c');

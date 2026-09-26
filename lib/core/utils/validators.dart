@@ -1,5 +1,5 @@
-import 'package:emiliano_cesare_flutter_template/l10n/gen/app_localizations.dart';
 import 'package:flutter/widgets.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
 
 /// Localized form validators: `validator: Validators.email(context.l10n)`.
 abstract final class Validators {

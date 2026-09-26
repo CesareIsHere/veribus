@@ -1,31 +1,23 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/navigation/app_shell.dart';
-import 'package:emiliano_cesare_flutter_template/core/navigation/pages/not_found_page.dart';
-import 'package:emiliano_cesare_flutter_template/core/navigation/pages/splash_page.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/auth_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/logger.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/features/ai/ai_chat_page.dart'; // feature:ai
-import 'package:emiliano_cesare_flutter_template/features/auth/forgot_password_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/login_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/register_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/reset_password_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/dashboard/dashboard_page.dart'; // feature:demo
-import 'package:emiliano_cesare_flutter_template/features/home/home_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/onboarding/onboarding_page.dart'; // feature:onboarding
-import 'package:emiliano_cesare_flutter_template/features/onboarding/providers/onboarding_notifier.dart'; // feature:onboarding
-import 'package:emiliano_cesare_flutter_template/features/payments/paywall_page.dart'; // feature:payments
-import 'package:emiliano_cesare_flutter_template/features/settings/profile_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/settings/settings_page.dart';
-import 'package:emiliano_cesare_flutter_template/features/transactions/transaction_form_page.dart'; // feature:demo
-import 'package:emiliano_cesare_flutter_template/features/transactions/transactions_page.dart'; // feature:demo
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
-import 'package:emiliano_cesare_flutter_template/services/analytics_service.dart'; // feature:analytics
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/navigation/app_shell.dart';
+import 'package:veribus/core/navigation/pages/not_found_page.dart';
+import 'package:veribus/core/navigation/pages/splash_page.dart';
+import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/utils/logger.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/auth/forgot_password_page.dart';
+import 'package:veribus/features/auth/login_page.dart';
+import 'package:veribus/features/auth/register_page.dart';
+import 'package:veribus/features/auth/reset_password_page.dart';
+import 'package:veribus/features/home/home_page.dart';
+import 'package:veribus/features/settings/profile_page.dart';
+import 'package:veribus/features/settings/settings_page.dart';
+import 'package:veribus/models/user/user_model.dart';
 
 part 'router.g.dart';
 
@@ -87,34 +79,9 @@ GoRouter router(Ref ref) {
   void bump(Object? _, Object? _) => refresh.value++;
   ref
     ..listen(authProvider, bump)
-    ..listen(onboardingProvider, bump) // feature:onboarding
     ..onDispose(refresh.dispose);
 
   final tabs = <({String route, Widget page, List<RouteBase> routes, ShellDestination Function(BuildContext) nav})>[
-    // feature:demo:start
-    if (Features.demo) ...[
-      (
-        route: DashboardPage.route,
-        page: const DashboardPage(),
-        routes: const <RouteBase>[],
-        nav: (c) => (icon: Icons.space_dashboard_outlined, selectedIcon: Icons.space_dashboard, label: c.l10n.overview),
-      ),
-      (
-        route: TransactionsPage.route,
-        page: const TransactionsPage(),
-        // Full-screen dialogs above the shell (root navigator).
-        routes: <RouteBase>[
-          GoRoute(path: 'new', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const TransactionFormPage()),
-          GoRoute(
-            path: ':id',
-            parentNavigatorKey: rootNavigatorKey,
-            builder: (_, state) => TransactionFormPage(id: state.pathParameters['id']),
-          ),
-        ],
-        nav: (c) => (icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, label: c.l10n.transactions),
-      ),
-    ],
-    // feature:demo:end
     if (!Features.demo)
       (
         route: HomePage.route,
@@ -122,15 +89,6 @@ GoRouter router(Ref ref) {
         routes: const <RouteBase>[],
         nav: (c) => (icon: Icons.home_outlined, selectedIcon: Icons.home, label: c.l10n.home),
       ),
-    // feature:ai:start
-    if (Features.ai)
-      (
-        route: AiChatPage.route,
-        page: const AiChatPage(),
-        routes: const [],
-        nav: (c) => (icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome, label: c.l10n.assistant),
-      ),
-    // feature:ai:end
     (
       route: SettingsPage.route,
       page: const SettingsPage(),
@@ -150,20 +108,12 @@ GoRouter router(Ref ref) {
     initialLocation: HomePage.route,
     refreshListenable: refresh,
     debugLogDiagnostics: !AppConfig.isProd,
-    observers: [
-      ...AnalyticsService.observers, // feature:analytics
-      if (AppConfig.sentryDsn.isNotEmpty) SentryNavigatorObserver(),
-    ],
-    redirect: (_, state) => appRedirect(
-      auth: ref.read(authProvider),
-      uri: state.uri,
-      onboardingDone: !Features.onboarding || ref.read(onboardingProvider), // feature:onboarding
-    ),
+    observers: [if (AppConfig.sentryDsn.isNotEmpty) SentryNavigatorObserver()],
+    redirect: (_, state) => appRedirect(auth: ref.read(authProvider), uri: state.uri),
     errorBuilder: (_, _) => const NotFoundPage(),
     routes: [
       GoRoute(path: '/', redirect: (_, _) => HomePage.route),
       GoRoute(path: SplashPage.route, builder: (_, _) => const SplashPage()),
-      GoRoute(path: OnboardingPage.route, builder: (_, _) => const OnboardingPage()), // feature:onboarding
       GoRoute(path: LoginPage.route, builder: (_, _) => const LoginPage()),
       GoRoute(path: RegisterPage.route, builder: (_, _) => const RegisterPage()),
       GoRoute(path: ForgotPasswordPage.route, builder: (_, _) => const ForgotPasswordPage()),
@@ -172,7 +122,6 @@ GoRouter router(Ref ref) {
         builder: (_, state) =>
             ResetPasswordPage(token: state.uri.queryParameters['token'] ?? state.uri.queryParameters['oobCode'] ?? ''),
       ),
-      GoRoute(path: PaywallPage.route, builder: (_, _) => const PaywallPage()), // feature:payments
       StatefulShellRoute.indexedStack(
         builder: (context, _, shell) => AppShell(shell: shell, destinations: [for (final t in tabs) t.nav(context)]),
         branches: [

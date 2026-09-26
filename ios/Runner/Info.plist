@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Template</string>
+		<string>Veribus</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Used to unlock the app.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
@@ -25,7 +25,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>emiliano_cesare_flutter_template</string>
+		<string>veribus</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>

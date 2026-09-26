@@ -1,8 +1,8 @@
-import 'package:emiliano_cesare_flutter_template/core/providers/auth_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/states/message_view.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/widgets/states/message_view.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
 
 /// Home placeholder, used when the demo is off (`FEATURE_DEMO=false`).
 /// Replace it with your app's first screen.

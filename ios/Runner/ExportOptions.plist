@@ -11,7 +11,7 @@
 	<string>manual</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>com.emilianocesare.emilianoCesareFlutterTemplate</key>
+		<key>com.emilianocesare.veribus</key>
 		<string>PROFILE_NAME</string>
 	</dict>
 </dict>

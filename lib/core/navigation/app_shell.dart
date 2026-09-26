@@ -1,8 +1,8 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/states/offline_banner.dart'; // feature:connectivity
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/widgets/states/offline_banner.dart'; // feature:connectivity
+import 'package:veribus/styles/app_spacing.dart';
 
 typedef ShellDestination = ({IconData icon, IconData selectedIcon, String label});
 

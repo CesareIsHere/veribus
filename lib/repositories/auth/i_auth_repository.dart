@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
+import 'package:veribus/models/user/user_model.dart';
 
 /// Auth contract. One implementation per backend (see `AppConfig.backend`):
 /// `MockAuthRepository`, `RestAuthRepository`, `FirebaseAuthRepository`, `SupabaseAuthRepository`.

@@ -1,5 +1,5 @@
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/models/user/user_model.dart';
 
 /// Photo if available, otherwise the initial of name/email.
 class UserAvatar extends StatelessWidget {

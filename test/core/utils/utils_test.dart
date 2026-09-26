@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/money.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/validators.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/app_failure_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/l10n/gen/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/core/utils/money.dart';
+import 'package:veribus/core/utils/validators.dart';
+import 'package:veribus/extensions/app_failure_extensions.dart';
+import 'package:veribus/l10n/gen/app_localizations_en.dart';
 
 void main() {
   final l10n = AppLocalizationsEn();

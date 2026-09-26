@@ -1,5 +1,5 @@
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 /// Shown while the session is being restored (router redirects away after).
 class SplashPage extends StatelessWidget {

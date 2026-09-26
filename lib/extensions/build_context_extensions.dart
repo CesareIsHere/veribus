@@ -1,6 +1,6 @@
-import 'package:emiliano_cesare_flutter_template/l10n/gen/app_localizations.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/styles/app_theme.dart';
 
 extension BuildContextExtensions on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);

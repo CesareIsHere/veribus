@@ -1,6 +1,6 @@
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 /// M3 basic dialog. Returns true when the user confirms.
 ///

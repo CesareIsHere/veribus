@@ -1,24 +1,20 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/auth_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/locale_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/package_info_provider.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/theme_mode_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/exception_handler.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/dialogs/confirm_dialog.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/section_header.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/features/biometric_lock/providers/biometric_lock_notifier.dart'; // feature:biometric_lock
-import 'package:emiliano_cesare_flutter_template/features/payments/paywall_page.dart'; // feature:payments
-import 'package:emiliano_cesare_flutter_template/features/payments/providers/payments_provider.dart'; // feature:payments
-import 'package:emiliano_cesare_flutter_template/features/settings/components/user_avatar.dart';
-import 'package:emiliano_cesare_flutter_template/features/settings/profile_page.dart';
-import 'package:emiliano_cesare_flutter_template/l10n/gen/app_localizations.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:in_app_review/in_app_review.dart'; // feature:app_review
 import 'package:url_launcher/url_launcher.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/providers/locale_notifier.dart';
+import 'package:veribus/core/providers/package_info_provider.dart';
+import 'package:veribus/core/providers/theme_mode_notifier.dart';
+import 'package:veribus/core/utils/exception_handler.dart';
+import 'package:veribus/core/widgets/dialogs/confirm_dialog.dart';
+import 'package:veribus/core/widgets/section_header.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/settings/components/user_avatar.dart';
+import 'package:veribus/features/settings/profile_page.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -57,16 +53,6 @@ class SettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(ProfilePage.route),
           ),
-          // feature:payments:start
-          if (Features.payments)
-            ListTile(
-              leading: const Icon(Icons.workspace_premium_outlined),
-              title: Text(l10n.premium),
-              subtitle: Text(ref.watch(isPremiumProvider) ? l10n.premiumActiveShort : l10n.premiumUpsell),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push(PaywallPage.route),
-            ),
-          // feature:payments:end
           ListTile(leading: const Icon(Icons.logout), title: Text(l10n.signOut), onTap: () => _signOut(context, ref)),
           SectionHeader(l10n.appearance),
           ListTile(
@@ -98,21 +84,6 @@ class SettingsPage extends ConsumerWidget {
               if (code != null) await ref.read(localeProvider.notifier).set(code.isEmpty ? null : Locale(code));
             },
           ),
-          // feature:biometric_lock:start
-          if (Features.biometricLock && (ref.watch(biometricSupportedProvider).value ?? false)) ...[
-            SectionHeader(l10n.security),
-            SwitchListTile(
-              secondary: const Icon(Icons.fingerprint),
-              title: Text(l10n.biometricLock),
-              subtitle: Text(l10n.biometricLockDescription),
-              value: ref.watch(biometricLockProvider),
-              onChanged: (v) => ExceptionHandler.handle(
-                context,
-                () => ref.read(biometricLockProvider.notifier).setEnabled(enabled: v, reason: l10n.unlockReason),
-              ),
-            ),
-          ],
-          // feature:biometric_lock:end
           SectionHeader(l10n.support),
           // feature:feedback:start
           if (Features.feedback && AppConfig.supportEmail.isNotEmpty)
@@ -128,14 +99,6 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           // feature:feedback:end
-          // feature:app_review:start
-          if (Features.appReview)
-            ListTile(
-              leading: const Icon(Icons.star_outline),
-              title: Text(l10n.rateApp),
-              onTap: () => InAppReview.instance.openStoreListing(appStoreId: AppConfig.appStoreId),
-            ),
-          // feature:app_review:end
           if (AppConfig.termsUrl.isNotEmpty)
             ListTile(
               leading: const Icon(Icons.description_outlined),

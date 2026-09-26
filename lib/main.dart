@@ -1,12 +1,3 @@
-import 'package:emiliano_cesare_flutter_template/core/app/app.dart';
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/shared_preferences_provider.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/logger.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/app_restart/restart_widget.dart';
-import 'package:emiliano_cesare_flutter_template/firebase_options.dart'; // firebase
-import 'package:emiliano_cesare_flutter_template/services/push_notifications_service.dart'; // feature:push
-import 'package:firebase_core/firebase_core.dart'; // firebase
-import 'package:firebase_messaging/firebase_messaging.dart'; // feature:push
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -15,6 +6,11 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // backend:supabase
 import 'package:talker_riverpod_logger/talker_riverpod_logger.dart';
+import 'package:veribus/core/app/app.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/providers/shared_preferences_provider.dart';
+import 'package:veribus/core/utils/logger.dart';
+import 'package:veribus/core/widgets/app_restart/restart_widget.dart';
 
 /// Run with: `flutter run --dart-define-from-file=env/dev.json`
 Future<void> main() async {
@@ -32,13 +28,6 @@ Future<void> main() async {
   };
 
   final prefs = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
-
-  // firebase:start
-  if (AppConfig.usesFirebase) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    if (Features.push) FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler); // feature:push
-  }
-  // firebase:end
 
   // backend:supabase:start
   if (AppConfig.backend == Backend.supabase) {

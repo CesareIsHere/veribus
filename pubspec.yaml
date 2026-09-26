@@ -1,4 +1,4 @@
-name: emiliano_cesare_flutter_template
+name: veribus
 description: "Flutter template by Emiliano Cesare"
 publish_to: "none"
 version: 0.1.0+1
@@ -23,7 +23,6 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   dio: ^5.11.1
-  flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.5
   intl: any
   google_fonts: ^8.2.1
@@ -39,29 +38,17 @@ dependencies:
   # Feature: connectivity
   connectivity_plus: ^7.3.1
   # Feature: app review
-  in_app_review: ^2.0.12
   # Feature: profile (avatar)
   image_picker: ^1.2.3
   # Feature: biometric lock
-  local_auth: ^3.0.2
   # Feature: payments
-  purchases_flutter: ^10.13.1
   # Feature: social login
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.2.0
   crypto: ^3.0.6
   # Feature: push notifications
-  flutter_local_notifications: ^22.3.1
 
   # Firebase (backend firebase / push / remote config / analytics / ai)
-  firebase_core: ^4.15.0
-  firebase_auth: ^6.7.0
-  cloud_firestore: ^6.10.0
-  firebase_storage: ^13.6.0
-  firebase_messaging: ^16.7.0
-  firebase_remote_config: ^6.7.0
-  firebase_analytics: ^12.6.0
-  firebase_ai: ^4.0.0
 
   # Supabase (backend supabase)
   supabase_flutter: ^2.17.2

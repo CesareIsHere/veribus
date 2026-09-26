@@ -1,5 +1,5 @@
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/l10n/gen/app_localizations.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
 
 /// Localized, user-facing text for a failure (kept out of the data layer).
 extension AppFailureMessage on AppFailure {

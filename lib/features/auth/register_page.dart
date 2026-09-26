@@ -1,14 +1,14 @@
-import 'package:emiliano_cesare_flutter_template/core/providers/auth_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/exception_handler.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/validators.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/buttons/loading_button.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/components/auth_scaffold.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/components/email_field.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/components/password_field.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/utils/exception_handler.dart';
+import 'package:veribus/core/utils/validators.dart';
+import 'package:veribus/core/widgets/buttons/loading_button.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/auth/components/auth_scaffold.dart';
+import 'package:veribus/features/auth/components/email_field.dart';
+import 'package:veribus/features/auth/components/password_field.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});

@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/supabase_auth_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/repositories/auth/supabase_auth_repository.dart';
 
 void main() {
   late SupabaseClient client;

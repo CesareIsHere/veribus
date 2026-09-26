@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/i_auth_repository.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/models/user/user_model.dart';
+import 'package:veribus/repositories/auth/i_auth_repository.dart';
 
 /// In-memory auth: any email works, password `wrongpass` fails.
 /// Used for demos, UI work without a server, and tests.

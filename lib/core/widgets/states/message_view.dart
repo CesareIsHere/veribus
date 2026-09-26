@@ -1,8 +1,8 @@
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/app_failure_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/extensions/app_failure_extensions.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 /// Centered empty/error state: icon, title, optional description and action.
 class MessageView extends StatelessWidget {

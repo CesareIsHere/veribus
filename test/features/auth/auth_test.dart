@@ -1,12 +1,12 @@
-import 'package:emiliano_cesare_flutter_template/core/providers/auth_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/features/auth/login_page.dart';
-import 'package:emiliano_cesare_flutter_template/l10n/gen/app_localizations.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/auth_repository_provider.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/mock_auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/features/auth/login_page.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/repositories/auth/auth_repository_provider.dart';
+import 'package:veribus/repositories/auth/mock_auth_repository.dart';
 
 void main() {
   ProviderContainer container() {

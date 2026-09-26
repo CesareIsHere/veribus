@@ -1,6 +1,6 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:veribus/core/config.dart';
 
 /// Material 3 theme. Components keep their M3 defaults (sizes, shapes,
 /// colors): change `SEED_COLOR` in env/*.json to rebrand and only override

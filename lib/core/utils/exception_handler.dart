@@ -1,9 +1,9 @@
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/logger.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/app_failure_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/core/utils/logger.dart';
+import 'package:veribus/extensions/app_failure_extensions.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
 
 /// Runs a user action and turns any error into a localized snackbar.
 ///

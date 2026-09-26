@@ -1,8 +1,8 @@
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/auth_repository_provider.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/i_auth_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:veribus/models/user/user_model.dart';
+import 'package:veribus/repositories/auth/auth_repository_provider.dart';
+import 'package:veribus/repositories/auth/i_auth_repository.dart';
 
 part 'auth_notifier.g.dart';
 

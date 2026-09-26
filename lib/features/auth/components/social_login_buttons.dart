@@ -1,12 +1,12 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/providers/auth_notifier.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/exception_handler.dart';
-import 'package:emiliano_cesare_flutter_template/core/widgets/buttons/loading_button.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/utils/exception_handler.dart';
+import 'package:veribus/core/widgets/buttons/loading_button.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 /// "or" divider + Google / Apple buttons, shown only where the active
 /// backend supports them.

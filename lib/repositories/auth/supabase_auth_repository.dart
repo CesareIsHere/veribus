@@ -1,11 +1,11 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/logger.dart';
-import 'package:emiliano_cesare_flutter_template/models/user/user_model.dart';
-import 'package:emiliano_cesare_flutter_template/repositories/auth/i_auth_repository.dart';
-import 'package:emiliano_cesare_flutter_template/services/social_sign_in.dart'; // feature:social_login
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/utils/app_failure.dart';
+import 'package:veribus/core/utils/logger.dart';
+import 'package:veribus/models/user/user_model.dart';
+import 'package:veribus/repositories/auth/i_auth_repository.dart';
+import 'package:veribus/services/social_sign_in.dart'; // feature:social_login
 
 /// Supabase Auth (+ Storage `avatars` bucket for avatars, `push_tokens` table).
 /// Tables, RLS policies and `delete_account()` live in supabase/migrations.

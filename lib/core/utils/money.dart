@@ -1,5 +1,5 @@
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
 import 'package:intl/intl.dart';
+import 'package:veribus/core/config.dart';
 
 /// Money as integer cents (never doubles): formatting in the app language
 /// and currency (`CURRENCY` env key), parsing of user input.

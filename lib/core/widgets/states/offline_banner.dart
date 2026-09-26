@@ -1,8 +1,8 @@
-import 'package:emiliano_cesare_flutter_template/core/providers/connectivity_provider.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veribus/core/providers/connectivity_provider.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 /// Thin status strip shown above the content while the device is offline.
 class OfflineBanner extends ConsumerWidget {

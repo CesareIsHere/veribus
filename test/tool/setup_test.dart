@@ -6,12 +6,8 @@ void main() {
   test('stripMarkers removes blocks and tagged lines only', () {
     const source = '''
 import 'a.dart';
-import 'push.dart'; // feature:push
 import 'push_x.dart'; // feature:push_x
 void main() {
-  // feature:push:start
-  initPush();
-  // feature:push:end
   run();
 }''';
     expect(stripMarkers(source, 'feature:push'), '''

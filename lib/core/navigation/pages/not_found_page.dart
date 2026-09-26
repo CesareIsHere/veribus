@@ -1,8 +1,8 @@
-import 'package:emiliano_cesare_flutter_template/core/widgets/states/message_view.dart';
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/features/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:veribus/core/widgets/states/message_view.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/home/home_page.dart';
 
 class NotFoundPage extends StatelessWidget {
   const NotFoundPage({super.key});

@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "com.emilianocesare.emiliano_cesare_flutter_template"
+    namespace = "com.emilianocesare.veribus"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.emilianocesare.emiliano_cesare_flutter_template"
+        applicationId = "com.emilianocesare.veribus"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

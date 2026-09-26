@@ -1,6 +1,6 @@
-import 'package:emiliano_cesare_flutter_template/extensions/build_context_extensions.dart';
-import 'package:emiliano_cesare_flutter_template/styles/app_spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/styles/app_spacing.dart';
 
 /// Layout shared by the auth pages: logo, headline, then the page [children]
 /// in a centered column no wider than a form. Children manage their own gaps

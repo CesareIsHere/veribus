@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
-import 'package:emiliano_cesare_flutter_template/core/config.dart';
-import 'package:emiliano_cesare_flutter_template/core/utils/app_failure.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:veribus/core/config.dart';
+import 'package:veribus/core/utils/app_failure.dart';
 
 /// Native Google / Apple sign-in, shared by every backend.
 /// The backend then exchanges the returned token for its own session.

@@ -1,4 +1,4 @@
-package com.emilianocesare.emiliano_cesare_flutter_template
+package com.emilianocesare.veribus
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
