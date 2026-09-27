@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-Flutter app template (Android, iOS, Web). Read README.md for the feature list.
+Veribus: Rome bus/tram app (Flutter) + realtime backend (Supabase, Deno). README.md has the architecture and setup;
+the product spec and technical doc are in Notion (*App Bus Roma*). All code, comments, SQL names and API JSON keys in
+English; user-facing strings in the ARB files. Login is mandatory (product decision, overrides spec RNF-04).
 
 ## Toolchain
 - Flutter 3.47.5 pinned in `.fvmrc` and `pubspec.yaml` (`fvm flutter ...` if FVM is used).
@@ -9,6 +11,10 @@ Flutter app template (Android, iOS, Web). Read README.md for the feature list.
 - After changing `lib/l10n/*.arb`: `flutter gen-l10n`. Generated files are committed.
 - Before finishing: `dart format lib test tool`, `flutter analyze` (must be clean), `flutter test`.
 - Line length 120 (`analysis_options.yaml`). Lints: very_good_analysis + riverpod_lint.
+- Backend: `cd backend && deno task check` (fmt, lint, types, engine tests). API: `supabase/tests/run.sh` in the
+  `supabase/postgres` image (see README). `backend/core` must not import adapters, runtimes or Supabase.
+- `api` functions are PL/pgSQL (never `language sql` or `BEGIN ATOMIC`, never `%ROWTYPE` of `network` tables): the
+  import drops and recreates the `network` schema at every swap.
 
 ## Conventions
 - Structure follows Atoms Platform: `core/`, `features/<f>/{components,providers}/`, `models/<domain>/`,
@@ -46,5 +52,5 @@ Flutter app template (Android, iOS, Web). Read README.md for the feature list.
 - Supabase: schema changes are new files in `supabase/migrations` (`supabase migration new <name>`), every table
   with RLS on and policies using `(select auth.uid())`. Demo-only SQL goes in files listed under `demo`.
 - Server-side logic: Cloud Functions following `docs/FIREBASE_FUNCTIONS.md` (Supabase: Edge Functions or SQL).
-- The personal-finance demo is the `demo` feature (`FEATURE_DEMO`); its transactions stack is the reference
-  pattern for new entities.
+- Reference pattern for new data: `repositories/transit` (interface + mock + supabase + provider), `models/transit`,
+  `features/stop`. Status/signal/time wording lives only in `features/stop/components/arrival_tile.dart`.
