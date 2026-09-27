@@ -13,6 +13,7 @@ e pubblicare il progetto.
 | Import del GTFS statico | `backend/static-import` | bash + psql, ogni notte su GitHub Actions |
 | Poller realtime e motore | `backend/core`, `backend/adapters`, `backend/runtimes` | TypeScript su Deno (Edge Function oggi, container domani) |
 | Database e API | `supabase/migrations` | Supabase: Postgres, funzioni SQL nello schema `api`, Storage, pg_cron |
+| Archivio degli snapshot grezzi | Cloudflare R2 | bucket S3, scadenza a 90 giorni con una regola del bucket |
 
 ---
 
@@ -42,7 +43,7 @@ coprono apposta i casi limite: arrivi in tutti gli stati e con ogni segnale, CAV
 
 ```
 RSM (GTFS zip + feed GTFS-RT) ──► GitHub Actions: import notturno ──► Postgres `network` + Storage `network/v<md5>.json`
-                              └─► pg_cron ogni 10 s ──► Edge Function `poller` ──► Postgres `live` + Storage `archive`
+                              └─► pg_cron ogni 10 s ──► Edge Function `poller` ──► Postgres `live` + R2 (archivio)
 App ──► RPC `api.*` (JWT dell'utente) ──► legge `network` + `live`, aggiunge i segnali che dipendono dall'istante
 App ──► Storage `network/v<md5>.json` una volta per versione (ricerca e fermate vicine girano sul telefono)
 ```
@@ -70,20 +71,33 @@ Un solo posto traduce stato, segnale e orario in parole: `features/stop/componen
 
 ## Setup del backend (una volta per progetto)
 
-Serve un progetto Supabase **Pro** (il piano gratuito non contiene il GTFS né l'archivio) e la
+Serve un progetto Supabase, un bucket Cloudflare R2 e la
 [CLI Supabase](https://supabase.com/docs/guides/local-development/cli/getting-started).
 
+**Piano Supabase.** La rete importata tiene solo gli orari da ieri a 7 giorni avanti: il database arriva a circa
+**420 MB** (misurato sul GTFS del 27/09: 3,4 M orari invece di 4,9 M). Durante l'import notturno la rete vecchia e
+quella nuova convivono e si sale a circa 880 MB, quindi:
+- **Pro** (8 GB): import normale, la rete attiva resta in servizio finché la nuova non ha passato i controlli (RF-81).
+- **Gratuito** (500 MB): variabile di repository `IN_PLACE=1`. L'import cancella prima la rete attiva e ricostruisce
+  (picco misurato 476 MB). Ogni notte l'API è giù per circa 3 minuti, e se l'import fallisce la rete manca fino
+  all'import riuscito successivo. Il margine è di poche decine di MB: va bene per sviluppo e test, non per la beta.
+
 1. **Schema**: `supabase link --project-ref <ref>` e `supabase db push` (tabelle, ruolo `poller`, bucket
-   `network`/`archive`, funzioni `api`, job pg_cron).
+   `network`, funzioni `api`, job pg_cron).
 2. **Esporre l'API**: dashboard → *Settings → API → Exposed schemas*, aggiungi `api` (in locale lo fa `supabase/config.toml`).
 3. **Ruolo del poller**: `alter role poller with login password '<password>';`
 4. **Import iniziale**: nei secret del repository GitHub metti `SUPABASE_DB_URL` (pooler in modalità *session*,
    utente `postgres`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, poi lancia a mano il workflow *Static import*.
    Da lì gira ogni notte alle 06:30.
-5. **Poller**:
+5. **Archivio su R2**: crea un bucket (es. `veribus-archive`), nelle sue impostazioni una regola *Object lifecycle*
+   che cancella gli oggetti dopo 90 giorni (RF-83), e un token API R2 con permesso *Object Read & Write* solo su quel
+   bucket. Costo: circa 1 GB al giorno, a regime ~95 GB, circa 1,3 $ al mese oltre i 10 GB gratuiti; le scritture
+   (~180.000 al mese) stanno nel milione gratuito.
+6. **Poller**:
    ```bash
    supabase secrets set POLLER_SECRET=<stringa casuale> \
      POLLER_DB_URL=postgres://poller.<ref>:<password>@<pooler-host>:6543/postgres \
+     R2_ACCOUNT_ID=<account id> R2_ACCESS_KEY_ID=<key> R2_SECRET_ACCESS_KEY=<secret> R2_BUCKET=veribus-archive \
      HEALTHCHECKS_URL=https://hc-ping.com/<uuid>
    supabase functions deploy poller
    ```
@@ -92,13 +106,13 @@ Serve un progetto Supabase **Pro** (il piano gratuito non contiene il GTFS né l
    select vault.create_secret('https://<ref>.supabase.co/functions/v1/poller', 'poller_url');
    select vault.create_secret('<la stessa stringa di POLLER_SECRET>', 'poller_secret');
    ```
-6. **Monitoraggio**: su [Healthchecks.io](https://healthchecks.io) un check con periodo 1 minuto e tolleranza
+7. **Monitoraggio**: su [Healthchecks.io](https://healthchecks.io) un check con periodo 1 minuto e tolleranza
    5 minuti. L'import che fallisce fa fallire il workflow e GitHub manda l'email.
-7. **App**: in `env/staging.json` e `env/prod.json` imposta `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
+8. **App**: in `env/staging.json` e `env/prod.json` imposta `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
 
 **Passare a Cloud Run** (quando il p95 della CPU del ciclo supera 1 s, o serve un processo sempre acceso):
-`backend/runtimes/container/main.ts` è lo stesso ciclo in un loop. Avvialo con `DB_URL`, `SUPABASE_URL`,
-`SUPABASE_SERVICE_ROLE_KEY` (istanza minima 1, CPU sempre allocata), poi `select cron.unschedule('poller');`.
+`backend/runtimes/container/main.ts` è lo stesso ciclo in un loop. Avvialo con `DB_URL` e le variabili `R2_*`
+(istanza minima 1, CPU sempre allocata), poi `select cron.unschedule('poller');`.
 Il lease in `live.lease` evita cicli doppi durante il passaggio.
 
 ### Auth (Supabase)
@@ -131,10 +145,11 @@ docker run -d --name vb-test -e POSTGRES_PASSWORD=postgres -v "$PWD:/repo" supab
   -c config_file=/etc/postgresql/postgresql.conf
 docker exec vb-test bash /repo/supabase/tests/run.sh
 
-# Poller sui feed veri contro un Postgres locale (archivio in backend/archive)
+# Poller sui feed veri contro un Postgres locale (senza R2_* l'archivio va in backend/archive, stessa struttura)
 cd backend && DB_URL=postgres://postgres:postgres@localhost:54322/postgres deno task poller
 
 # Riesecuzione del motore su un archivio (RF-85): un CSV con i cambi di stato di ogni corsa
+# (un giorno di produzione: rclone copy r2:veribus-archive/vp/2026/09/27 backend/archive/vp/2026/09/27, idem per tu)
 cd backend && DB_URL=... deno run -A replay/main.ts archive > changes.csv
 ```
 
@@ -148,7 +163,7 @@ Per importare il GTFS vero in locale: `GTFS_DIR=<cartella dello zip scompattato>
 | Workflow | Quando | Cosa fa |
 |---|---|---|
 | `ci.yml` | ogni PR e push su main | app: codegen, format, analyze, test, build web; backend: `deno task check` e test SQL |
-| `static_import.yml` | ogni notte e a mano | import del GTFS se l'md5 è cambiato; pulizia dell'archivio oltre 90 giorni |
+| `static_import.yml` | ogni notte e a mano | import del GTFS se l'md5 è cambiato (`vars.IN_PLACE=1` sul piano gratuito) |
 | `release.yml` | merge PR su main | bump semver dal titolo PR (Conventional Commits), tag + GitHub Release |
 | `deploy_android.yml` / `deploy_ios.yml` | dopo release, se `vars.DEPLOY_ANDROID` / `vars.DEPLOY_IOS` | Play Store (internal) / TestFlight |
 

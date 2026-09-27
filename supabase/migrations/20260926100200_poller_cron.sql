@@ -20,9 +20,10 @@ revoke all on function live.invoke_poller() from public;
 
 select cron.schedule('poller', '10 seconds', 'select live.invoke_poller()');
 
--- pg_net keeps every response: trim it, and the snapshot index past the 90 days of the archive (RF-83).
+-- pg_net keeps every response: trim it. The snapshot index keeps a week (~6.000 rows a day): the files themselves
+-- stay 90 days on R2, where a listing finds them, and the database has to fit 500 MB on the free plan.
 select cron.schedule('cleanup', '17 3 * * *', $$
   delete from net._http_response where created < now() - interval '1 day';
-  delete from live.snapshot where fetched_at < now() - interval '90 days';
+  delete from live.snapshot where fetched_at < now() - interval '7 days';
   delete from network_meta.route_seen where date < current_date - 30;
 $$);

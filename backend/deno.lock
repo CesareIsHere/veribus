@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.14",
+    "npm:aws4fetch@1.0.20": "1.0.20",
     "npm:gtfs-realtime-bindings@1.1.1": "1.1.1",
     "npm:postgres@3.4.7": "3.4.7"
   },
@@ -111,6 +112,9 @@
     },
     "argparse@2.0.1": {
       "integrity": "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="
+    },
+    "aws4fetch@1.0.20": {
+      "integrity": "sha512-/djoAN709iY65ETD6LKCtyyEI04XIBP5xVvfmNxsEP0uJB5tyaGBztSryRr4HqMStr9R06PisQE7m9zDTXKu6g=="
     },
     "balanced-match@1.0.2": {
       "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="

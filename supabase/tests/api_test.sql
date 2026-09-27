@@ -37,6 +37,7 @@ begin
   perform pg_temp.check(jsonb_array_length(api.timetable('A', 'R1', (now() at time zone 'Europe/Rome')::date)->0->'departures') = 5, 'timetable');
   perform pg_temp.check(api.network()->>'version' = 'test', 'network version');
   perform pg_temp.check(not exists (select from network.route where route_id = 'M1'), 'metro excluded by the import');
+  perform pg_temp.check(not exists (select from network.trip where trip_id = 'T9'), 'trips beyond 7 days not imported');
 end $$;
 
 -- Only Trip Updates stopped (SC-11b): no predictions, located vehicles show "N stops away".

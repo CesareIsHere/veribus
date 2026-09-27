@@ -1,4 +1,5 @@
-// HTTP adapters: RSM feeds, Supabase Storage archive, Healthchecks.io heartbeat.
+// HTTP adapters: RSM feeds, R2 archive, Healthchecks.io heartbeat.
+import { AwsClient } from "npm:aws4fetch@1.0.20";
 import type { Archive, CycleSummary, FeedSource } from "../core/cycle.ts";
 import type { Feed } from "../core/types.ts";
 
@@ -26,17 +27,29 @@ export function rsmFeeds(): FeedSource {
   };
 }
 
-/** archive/{feed}/YYYY/MM/DD/hhmmss.pb.gz in the private `archive` bucket. */
-export function storageArchive(supabaseUrl: string, serviceKey: string): Archive {
+/** {feed}/YYYY/MM/DD/hhmmss.pb.gz: one folder per day, as the spec asks (RF-83). */
+export function archivePath(feed: Feed, fetchedAt: number): string {
+  const t = new Date(fetchedAt * 1000).toISOString(); // 2026-09-26T10:45:40.000Z
+  return `${feed}/${t.slice(0, 4)}/${t.slice(5, 7)}/${t.slice(8, 10)}/${t.slice(11, 19).replaceAll(":", "")}.pb.gz`;
+}
+
+/** Raw snapshots on Cloudflare R2 (S3 API): ~1 GB a day would not fit Supabase Storage on the free plan.
+ * Retention (90 days) is an R2 lifecycle rule on the bucket, not code. */
+export function r2Archive(
+  env: { accountId: string; accessKeyId: string; secretAccessKey: string; bucket: string },
+): Archive {
+  const aws = new AwsClient({
+    accessKeyId: env.accessKeyId,
+    secretAccessKey: env.secretAccessKey,
+    service: "s3",
+    region: "auto",
+  });
   return {
     async put(feed, fetchedAt, gz) {
-      const t = new Date(fetchedAt * 1000).toISOString(); // 2026-09-26T10:45:40.000Z
-      const path = `${feed}/${t.slice(0, 4)}/${t.slice(5, 7)}/${t.slice(8, 10)}/${
-        t.slice(11, 19).replaceAll(":", "")
-      }.pb.gz`;
-      const res = await fetch(`${supabaseUrl}/storage/v1/object/archive/${path}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/gzip", "x-upsert": "true" },
+      const path = archivePath(feed, fetchedAt);
+      const res = await aws.fetch(`https://${env.accountId}.r2.cloudflarestorage.com/${env.bucket}/${path}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/gzip" },
         body: gz as BodyInit,
       });
       if (!res.ok) throw new Error(`archive: HTTP ${res.status} ${await res.text()}`);

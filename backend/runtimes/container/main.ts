@@ -2,26 +2,34 @@
 // the state in memory, still writing it to the database at every cycle. To migrate from the edge runtime:
 // start this, then `select cron.unschedule('poller');`.
 //
-//   DB_URL=postgres://... [SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=...] deno task poller
+//   DB_URL=postgres://... [R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... R2_BUCKET=...] deno task poller
 //
-// Without SUPABASE_URL snapshots are archived under ./archive.
+// Without R2_ACCOUNT_ID snapshots are archived under ./archive, with the same layout.
 import { type Archive, runCycle } from "../../core/cycle.ts";
 import type { CycleState } from "../../core/types.ts";
-import { healthchecks, rsmFeeds, storageArchive } from "../../adapters/http.ts";
+import { archivePath, healthchecks, r2Archive, rsmFeeds } from "../../adapters/http.ts";
 import { postgresStore } from "../../adapters/postgres.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const localArchive: Archive = {
   async put(feed, fetchedAt, gz) {
-    await Deno.mkdir(`archive/${feed}`, { recursive: true });
-    await Deno.writeFile(`archive/${feed}/${fetchedAt}.pb.gz`, gz);
-    return `${feed}/${fetchedAt}.pb.gz`;
+    const path = archivePath(feed, fetchedAt);
+    await Deno.mkdir(`archive/${path.slice(0, path.lastIndexOf("/"))}`, { recursive: true });
+    await Deno.writeFile(`archive/${path}`, gz);
+    return path;
   },
 };
 const store = postgresStore(env("DB_URL"));
 const ports = {
   feeds: rsmFeeds(),
-  archive: env("SUPABASE_URL") ? storageArchive(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY")) : localArchive,
+  archive: env("R2_ACCOUNT_ID")
+    ? r2Archive({
+      accountId: env("R2_ACCOUNT_ID"),
+      accessKeyId: env("R2_ACCESS_KEY_ID"),
+      secretAccessKey: env("R2_SECRET_ACCESS_KEY"),
+      bucket: env("R2_BUCKET"),
+    })
+    : localArchive,
   store,
   clock: { now: () => Math.floor(Date.now() / 1000) },
 };

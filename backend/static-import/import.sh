@@ -5,6 +5,9 @@
 #
 # DB_URL: session pooler (GitHub runners have no IPv6 for the direct connection).
 # GTFS_DIR=<dir> imports an already unzipped feed; FORCE=1 imports even if the md5 is unchanged.
+# IN_PLACE=1 drops the active network before building the new one, so the database never holds two of them
+# (Supabase free plan, 500 MB): the API is down for about a minute, and if the import fails there is no network
+# until the next successful run (it gives up RF-81, "keep the previous version"). Leave it off on Pro.
 # Without SUPABASE_URL the network JSON is left in ./network.json instead of Storage.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -24,17 +27,26 @@ else
 fi
 echo "Importing $MD5"
 
-# Raw staging: one text column per CSV header field, so column order never matters.
+# Raw staging for the small files: one text column per CSV header field, so column order never matters.
 {
   echo "drop schema if exists network_staging cascade; create schema network_staging;"
   for f in "$GTFS_DIR"/*.txt; do
+    [ "$(basename "$f")" = stop_times.txt ] && continue
     t=$(basename "$f" .txt)
     cols=$(head -1 "$f" | tr -d '\r' | sed 's/^\xEF\xBB\xBF//; s/,/" text, "/g')
     echo "create table network_staging.\"$t\" (\"$cols\" text);"
     echo "\\copy network_staging.\"$t\" from '$f' with (format csv, header true)"
   done
+  echo "\\i keep.sql"
 } | psql
+KEEP=$(mktemp)
+psql -Atc "copy network_staging.keep to stdout" > "$KEEP"
 
+if [ -n "${IN_PLACE:-}" ]; then psql -c "drop schema if exists network cascade"; fi
+# stop_times (5 million rows, most of the space) streams filtered and typed straight into its final table.
+psql -c "drop schema if exists network_import cascade; create schema network_import;
+         create table network_import.stop_time (trip_id text, seq int, stop_id text, departure_s int);"
+awk -f stop_times.awk "$KEEP" "$GTFS_DIR/stop_times.txt" | psql -c "\\copy network_import.stop_time from stdin with (format csv)"
 psql -f transform.sql
 
 # The file goes up before the swap: the app never sees a version it cannot download.

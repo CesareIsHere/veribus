@@ -1,14 +1,19 @@
 // Supabase Edge Function runtime: pg_cron calls it every 10 s (supabase/migrations/*_poller_cron.sql).
 // Each invocation takes the lease, reloads the state from the database and runs one cycle.
 import { runCycle } from "../../core/cycle.ts";
-import { healthchecks, rsmFeeds, storageArchive } from "../../adapters/http.ts";
+import { healthchecks, r2Archive, rsmFeeds } from "../../adapters/http.ts";
 import { postgresStore } from "../../adapters/postgres.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const store = postgresStore(env("POLLER_DB_URL") || env("SUPABASE_DB_URL"));
 const ports = {
   feeds: rsmFeeds(),
-  archive: storageArchive(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY")),
+  archive: r2Archive({
+    accountId: env("R2_ACCOUNT_ID"),
+    accessKeyId: env("R2_ACCESS_KEY_ID"),
+    secretAccessKey: env("R2_SECRET_ACCESS_KEY"),
+    bucket: env("R2_BUCKET"),
+  }),
   store,
   clock: { now: () => Math.floor(Date.now() / 1000) },
 };

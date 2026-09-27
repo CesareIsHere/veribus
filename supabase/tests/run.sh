@@ -26,6 +26,7 @@ echo "shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence" > "$G/shapes.txt"
 printf 'S1,41.90,12.50,1\nS1,41.92,12.50,2\n' >> "$G/shapes.txt"
 echo "service_id,date,exception_type" > "$G/calendar_dates.txt"
 echo "WK,$(TZ=Europe/Rome date +%Y%m%d),1" >> "$G/calendar_dates.txt"
+echo "LATER,$(TZ=Europe/Rome date -d "@$(($(date +%s) + 20 * 86400))" +%Y%m%d),1" >> "$G/calendar_dates.txt"
 echo "route_id,service_id,trip_id,trip_headsign,direction_id,shape_id" > "$G/trips.txt"
 echo "trip_id,arrival_time,departure_time,stop_id,stop_sequence" > "$G/stop_times.txt"
 for i in 1 2 3 4 5; do
@@ -33,6 +34,8 @@ for i in 1 2 3 4 5; do
   echo "R1,WK,T$i,Gamma,0,S1" >> "$G/trips.txt"
   for s in 1 2 3; do echo "T$i,$(hms $((t + s * 120))),$(hms $((t + s * 120))),$(echo ABC | cut -c$s),$s" >> "$G/stop_times.txt"; done
 done
+echo "R1,LATER,T9,Gamma,0,S1" >> "$G/trips.txt"  # outside the 7-day window: must not be imported
+echo "T9,08:00:00,08:00:00,A,1" >> "$G/stop_times.txt"
 GTFS_DIR=$G MD5=test bash backend/static-import/import.sh > /dev/null 2>&1
 
 psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f supabase/tests/api_test.sql

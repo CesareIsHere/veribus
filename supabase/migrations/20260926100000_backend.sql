@@ -143,6 +143,6 @@ begin
   end loop;
 end $$;
 
--- Storage: network data for the app (public) and the raw snapshot archive (private).
-insert into storage.buckets (id, name, public) values ('network', 'network', true), ('archive', 'archive', false)
+-- Storage: network data for the app. The raw snapshot archive lives on Cloudflare R2 (backend/adapters/http.ts).
+insert into storage.buckets (id, name, public) values ('network', 'network', true)
 on conflict (id) do nothing;
