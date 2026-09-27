@@ -71,7 +71,7 @@ class LineBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = muted || withoutRealtime ? context.colors.onSurfaceVariant : context.colors.onSurface;
     return Container(
-      constraints: const BoxConstraints(minWidth: Spacing.xxxl, minHeight: Spacing.xxl),
+      constraints: const BoxConstraints(minWidth: Spacing.xxxl + Spacing.s, minHeight: Spacing.xxl),
       padding: const EdgeInsets.symmetric(horizontal: Spacing.s),
       decoration: BoxDecoration(
         border: Border.all(color: withoutRealtime ? context.colors.outlineVariant : color, width: 1.5),
@@ -122,7 +122,13 @@ class ArrivalTime extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final base = large ? context.textTheme.titleLarge : context.textTheme.titleSmall;
+    // Minutes are the headline; clock times and "N stops away" are one step smaller (wireframe "Fermata").
+    final minutes = arrival.minutes != null && !arrival.approximate;
+    final base = !large
+        ? context.textTheme.titleSmall
+        : minutes
+        ? context.textTheme.titleLarge
+        : context.textTheme.titleMedium;
     final style = switch (arrival.status) {
       ArrivalStatus.confirmed => base?.copyWith(fontWeight: FontWeight.w700),
       ArrivalStatus.uncertain => base?.copyWith(

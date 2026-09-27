@@ -991,6 +991,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data come from automatic equipment and are not exhaustive: road conditions and malfunctions can make them inaccurate.'**
   String get dataDisclaimer;
+
+  /// No description provided for @variantStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Served only by some trips'**
+  String get variantStops;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

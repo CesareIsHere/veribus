@@ -10,6 +10,7 @@ import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/alert_card.dart';
+import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
@@ -141,13 +142,7 @@ class _StopPageState extends ConsumerState<StopPage> {
           padding: EdgeInsets.symmetric(horizontal: context.pageMargin, vertical: Spacing.xs),
           child: AlertCard(alert),
         ),
-      if (data.feed == FeedStatus.stale)
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: context.pageMargin, vertical: Spacing.xs),
-          child: Card.filled(
-            child: ListTile(leading: const Icon(Icons.cloud_off_outlined), title: Text(l10n.realtimeUnavailable)),
-          ),
-        ),
+      StaleBanner(data.feed),
       if (list.isEmpty)
         MessageView(icon: Icons.nights_stay_outlined, title: l10n.noArrivals)
       else

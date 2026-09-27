@@ -8,7 +8,7 @@ import 'package:veribus/repositories/auth/i_auth_repository.dart';
 /// In-memory auth: any email works, password `wrongpass` fails.
 /// Used for demos, UI work without a server, and tests.
 class MockAuthRepository implements IAuthRepository {
-  MockAuthRepository({this.latency = const Duration(milliseconds: 400)});
+  MockAuthRepository({this.latency = const Duration(milliseconds: 400), this._user});
 
   final Duration latency;
   final _controller = StreamController<UserModel?>.broadcast();

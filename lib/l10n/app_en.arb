@@ -261,5 +261,6 @@
   "stateCanceledMeaning": "The operator canceled the trip.",
   "dataSource": "Data source",
   "dataSourceBody": "Open data by Roma Servizi per la Mobilità (GTFS and GTFS-Realtime). This app is not affiliated with Atac or RSM.",
-  "dataDisclaimer": "Data come from automatic equipment and are not exhaustive: road conditions and malfunctions can make them inaccurate."
+  "dataDisclaimer": "Data come from automatic equipment and are not exhaustive: road conditions and malfunctions can make them inaccurate.",
+  "variantStops": "Served only by some trips"
 }

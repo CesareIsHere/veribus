@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:veribus/core/config.dart';
+import 'package:veribus/models/user/user_model.dart';
 import 'package:veribus/repositories/auth/i_auth_repository.dart';
 import 'package:veribus/repositories/auth/mock_auth_repository.dart';
 import 'package:veribus/repositories/auth/supabase_auth_repository.dart'; // backend:supabase
@@ -9,6 +10,9 @@ part 'auth_repository_provider.g.dart';
 /// The only place that knows which backend is active.
 @Riverpod(keepAlive: true)
 IAuthRepository authRepository(Ref ref) => switch (AppConfig.backend) {
+  Backend.mock when AppConfig.mockSignedIn => MockAuthRepository(
+    user: const UserModel(id: 'mock', email: 'demo@veribus.dev', displayName: 'Demo'),
+  ),
   Backend.mock => MockAuthRepository(),
   Backend.supabase => SupabaseAuthRepository(), // backend:supabase
 };

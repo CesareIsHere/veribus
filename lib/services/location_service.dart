@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:veribus/core/config.dart';
 
 part 'location_service.g.dart';
 
@@ -8,6 +9,10 @@ part 'location_service.g.dart';
 class LocationService {
   /// Asks for the permission once (RF-04, no intro screens); null when denied or off.
   Future<LatLng?> current() async {
+    if (AppConfig.mockPosition case final p when p.isNotEmpty) {
+      final [lat, lon] = p.split(',').map(double.parse).toList();
+      return LatLng(lat, lon);
+    }
     if (!await Geolocator.isLocationServiceEnabled()) return null;
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();

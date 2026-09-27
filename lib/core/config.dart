@@ -23,6 +23,11 @@ abstract final class AppConfig {
   static const _seedColor = String.fromEnvironment('SEED_COLOR', defaultValue: '0xFF3F51B5');
   static const _backend = String.fromEnvironment('BACKEND', defaultValue: 'mock');
 
+  /// Mock mode only (`env/mock.json`): start signed in and at a fixed position ("lat,lon"), so every screen
+  /// can be opened without typing credentials or granting the location.
+  static const mockSignedIn = bool.fromEnvironment('MOCK_SIGNED_IN');
+  static const mockPosition = String.fromEnvironment('MOCK_POSITION');
+
   static bool get isProd => stage == 'prod';
   static Color get seedColor => Color(int.parse(_seedColor));
   static Backend get backend => Backend.values.byName(_backend);

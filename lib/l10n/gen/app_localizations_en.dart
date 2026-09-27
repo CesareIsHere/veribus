@@ -509,4 +509,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dataDisclaimer =>
       'Data come from automatic equipment and are not exhaustive: road conditions and malfunctions can make them inaccurate.';
+
+  @override
+  String get variantStops => 'Served only by some trips';
 }

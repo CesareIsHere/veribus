@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/widgets/section_header.dart';
+import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/favorites/providers/favorites_arrivals_provider.dart';
@@ -46,6 +47,7 @@ class FavoritesPage extends ConsumerWidget {
               child: ListView(
                 padding: context.listPadding(),
                 children: [
+                  StaleBanner(data?.feed),
                   if (arrivals.hasError && data == null)
                     MessageView.error(
                       context,

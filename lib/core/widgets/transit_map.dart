@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/styles/app_theme.dart';
 
 /// Rome's center, used when the position is not available (RF-02).
 const rome = LatLng(41.8986, 12.4768);
@@ -21,27 +22,31 @@ class TransitMap extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tileUrl = ref.watch(networkInfoProvider).value?.tileUrl;
-    return FlutterMap(
-      mapController: controller,
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: zoom,
-        minZoom: 10,
-        maxZoom: 19,
-        interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
-      ),
-      children: [
-        if (tileUrl != null) TileLayer(urlTemplate: tileUrl, userAgentPackageName: 'com.emilianocesare.veribus'),
-        ...children,
-        RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution(
-              'OpenStreetMap',
-              onTap: () => launchUrl(Uri.parse('https://www.openstreetmap.org/copyright')),
-            ),
-          ],
+    // Tiles are always light: markers use the light scheme too, or in dark mode they turn into black dots.
+    return Theme(
+      data: AppTheme.light(),
+      child: FlutterMap(
+        mapController: controller,
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: zoom,
+          minZoom: 10,
+          maxZoom: 19,
+          interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
         ),
-      ],
+        children: [
+          if (tileUrl != null) TileLayer(urlTemplate: tileUrl, userAgentPackageName: 'com.emilianocesare.veribus'),
+          ...children,
+          RichAttributionWidget(
+            attributions: [
+              TextSourceAttribution(
+                'OpenStreetMap',
+                onTap: () => launchUrl(Uri.parse('https://www.openstreetmap.org/copyright')),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

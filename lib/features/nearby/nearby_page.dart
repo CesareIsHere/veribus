@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
@@ -26,6 +27,8 @@ class NearbyPage extends ConsumerWidget {
     final l10n = context.l10n;
     final map = ref.watch(nearbyMapViewProvider);
     final position = ref.watch(positionProvider);
+    // RF-61 / SC-01 1a: without network data the map would stay blank.
+    final networkError = ref.watch(networkProvider).error;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -58,6 +61,11 @@ class NearbyPage extends ConsumerWidget {
               ),
             Expanded(
               child: switch (position) {
+                _ when networkError != null => MessageView.error(
+                  context,
+                  networkError,
+                  onRetry: () => ref.invalidate(networkInfoProvider),
+                ),
                 AsyncValue(isLoading: true) => const Center(child: CircularProgressIndicator()),
                 AsyncValue(:final value) when map => _NearbyMap(position: value),
                 AsyncValue(value: null) => MessageView(icon: Icons.search, title: l10n.locationDeniedList),
@@ -98,7 +106,11 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
                 markers: [
                   Marker(
                     point: p,
-                    child: Icon(Icons.my_location, color: context.colors.primary, semanticLabel: context.l10n.you),
+                    // Builder: the map's light theme, not the page's.
+                    child: Builder(
+                      builder: (context) =>
+                          Icon(Icons.my_location, color: context.colors.primary, semanticLabel: context.l10n.you),
+                    ),
                   ),
                 ],
               ),
@@ -107,7 +119,7 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
         if (widget.position case final p?)
           Positioned(
             right: Spacing.l,
-            bottom: Spacing.xxl,
+            bottom: Spacing.xxxl + Spacing.l, // above the map attribution button
             child: FloatingActionButton.small(
               tooltip: context.l10n.backToMyPosition,
               onPressed: () => _controller.move(p, 16),
@@ -168,6 +180,7 @@ class _NearbyList extends ConsumerWidget {
         child: ListView(
           padding: context.listPadding(),
           children: [
+            StaleBanner(arrivals?.feed),
             for (final (:stop, :meters) in value)
               _StopCard(
                 stop: stop,
@@ -222,6 +235,8 @@ class _StopCard extends StatelessWidget {
             ),
             if (next == null)
               const LinearProgressIndicator()
+            else if (next!.isEmpty)
+              Text(context.l10n.noArrivals, style: context.textTheme.bodySmall)
             else
               for (final a in next!)
                 Row(

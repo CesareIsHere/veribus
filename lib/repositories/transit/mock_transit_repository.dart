@@ -40,7 +40,32 @@ class MockTransitRepository implements ITransitRepository {
       12.50273,
       ['75', '8BUS'],
     ],
+    [
+      '70102',
+      'REPUBBLICA',
+      41.90250,
+      12.49600,
+      ['64', '170', '40'],
+    ],
+    [
+      '74902',
+      'S. MARIA MAGGIORE',
+      41.89750,
+      12.49850,
+      ['75', 'n11'],
+    ],
+    [
+      '70103',
+      'VIMINALE',
+      41.89900,
+      12.49350,
+      ['64', '170', '40', '8BUS'],
+    ],
   ];
+
+  /// Edge cases on purpose: CAVOUR has stale realtime data (RF-60), MANIN no arrivals in the next hour.
+  static const _staleStop = '74901';
+  static const _emptyStop = '76301';
   static const List<List<Object>> _lines = [
     ['64', '64', 'bus', false, 'P.ZA STAZIONE S. PIETRO (FL)', 'TERMINI (MA-MB-FS)'],
     ['170', '170', 'bus', false, 'AGRICOLTURA', 'TERMINI (MA-MB-FS)'],
@@ -81,6 +106,7 @@ class MockTransitRepository implements ITransitRepository {
     final now = DateTime.now().toUtc();
     String at(int minutes) => now.add(Duration(minutes: minutes)).toIso8601String();
     Map<String, dynamic> arrival(String line, String status, int minutes, {Map<String, dynamic>? signal}) => {
+      'sort': minutes.abs(),
       'trip_id': '$line-$minutes',
       'route_id': line,
       'direction_id': 1,
@@ -95,38 +121,43 @@ class MockTransitRepository implements ITransitRepository {
           ? null
           : {'id': 'v$line', 'label': '3001', 'lat': 41.8985, 'lon': 12.4870, 'gps_at': now.toIso8601String()},
     };
+    final stale = stopIds.length == 1 && stopIds.single == _staleStop;
+    List<Map<String, dynamic>> stopArrivals(String id) {
+      if (id == _emptyStop) return const [];
+      final lines = (_stops.firstWhere((s) => s[0] == id, orElse: () => _stops.first)[4] as List).cast<String>();
+      final list = [
+        for (final (i, line) in lines.indexed)
+          ...switch (i) {
+            _ when stale => [arrival(line, 'scheduled', 6 + i * 5)],
+            _ when line == '8BUS' => [arrival(line, 'scheduled', 12), arrival(line, 'scheduled', 27)],
+            0 => [arrival(line, 'confirmed', 4), arrival(line, 'confirmed', 14), arrival(line, 'confirmed', -21)],
+            1 => [
+              arrival(line, 'uncertain', 7, signal: {'code': 'S3', 'min': 8}),
+              arrival(line, 'suppressed', 9, signal: {'code': 'S2', 'min': 6}),
+            ],
+            2 => [
+              arrival(line, 'uncertain', 11, signal: {'code': 'S5', 'at': now.millisecondsSinceEpoch ~/ 1000 + 600}),
+              arrival(line, 'canceled', 18, signal: {'code': 'S1'}),
+            ],
+            _ => [
+              arrival(line, 'uncertain', 2, signal: {'code': 'S4', 'min': 3}),
+              arrival(line, 'scheduled', 33),
+            ],
+          },
+      ];
+      // The API sorts by time; "N stops away" (no time) sorts by its scheduled slot.
+      return list..sort((a, b) => (a['sort'] as int).compareTo(b['sort'] as int));
+    }
+
     return Arrivals.fromJson({
       'computed_at': now.toIso8601String(),
-      'feed': {'status': 'ok', 'age_s': 20},
+      'feed': {'status': stale ? 'stale' : 'ok', 'age_s': stale ? 900 : 20},
       'stops': [
         for (final id in stopIds)
           {
             'stop_id': id,
             'alerts': id == '70001' ? ['a1'] : <String>[],
-            'arrivals': [
-              for (final (i, line)
-                  in (_stops.firstWhere((s) => s[0] == id, orElse: () => _stops.first)[4] as List)
-                      .cast<String>()
-                      .indexed)
-                ...switch (i) {
-                  _ when line == '8BUS' => [arrival(line, 'scheduled', 12), arrival(line, 'scheduled', 27)],
-                  0 => [arrival(line, 'confirmed', 4), arrival(line, 'confirmed', 14), arrival(line, 'confirmed', -21)],
-                  1 => [
-                    arrival(line, 'uncertain', 7, signal: {'code': 'S3', 'min': 8}),
-                    arrival(line, 'suppressed', 9, signal: {'code': 'S2', 'min': 6}),
-                  ],
-                  2 => [
-                    arrival(
-                      line,
-                      'uncertain',
-                      11,
-                      signal: {'code': 'S5', 'at': now.millisecondsSinceEpoch ~/ 1000 + 600},
-                    ),
-                    arrival(line, 'canceled', 18, signal: {'code': 'S1'}),
-                  ],
-                  _ => [arrival(line, 'scheduled', 33)],
-                },
-            ],
+            'arrivals': stopArrivals(id),
           },
       ],
       'alerts': [
@@ -180,6 +211,7 @@ class MockTransitRepository implements ITransitRepository {
             ],
       'alerts': <Map<String, dynamic>>[],
       'next_departure': idle ? now.add(const Duration(hours: 5)).toIso8601String() : null,
+      'variant_stops': lineId == '64' ? [_staleStop] : <String>[],
       'feed': {'status': 'ok'},
     });
   }

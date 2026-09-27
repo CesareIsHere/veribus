@@ -7,6 +7,8 @@ import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/alert_card.dart';
+import 'package:veribus/core/widgets/section_header.dart';
+import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
@@ -132,6 +134,7 @@ class _LinePageState extends ConsumerState<LinePage> {
     return ListView(
       padding: context.listPadding(),
       children: [
+        StaleBanner(d.feed),
         for (final alert in d.alerts)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: context.pageMargin, vertical: Spacing.xs),
@@ -167,6 +170,15 @@ class _LinePageState extends ConsumerState<LinePage> {
             trailing: i == 0 || i == d.stopIds.length - 1 ? Text(l10n.terminus) : null,
             onTap: () => context.push(StopPage.route(id)),
           ),
+        ],
+        if (d.variantStopIds.isNotEmpty) ...[
+          SectionHeader(l10n.variantStops),
+          for (final id in d.variantStopIds)
+            ListTile(
+              leading: const SizedBox(width: Spacing.xl, child: Icon(Icons.alt_route, size: 16)),
+              title: Text(network.stopById[id]?.name ?? id),
+              onTap: () => context.push(StopPage.route(id)),
+            ),
         ],
       ],
     );

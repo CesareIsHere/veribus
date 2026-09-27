@@ -509,4 +509,7 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get dataDisclaimer =>
       'I dati provengono da strumentazione automatica e non vanno considerati esaustivi: la variabilità della strada e possibili malfunzionamenti possono renderli imprecisi.';
+
+  @override
+  String get variantStops => 'Servite solo da alcune corse';
 }

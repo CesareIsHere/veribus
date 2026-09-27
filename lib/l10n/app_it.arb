@@ -149,5 +149,6 @@
   "stateCanceledMeaning": "L'operatore ha cancellato la corsa.",
   "dataSource": "Fonte dei dati",
   "dataSourceBody": "Open data di Roma Servizi per la Mobilità (GTFS e GTFS-Realtime). Questa app non è affiliata ad Atac né a RSM.",
-  "dataDisclaimer": "I dati provengono da strumentazione automatica e non vanno considerati esaustivi: la variabilità della strada e possibili malfunzionamenti possono renderli imprecisi."
+  "dataDisclaimer": "I dati provengono da strumentazione automatica e non vanno considerati esaustivi: la variabilità della strada e possibili malfunzionamenti possono renderli imprecisi.",
+  "variantStops": "Servite solo da alcune corse"
 }
