@@ -43,3 +43,22 @@ jobs:
 
       - name: Build web (compile check)
         run: flutter build web --release --dart-define-from-file=env/dev.json
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Poller (format, lint, types, engine tests)
+        working-directory: backend
+        run: deno task check
+
+      - name: Database (migrations, import, api)
+        run: |
+          docker run -d --name db -e POSTGRES_PASSWORD=postgres -v "$PWD:/repo" supabase/postgres:17.6.1.177 \
+            -c config_file=/etc/postgresql/postgresql.conf
+          docker exec db bash /repo/supabase/tests/run.sh

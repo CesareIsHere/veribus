@@ -57,3 +57,7 @@ app.*.map.json
 
 # Local env overrides (secrets)
 env/*.local.json
+
+# Backend local runs
+/backend/archive/
+/backend/static-import/network.json

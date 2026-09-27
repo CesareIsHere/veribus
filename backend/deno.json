@@ -1,0 +1,9 @@
+{
+  "nodeModulesDir": "none",
+  "fmt": { "lineWidth": 120 },
+  "lint": { "rules": { "exclude": ["no-import-prefix"] } },
+  "tasks": {
+    "check": "deno fmt --check && deno lint && deno check . && deno test -A",
+    "poller": "deno run -A runtimes/container/main.ts"
+  }
+}

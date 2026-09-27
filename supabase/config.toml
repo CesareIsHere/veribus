@@ -1,0 +1,10 @@
+# Only what differs from the Supabase CLI defaults.
+project_id = "veribus"
+
+[api]
+# The app calls the `api` schema functions as RPC; the other schemas stay private.
+schemas = ["public", "graphql_public", "api"]
+
+[functions.poller]
+# Called by pg_cron with its own shared secret (POLLER_SECRET), not a user JWT.
+verify_jwt = false

@@ -1,0 +1,50 @@
+# Nightly import of the RSM static GTFS (RF-80), then archive cleanup past 90 days (RF-83).
+# A failed import fails the workflow and GitHub sends the email (RF-86); the active version stays.
+#
+# Secrets: SUPABASE_DB_URL (session pooler, postgres user), SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+name: Static import
+
+on:
+  schedule:
+    - cron: "30 4 * * *" # 06:30 in Rome (summer time); RSM publishes around 05:30
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Import even if the md5 is unchanged
+        type: boolean
+        default: false
+
+concurrency: static-import
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash backend/static-import/import.sh
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FORCE: ${{ inputs.force && '1' || '' }}
+
+  archive-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the day that just left the 90-day window
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          day=$(date -u -d '91 days ago' +%Y/%m/%d)
+          for feed in vp tu sa; do
+            while true; do
+              names=$(curl -fsS -X POST "$SUPABASE_URL/storage/v1/object/list/archive" \
+                -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+                -d "{\"prefix\": \"$feed/$day/\", \"limit\": 1000}" | jq -c "[.[].name | \"$feed/$day/\" + .]")
+              [ "$names" = "[]" ] && break
+              curl -fsS -X DELETE "$SUPABASE_URL/storage/v1/object/archive" \
+                -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d "{\"prefixes\": $names}" > /dev/null
+            done
+          done
