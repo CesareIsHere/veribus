@@ -9,14 +9,14 @@ const URLS: Record<Feed, string> = {
   sa: `${RSM}/rome_rtgtfs_service_alerts_feed.pb`,
 };
 
-export function rsmFeeds(urls: Record<Feed, string> = URLS): FeedSource {
+export function rsmFeeds(): FeedSource {
   return {
     async fetchIfChanged(feed, prev) {
-      const head = await fetch(urls[feed], { method: "HEAD", signal: AbortSignal.timeout(5000) });
+      const head = await fetch(URLS[feed], { method: "HEAD", signal: AbortSignal.timeout(5000) });
       await head.body?.cancel();
       const lastModified = head.headers.get("last-modified");
       if (lastModified && lastModified === prev.lastModified) return null;
-      const res = await fetch(urls[feed], { signal: AbortSignal.timeout(10000) });
+      const res = await fetch(URLS[feed], { signal: AbortSignal.timeout(10000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return {
         lastModified: res.headers.get("last-modified") ?? lastModified,

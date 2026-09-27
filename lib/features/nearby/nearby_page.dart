@@ -172,7 +172,7 @@ class _NearbyList extends ConsumerWidget {
               _StopCard(
                 stop: stop,
                 meters: meters,
-                next: _nextPerLine(arrivals?.byStop[stop.id]),
+                next: arrivals == null ? null : firstPerLine(arrivals.byStop[stop.id] ?? const []),
                 network: network,
                 noRealtime: noRealtime,
               ),
@@ -186,16 +186,6 @@ class _NearbyList extends ConsumerWidget {
       AsyncValue(:final error?) => MessageView.error(context, error, onRetry: () => ref.invalidate(positionProvider)),
       _ => const Center(child: CircularProgressIndicator()),
     };
-  }
-
-  /// First arrival of each line and direction; suppressed ones stay visible (RF-29).
-  static List<Arrival>? _nextPerLine(List<Arrival>? arrivals) {
-    if (arrivals == null) return null;
-    final seen = <String>{};
-    return [
-      for (final a in arrivals)
-        if (a.status != ArrivalStatus.canceled && seen.add('${a.lineId}/${a.directionId}')) a,
-    ];
   }
 }
 

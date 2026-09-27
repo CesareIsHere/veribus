@@ -16,11 +16,11 @@ class SupabaseTransitRepository implements ITransitRepository {
 
   final SupabaseClient _client;
 
-  Future<Map<String, dynamic>> _rpc(String fn, [Map<String, dynamic>? params]) async =>
-      await _call(() => _client.schema('api').rpc<dynamic>(fn, params: params)) as Map<String, dynamic>;
+  Future<dynamic> _rpc(String fn, [Map<String, dynamic>? params]) =>
+      _call(() => _client.schema('api').rpc<dynamic>(fn, params: params));
 
   @override
-  Future<NetworkInfo> networkInfo() async => NetworkInfo.fromJson(await _rpc('network'));
+  Future<NetworkInfo> networkInfo() async => NetworkInfo.fromJson(await _rpc('network') as Map<String, dynamic>);
 
   @override
   Future<Network> network(NetworkInfo info) async {
@@ -44,34 +44,25 @@ class SupabaseTransitRepository implements ITransitRepository {
 
   @override
   Future<Arrivals> arrivals(List<String> stopIds, {List<String> lineIds = const []}) async =>
-      Arrivals.fromJson(await _rpc('arrivals', {'stop_ids': stopIds, 'route_ids': lineIds}));
+      Arrivals.fromJson(await _rpc('arrivals', {'stop_ids': stopIds, 'route_ids': lineIds}) as Map<String, dynamic>);
 
   @override
   Future<LineDetail?> line(String lineId, int directionId) async {
-    final json = await _call(
-      () => _client.schema('api').rpc<dynamic>('route', params: {'route_id': lineId, 'direction_id': directionId}),
-    );
+    final json = await _rpc('route', {'route_id': lineId, 'direction_id': directionId});
     return json == null ? null : LineDetail.fromJson(json as Map<String, dynamic>);
   }
 
   @override
   Future<List<TimetableDirection>> timetable(String stopId, String lineId, DateTime day) async {
-    final json = await _call(
-      () => _client
-          .schema('api')
-          .rpc<dynamic>(
-            'timetable',
-            params: {'stop_id': stopId, 'route_id': lineId, 'day': day.toIso8601String().substring(0, 10)},
-          ),
-    );
-    return [for (final d in json as List) TimetableDirection.fromJson(d as Map<String, dynamic>)];
+    final date = day.toIso8601String().substring(0, 10);
+    final json = await _rpc('timetable', {'stop_id': stopId, 'route_id': lineId, 'day': date}) as List;
+    return [for (final d in json) TimetableDirection.fromJson(d as Map<String, dynamic>)];
   }
 
   @override
-  Future<List<ServiceAlert>> alerts() async {
-    final json = await _call(() => _client.schema('api').rpc<dynamic>('alerts'));
-    return [for (final a in json as List) ServiceAlert.fromJson(a as Map<String, dynamic>)];
-  }
+  Future<List<ServiceAlert>> alerts() async => [
+    for (final a in await _rpc('alerts') as List) ServiceAlert.fromJson(a as Map<String, dynamic>),
+  ];
 
   /// SDK errors become [AppFailure]s here, so the rest of the app never sees Supabase types.
   static Future<T> _call<T>(Future<T> Function() request) async {

@@ -11,7 +11,6 @@ import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/settings/settings_page.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
-import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Favorite stops with their next arrivals and lines with vehicles in service (RF-41). Info is reached from here.
@@ -70,7 +69,7 @@ class FavoritesPage extends ConsumerWidget {
                       if (data == null)
                         const LinearProgressIndicator()
                       else
-                        for (final a in _firstPerLine(data.byStop[id] ?? const []).take(4))
+                        for (final a in firstPerLine(data.byStop[id] ?? const []).take(4))
                           ArrivalTile(
                             arrival: a,
                             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
@@ -99,14 +98,6 @@ class FavoritesPage extends ConsumerWidget {
               ),
             ),
     );
-  }
-
-  static List<Arrival> _firstPerLine(List<Arrival> arrivals) {
-    final seen = <String>{};
-    return [
-      for (final a in arrivals)
-        if (a.status != ArrivalStatus.canceled && seen.add('${a.lineId}/${a.directionId}')) a,
-    ];
   }
 }
 

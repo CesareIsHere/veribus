@@ -50,6 +50,15 @@ abstract final class ArrivalText {
   };
 }
 
+/// First arrival of each line and direction; canceled trips skipped, suppressed ones kept (RF-29).
+List<Arrival> firstPerLine(List<Arrival> arrivals) {
+  final seen = <String>{};
+  return [
+    for (final a in arrivals)
+      if (a.status != ArrivalStatus.canceled && seen.add('${a.lineId}/${a.directionId}')) a,
+  ];
+}
+
 /// Line number in a rounded box; muted when the line never transmits positions (RF-35).
 class LineBadge extends StatelessWidget {
   const LineBadge(this.name, {this.withoutRealtime = false, this.muted = false, super.key});

@@ -137,8 +137,7 @@ class LineDetail {
       ],
       vehicles = [for (final v in json['vehicles'] as List) VehicleInfo.fromJson(v as Map<String, dynamic>)],
       alerts = [for (final a in json['alerts'] as List) ServiceAlert.fromJson(a as Map<String, dynamic>)],
-      nextDeparture = json['next_departure'] == null ? null : DateTime.parse(json['next_departure'] as String),
-      feed = FeedStatus.values.byName((json['feed'] as Map)['status'] as String);
+      nextDeparture = json['next_departure'] == null ? null : DateTime.parse(json['next_departure'] as String);
 
   final String headsign;
   final List<String> stopIds;
@@ -148,7 +147,6 @@ class LineDetail {
 
   /// RF-34: set only when no vehicle is in service.
   final DateTime? nextDeparture;
-  final FeedStatus feed;
 }
 
 /// `api.timetable`: departures of one direction, in seconds from the service day's midnight (can exceed 24 h).
