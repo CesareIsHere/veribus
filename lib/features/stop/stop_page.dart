@@ -56,7 +56,7 @@ class _StopPageState extends ConsumerState<StopPage> {
     return Scaffold(
       appBar: AppBar(
         // Opened from a link there is nothing to pop: go back to the tabs.
-        leading: context.canPop() ? null : BackButton(onPressed: () => context.go('/')),
+        leading: Navigator.canPop(context) ? null : BackButton(onPressed: () => context.go('/')),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -53,7 +53,7 @@ class _LinePageState extends ConsumerState<LinePage> {
     return Scaffold(
       appBar: AppBar(
         // Opened from a link there is nothing to pop: go back to the tabs.
-        leading: context.canPop() ? null : BackButton(onPressed: () => context.go('/')),
+        leading: Navigator.canPop(context) ? null : BackButton(onPressed: () => context.go('/')),
         title: Row(
           spacing: Spacing.m,
           children: [LineBadge(line?.name ?? widget.lineId, withoutRealtime: withoutRealtime)],
