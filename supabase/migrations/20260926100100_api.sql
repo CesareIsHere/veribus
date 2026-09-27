@@ -23,16 +23,22 @@ language sql immutable set search_path = '' as $$
     'route_ids', a.route_ids, 'stop_ids', a.stop_ids, 'general', a.general)
 $$;
 
--- Age of the realtime data: ok, late (S6) or stale (RF-60: everything becomes scheduled).
+-- Age of the realtime data: ok, late (S6) or stale (RF-60: no vehicles, everything becomes scheduled).
+-- `predictions` is false when only Trip Updates stopped: located vehicles still show "N stops away" (SC-11b).
 create function api._feed(at timestamptz) returns jsonb
 language plpgsql stable set search_path = '' as $$
 declare
-  age int := extract(epoch from at - (select min(feed_ts) from live.feed_status where feed in ('vp', 'tu')))::int;
+  vp int := extract(epoch from at - (select feed_ts from live.feed_status where feed = 'vp'))::int;
+  tu int := extract(epoch from at - (select feed_ts from live.feed_status where feed = 'tu'))::int;
+  stale int := config.get('rf60_min')::int * 60;
 begin
-  return jsonb_build_object('age_s', age, 'status', case
-    when age is null or age > config.get('rf60_min')::int * 60 then 'stale'
-    when age > config.get('s6_min')::int * 60 then 'late'
-    else 'ok' end);
+  return jsonb_build_object(
+    'age_s', greatest(vp, tu),
+    'status', case
+      when vp is null or vp > stale then 'stale'
+      when greatest(vp, tu) > config.get('s6_min')::int * 60 then 'late'
+      else 'ok' end,
+    'predictions', tu <= stale);
 end $$;
 
 -- Minutes beyond which a prediction is shown as approximate (RF-29b), by time band.
@@ -104,7 +110,8 @@ begin
       join network.service_day sd on sd.service_id = t.service_id and sd.date = d.date
     ), joined as (
       select c.*, ts.trip_id is not null as has_rt, ts.status as rt_status, ts.signal as rt_signal, ts.suppressed_at,
-             to_timestamp(ts.pred_ts[array_position(ts.pred_seq, c.seq)]) as predicted,
+             case when (feed->>'predictions')::boolean
+               then to_timestamp(ts.pred_ts[array_position(ts.pred_seq, c.seq)]) end as predicted,
              v.vehicle_id, v.label, v.lat, v.lon, v.gps_at, v.seq as v_seq
       from candidate c
       left join live.trip_state ts on ts.trip_id = c.trip_id
@@ -211,6 +218,11 @@ begin
   return jsonb_build_object(
     'route_id', p.route_id, 'direction_id', p.direction_id, 'headsign', p.headsign,
     'stops', to_jsonb(p.stop_ids), 'shape', p.shape, 'vehicles', vehicles, 'feed', feed,
+    -- Stops served only by some trips, not on the main path (spec, section 15).
+    'variant_stops', coalesce((
+      select jsonb_agg(distinct st.stop_id) from network.trip t join network.stop_time st using (trip_id)
+      where t.route_id = route.route_id and t.direction_id = route.direction_id and st.stop_id <> all(p.stop_ids)
+    ), '[]'),
     'alerts', coalesce((select jsonb_agg(api._alert(al)) from live.alert al
                         where api._active(al.periods, at) and (al.general or route.route_id = any(al.route_ids))), '[]'),
     -- RF-34: with nobody in service, the next scheduled departure from the first stop.

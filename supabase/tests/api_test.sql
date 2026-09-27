@@ -39,6 +39,15 @@ begin
   perform pg_temp.check(not exists (select from network.route where route_id = 'M1'), 'metro excluded by the import');
 end $$;
 
+-- Only Trip Updates stopped (SC-11b): no predictions, located vehicles show "N stops away".
+update live.feed_status set feed_ts = now() - interval '11 minutes' where feed = 'tu';
+do $$
+declare a jsonb := pg_temp.at_b();
+begin
+  perform pg_temp.check(a->'T1'->'time' = 'null' and a->'T1'->>'stops_away' = '1', 'TU stale: T1 stops away, no time');
+  perform pg_temp.check(a->'T1'->'signal'->>'code' = 'S6', 'TU stale: T1 flagged late');
+end $$;
+
 -- Feeds late (S6), then stale (RF-60): everything becomes scheduled.
 update live.feed_status set feed_ts = now() - interval '5 minutes';
 do $$ begin
