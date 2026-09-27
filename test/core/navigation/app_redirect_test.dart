@@ -25,7 +25,7 @@ void main() {
 
     test('signed out: private pages go to login with from, public pages stay', () {
       expect(redirect(signedOut, '/settings'), '/login?from=%2Fsettings');
-      expect(redirect(signedOut, '/home'), '/login');
+      expect(redirect(signedOut, '/'), '/login');
       expect(redirect(signedOut, '/register'), isNull);
       expect(redirect(signedOut, '/reset-password?token=x'), isNull);
     });
@@ -36,16 +36,21 @@ void main() {
     });
 
     test('signed in: leaves auth pages, honours only safe from', () {
-      expect(redirect(signedIn, '/login'), '/home');
+      expect(redirect(signedIn, '/login'), '/nearby');
       expect(redirect(signedIn, '/login?from=%2Fsettings'), '/settings');
-      expect(redirect(signedIn, '/login?from=https%3A%2F%2Fevil.com'), '/home');
-      expect(redirect(signedIn, '/login?from=%2Flogin'), '/home');
-      expect(redirect(signedIn, '/login?from=%2F%2Fevil.com'), '/home');
+      expect(redirect(signedIn, '/login?from=https%3A%2F%2Fevil.com'), '/nearby');
+      expect(redirect(signedIn, '/login?from=%2Flogin'), '/nearby');
+      expect(redirect(signedIn, '/login?from=%2F%2Fevil.com'), '/nearby');
       expect(redirect(signedIn, '/settings'), isNull);
     });
 
+    test('the app opens on favorites when there are some, otherwise nearby (RF-42)', () {
+      expect(redirect(signedIn, '/'), '/nearby');
+      expect(appRedirect(auth: signedIn, uri: Uri.parse('/'), home: '/favorites'), '/favorites');
+    });
+
     test('auth error counts as signed out', () {
-      expect(redirect(AsyncError<UserModel?>(Exception(), StackTrace.empty), '/home'), '/login');
+      expect(redirect(AsyncError<UserModel?>(Exception(), StackTrace.empty), '/'), '/login');
     });
   });
 }

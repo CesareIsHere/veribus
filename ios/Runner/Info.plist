@@ -8,8 +8,8 @@
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
 		<string>Veribus</string>
-		<key>NSFaceIDUsageDescription</key>
-		<string>Used to unlock the app.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Per mostrarti le fermate vicine. La posizione resta sul telefono.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Used to choose your profile photo.</string>
 		<key>NSCameraUsageDescription</key>

@@ -8,12 +8,15 @@ import 'package:veribus/core/providers/locale_notifier.dart';
 import 'package:veribus/core/providers/package_info_provider.dart';
 import 'package:veribus/core/providers/theme_mode_notifier.dart';
 import 'package:veribus/core/utils/exception_handler.dart';
+import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/dialogs/confirm_dialog.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/settings/components/user_avatar.dart';
 import 'package:veribus/features/settings/profile_page.dart';
+import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -84,19 +87,28 @@ class SettingsPage extends ConsumerWidget {
               if (code != null) await ref.read(localeProvider.notifier).set(code.isEmpty ? null : Locale(code));
             },
           ),
+          SectionHeader(l10n.arrivalStates),
+          for (final (status, meaning) in [
+            (ArrivalStatus.confirmed, l10n.stateConfirmedMeaning),
+            (ArrivalStatus.uncertain, l10n.stateUncertainMeaning),
+            (ArrivalStatus.scheduled, l10n.stateScheduledMeaning),
+            (ArrivalStatus.suppressed, l10n.stateSuppressedMeaning),
+            (ArrivalStatus.canceled, l10n.stateCanceledMeaning),
+          ])
+            ListTile(leading: StatusTag(status), title: Text(meaning)),
+          SectionHeader(l10n.dataSource),
+          ListTile(
+            leading: const Icon(Icons.dataset_outlined),
+            title: Text(l10n.dataSourceBody),
+            subtitle: Text(l10n.dataDisclaimer),
+          ),
           SectionHeader(l10n.support),
           // feature:feedback:start
-          if (Features.feedback && AppConfig.supportEmail.isNotEmpty)
+          if (canReportProblem)
             ListTile(
-              leading: const Icon(Icons.feedback_outlined),
-              title: Text(l10n.sendFeedback),
-              onTap: () => launchUrl(
-                Uri(
-                  scheme: 'mailto',
-                  path: AppConfig.supportEmail,
-                  query: 'subject=${Uri.encodeComponent('${AppConfig.appName} feedback (${version?.version})')}',
-                ),
-              ),
+              leading: const Icon(Icons.flag_outlined),
+              title: Text(l10n.reportProblem),
+              onTap: () => reportProblem(ref),
             ),
           // feature:feedback:end
           if (AppConfig.termsUrl.isNotEmpty)

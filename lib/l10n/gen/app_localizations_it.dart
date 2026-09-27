@@ -16,107 +16,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get account => 'Account';
 
   @override
-  String get addTransaction => 'Aggiungi';
-
-  @override
-  String get all => 'Tutti';
-
-  @override
-  String get amount => 'Importo';
-
-  @override
-  String get appLocked => 'L\'app è bloccata';
-
-  @override
   String get appTitle => 'Template';
 
   @override
   String get appearance => 'Aspetto';
 
   @override
-  String get assistant => 'Assistente';
-
-  @override
-  String get assistantDisclaimer =>
-      'Le risposte sono generate dall\'IA e possono essere imprecise. Non è una consulenza finanziaria.';
-
-  @override
-  String get assistantEmpty => 'Chiedimi qualsiasi cosa.';
-
-  @override
-  String get assistantHint => 'Scrivi un messaggio';
-
-  @override
-  String get assistantSuggestion1 => 'Come posso risparmiare di più ogni mese?';
-
-  @override
-  String get assistantSuggestion2 => 'Spiegami la regola 50/30/20';
-
-  @override
-  String get assistantSuggestion3 => 'Come creo un fondo di emergenza?';
-
-  @override
-  String get averageDailyExpense => 'Spesa media giornaliera';
-
-  @override
-  String get biometricLock => 'Blocca con biometria';
-
-  @override
-  String get biometricLockDescription => 'Chiedi impronta, volto o PIN all\'apertura dell\'app';
-
-  @override
   String get cancel => 'Annulla';
 
   @override
-  String get category => 'Categoria';
-
-  @override
-  String get categoryBills => 'Bollette';
-
-  @override
-  String get categoryEntertainment => 'Svago';
-
-  @override
-  String get categoryFreelance => 'Freelance';
-
-  @override
-  String get categoryGift => 'Regali';
-
-  @override
-  String get categoryGroceries => 'Spesa';
-
-  @override
-  String get categoryHealth => 'Salute';
-
-  @override
-  String get categoryHome => 'Casa';
-
-  @override
-  String get categoryOther => 'Altro';
-
-  @override
-  String get categoryOtherIncome => 'Altre entrate';
-
-  @override
-  String get categoryRestaurants => 'Ristoranti';
-
-  @override
-  String get categorySalary => 'Stipendio';
-
-  @override
-  String get categoryShopping => 'Acquisti';
-
-  @override
-  String get categoryTransport => 'Trasporti';
-
-  @override
-  String get categoryTravel => 'Viaggi';
-
-  @override
   String get changePhoto => 'Cambia foto';
-
-  @override
-  String get close => 'Chiudi';
 
   @override
   String get confirmPassword => 'Conferma password';
@@ -131,9 +40,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createAccount => 'Crea account';
 
   @override
-  String get date => 'Data';
-
-  @override
   String get delete => 'Elimina';
 
   @override
@@ -145,18 +51,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deleteAccountDescription => 'Elimina definitivamente il tuo account e tutti i suoi dati.';
-
-  @override
-  String get deleteTransaction => 'Elimina movimento';
-
-  @override
-  String get deleteTransactionConfirm => 'Il movimento verrà eliminato definitivamente.';
-
-  @override
-  String get description => 'Descrizione';
-
-  @override
-  String get editTransaction => 'Modifica movimento';
 
   @override
   String get email => 'Email';
@@ -198,9 +92,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorWeakPassword => 'La password è troppo debole.';
 
   @override
-  String get expenses => 'Uscite';
-
-  @override
   String get forgotPassword => 'Password dimenticata?';
 
   @override
@@ -213,30 +104,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get fullName => 'Nome e cognome';
 
   @override
-  String get getStarted => 'Inizia';
-
-  @override
   String get goHome => 'Vai alla home';
-
-  @override
-  String get home => 'Home';
-
-  @override
-  String homeGreeting(String name) {
-    return 'Ciao $name';
-  }
-
-  @override
-  String get homePlaceholder => 'Qui inizia la tua app. Sostituisci questa pagina con la tua prima schermata.';
-
-  @override
-  String get income => 'Entrate';
-
-  @override
-  String get insights => 'Analisi';
-
-  @override
-  String get insightsLocked => 'Sblocca tasso di risparmio e medie giornaliere';
 
   @override
   String get language => 'Lingua';
@@ -254,70 +122,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get logs => 'Log';
 
   @override
-  String get maintenance => 'Stiamo facendo manutenzione. Torna tra qualche minuto.';
-
-  @override
-  String get monthBalance => 'Saldo del mese';
-
-  @override
   String get newPassword => 'Nuova password';
-
-  @override
-  String get newTransaction => 'Nuovo movimento';
-
-  @override
-  String get next => 'Avanti';
-
-  @override
-  String get nextMonth => 'Mese successivo';
 
   @override
   String get noAccountRegister => 'Non hai un account? Registrati';
 
   @override
-  String get noExpenses => 'Nessuna spesa questo mese.';
-
-  @override
-  String get noOffering => 'Nessun piano disponibile al momento.';
-
-  @override
-  String get noTransactions => 'Ancora nessun movimento';
-
-  @override
-  String get noTransactionsDescription => 'Tocca Aggiungi per registrare la prima entrata o uscita.';
-
-  @override
-  String get noTransactionsMonth => 'Nessun movimento questo mese';
-
-  @override
-  String get noteOptional => 'Nota (facoltativa)';
-
-  @override
   String get offline => 'Sei offline';
 
   @override
-  String get onboarding1Body => 'Registra entrate e uscite in un paio di tocchi.';
-
-  @override
-  String get onboarding1Title => 'Tutti i tuoi soldi in un posto';
-
-  @override
-  String get onboarding2Body => 'Saldo del mese e spese per categoria, a colpo d\'occhio.';
-
-  @override
-  String get onboarding2Title => 'Scopri dove vanno';
-
-  @override
-  String get onboarding3Body => 'Blocca l\'app con la biometria: i tuoi dati restano tuoi.';
-
-  @override
-  String get onboarding3Title => 'Privato e sicuro';
-
-  @override
   String get orContinueWith => 'oppure';
-
-  @override
-  String get overview => 'Panoramica';
 
   @override
   String get pageNotFound => 'Pagina non trovata.';
@@ -329,43 +143,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get passwordUpdated => 'Password aggiornata. Ora puoi accedere.';
 
   @override
-  String get premium => 'Premium';
-
-  @override
-  String get premiumActive => 'Premium attivo. Grazie!';
-
-  @override
-  String get premiumActiveShort => 'Attivo';
-
-  @override
-  String get premiumBenefit1 => 'Tasso di risparmio e analisi delle spese';
-
-  @override
-  String get premiumBenefit2 => 'Storico illimitato';
-
-  @override
-  String get premiumBenefit3 => 'Sostieni uno sviluppatore indipendente';
-
-  @override
-  String get premiumPitch => 'Passa a Premium';
-
-  @override
-  String get premiumUpsell => 'Sblocca tutte le funzionalità';
-
-  @override
-  String get previousMonth => 'Mese precedente';
-
-  @override
   String get privacy => 'Privacy policy';
 
   @override
   String get profile => 'Profilo';
-
-  @override
-  String get rateApp => 'Valuta l\'app';
-
-  @override
-  String get recentTransactions => 'Movimenti recenti';
 
   @override
   String get registerTitle => 'Crea il tuo account';
@@ -375,9 +156,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get resetPasswordTitle => 'Scegli una nuova password';
-
-  @override
-  String get restorePurchases => 'Ripristina acquisti';
 
   @override
   String get retry => 'Riprova';
@@ -390,21 +168,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get saved => 'Salvato';
-
-  @override
-  String get savingsRate => 'Tasso di risparmio';
-
-  @override
-  String get security => 'Sicurezza';
-
-  @override
-  String get seeAll => 'Vedi tutti';
-
-  @override
-  String get send => 'Invia';
-
-  @override
-  String get sendFeedback => 'Invia feedback';
 
   @override
   String get sendResetLink => 'Invia link';
@@ -420,15 +183,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get signOutConfirm => 'Vuoi uscire dall\'account?';
-
-  @override
-  String get skip => 'Salta';
-
-  @override
-  String get spendingByCategory => 'Spese per categoria';
-
-  @override
-  String get subscribe => 'Continua';
 
   @override
   String get support => 'Supporto';
@@ -449,37 +203,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get themeLight => 'Chiaro';
 
   @override
-  String get today => 'Oggi';
-
-  @override
-  String get transactionDeleted => 'Movimento eliminato';
-
-  @override
-  String get transactions => 'Movimenti';
-
-  @override
-  String get typeExpense => 'Uscita';
-
-  @override
-  String get typeIncome => 'Entrata';
-
-  @override
-  String get undo => 'Annulla';
-
-  @override
-  String get unlock => 'Sblocca';
-
-  @override
-  String get unlockReason => 'Conferma la tua identità per aprire l\'app';
-
-  @override
   String get update => 'Aggiorna';
 
   @override
   String get updateRequired => 'Per continuare è necessaria una nuova versione.';
-
-  @override
-  String get validationAmount => 'Inserisci un importo maggiore di zero';
 
   @override
   String get validationEmail => 'Inserisci un\'email valida';
@@ -497,5 +224,289 @@ class AppLocalizationsIt extends AppLocalizations {
   String get version => 'Versione';
 
   @override
-  String get yesterday => 'Ieri';
+  String get nearby => 'Vicino a me';
+
+  @override
+  String get search => 'Cerca';
+
+  @override
+  String get favorites => 'Preferiti';
+
+  @override
+  String get alerts => 'Avvisi';
+
+  @override
+  String get mapView => 'Mappa';
+
+  @override
+  String get listView => 'Elenco';
+
+  @override
+  String get addFavorite => 'Aggiungi ai preferiti';
+
+  @override
+  String get removeFavorite => 'Togli dai preferiti';
+
+  @override
+  String get reportProblem => 'Segnala un problema';
+
+  @override
+  String get allLines => 'Tutte';
+
+  @override
+  String get line => 'Linea';
+
+  @override
+  String get lines => 'Linee';
+
+  @override
+  String get stops => 'Fermate';
+
+  @override
+  String lineDetail(String name) {
+    return 'Linea $name';
+  }
+
+  @override
+  String stopCode(String code) {
+    return 'palina $code';
+  }
+
+  @override
+  String get stopNotServed => 'Questa fermata non è più servita.';
+
+  @override
+  String get lineNotServed => 'Questa linea non è in servizio.';
+
+  @override
+  String get notServedAnymore => 'Non più servito';
+
+  @override
+  String minutes(int n) {
+    return '$n min';
+  }
+
+  @override
+  String around(String time) {
+    return 'verso le $time';
+  }
+
+  @override
+  String get arriving => 'in arrivo';
+
+  @override
+  String stopsAway(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'a $n fermate',
+      one: 'a 1 fermata',
+      zero: 'alla fermata',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String approximateTime(int n) {
+    return 'tra circa $n min, orario approssimato';
+  }
+
+  @override
+  String vehicle(String label) {
+    return 'vettura $label';
+  }
+
+  @override
+  String get noRealtimeData => 'nessun dato in tempo reale';
+
+  @override
+  String get lineWithoutRealtime => 'questa linea non trasmette la posizione';
+
+  @override
+  String get withoutRealtime => 'Senza tempo reale, solo orari programmati';
+
+  @override
+  String get statusConfirmed => 'Confermato';
+
+  @override
+  String get statusUncertain => 'Da verificare';
+
+  @override
+  String get statusScheduled => 'Programmato';
+
+  @override
+  String get statusCanceled => 'Cancellata';
+
+  @override
+  String get statusSuppressed => 'Soppressa';
+
+  @override
+  String get signalCanceled => 'Corsa cancellata';
+
+  @override
+  String signalNotTransmitting(int n) {
+    return 'Il mezzo non trasmette da $n min';
+  }
+
+  @override
+  String get signalNoVehicle => 'Nessun mezzo localizzato';
+
+  @override
+  String signalStill(int n) {
+    return 'Mezzo fermo da $n min';
+  }
+
+  @override
+  String signalOldGps(int n) {
+    return 'Ultimo segnale GPS $n min fa';
+  }
+
+  @override
+  String signalAtTerminus(String time) {
+    return 'Parte dal capolinea alle $time';
+  }
+
+  @override
+  String get signalAtTerminusNoTime => 'Ancora al capolinea';
+
+  @override
+  String get signalLateData => 'Dati in tempo reale in ritardo';
+
+  @override
+  String get realtimeUnavailable => 'Tempo reale non disponibile: orari programmati';
+
+  @override
+  String get noArrivals => 'Nessun arrivo nei prossimi 60 minuti';
+
+  @override
+  String updatedAgo(int s) {
+    return 'aggiornato $s s fa';
+  }
+
+  @override
+  String get timetable => 'Orari della giornata';
+
+  @override
+  String get previousDay => 'Giorno precedente';
+
+  @override
+  String get nextDay => 'Giorno successivo';
+
+  @override
+  String get scheduledTimesNote => 'Orari programmati: non tengono conto del traffico.';
+
+  @override
+  String get noServiceThisDay => 'Nessuna corsa in questo giorno';
+
+  @override
+  String get firstTrip => 'prima';
+
+  @override
+  String get lastTrip => 'ultima';
+
+  @override
+  String lastPositionAt(String time) {
+    return 'ultima posizione nota alle $time';
+  }
+
+  @override
+  String get terminus => 'capolinea';
+
+  @override
+  String get noTripsInService => 'Nessuna corsa in servizio';
+
+  @override
+  String nextDeparture(String time) {
+    return 'Prossima partenza alle $time';
+  }
+
+  @override
+  String vehiclesInService(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n mezzi in servizio',
+      one: '1 mezzo in servizio',
+      zero: 'Nessun mezzo in servizio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchHint => 'Linea o palina';
+
+  @override
+  String get searchEmpty => 'La ricerca lavora sul telefono: i risultati compaiono mentre scrivi.';
+
+  @override
+  String get searchNoResults => 'Nessun risultato. Controlla il codice scritto sulla palina.';
+
+  @override
+  String get locationDenied => 'Attiva la posizione per vedere le fermate vicine';
+
+  @override
+  String get locationDeniedList => 'Senza posizione l\'elenco è vuoto: usa Cerca per trovare una fermata.';
+
+  @override
+  String get enableLocation => 'Attiva';
+
+  @override
+  String get you => 'Tu sei qui';
+
+  @override
+  String get backToMyPosition => 'Torna sulla mia posizione';
+
+  @override
+  String get zoomInForStops => 'Avvicinati per vedere le fermate';
+
+  @override
+  String get noStopsNearby => 'Nessuna fermata entro 1 km';
+
+  @override
+  String get nearbyNote =>
+      'Fermate entro 500 m, ordinate per distanza. Se non ce ne sono, il raggio si allarga a 1 km.';
+
+  @override
+  String meters(int n) {
+    return '$n m';
+  }
+
+  @override
+  String get noFavorites => 'Nessun preferito';
+
+  @override
+  String get noFavoritesHint => 'Tocca la stella su una fermata o una linea: l\'app si aprirà qui.';
+
+  @override
+  String get noAlerts => 'Nessun avviso attivo';
+
+  @override
+  String get arrivalStates => 'Stati degli arrivi';
+
+  @override
+  String get stateConfirmedMeaning => 'Un mezzo localizzato da poco e in movimento sta facendo questa corsa.';
+
+  @override
+  String get stateUncertainMeaning => 'C\'è una previsione, ma qualcosa la rende dubbia: il motivo è sempre scritto.';
+
+  @override
+  String get stateScheduledMeaning =>
+      'Nessun dato in tempo reale per questa corsa: solo l\'orario programmato, mai i minuti.';
+
+  @override
+  String get stateSuppressedMeaning => 'Il mezzo è sparito prima di completare la corsa: resta visibile per 5 minuti.';
+
+  @override
+  String get stateCanceledMeaning => 'L\'operatore ha cancellato la corsa.';
+
+  @override
+  String get dataSource => 'Fonte dei dati';
+
+  @override
+  String get dataSourceBody =>
+      'Open data di Roma Servizi per la Mobilità (GTFS e GTFS-Realtime). Questa app non è affiliata ad Atac né a RSM.';
+
+  @override
+  String get dataDisclaimer =>
+      'I dati provengono da strumentazione automatica e non vanno considerati esaustivi: la variabilità della strada e possibili malfunzionamenti possono renderli imprecisi.';
 }

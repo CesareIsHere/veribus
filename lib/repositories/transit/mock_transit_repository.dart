@@ -1,0 +1,213 @@
+import 'package:veribus/models/transit/live.dart';
+import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/repositories/transit/i_transit_repository.dart';
+
+/// A few stops around Termini whose arrivals show every status, so the app runs with no server at all.
+class MockTransitRepository implements ITransitRepository {
+  static const List<List<Object>> _stops = [
+    [
+      '05000',
+      'TERMINI (MA-MB-FS)',
+      41.90131,
+      12.50043,
+      ['64', '170', '40'],
+    ],
+    [
+      '70100',
+      'NAZIONALE/QUIRINALE',
+      41.89968,
+      12.49042,
+      ['64', '170', '40'],
+    ],
+    [
+      '70001',
+      'VENEZIA',
+      41.89630,
+      12.48250,
+      ['64', '170', '40', '8BUS', 'n11'],
+    ],
+    [
+      '74901',
+      'CAVOUR',
+      41.89584,
+      12.49478,
+      ['75', 'n11'],
+    ],
+    [
+      '76301',
+      'MANIN',
+      41.90063,
+      12.50273,
+      ['75', '8BUS'],
+    ],
+  ];
+  static const List<List<Object>> _lines = [
+    ['64', '64', 'bus', false, 'P.ZA STAZIONE S. PIETRO (FL)', 'TERMINI (MA-MB-FS)'],
+    ['170', '170', 'bus', false, 'AGRICOLTURA', 'TERMINI (MA-MB-FS)'],
+    ['40', '40', 'bus', false, 'BORGO S. ANGELO', 'TERMINI (MA-MB-FS)'],
+    ['75', '75', 'bus', false, 'POERIO/MARINO', 'INDIPENDENZA'],
+    ['8BUS', '8BUS', 'bus', false, 'GIANICOLENSE/CASALETTO', 'ASTALLI/VENEZIA'],
+    ['n11', 'n11', 'bus', true, 'GROTTE CELONI (MC)', 'P.ZA VENEZIA'],
+  ];
+
+  @override
+  Future<NetworkInfo> networkInfo() async => NetworkInfo.fromJson({
+    'version': 'mock',
+    'path': 'vmock.json',
+    'min_app_version': '0.1.0',
+    'tile_url': 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'no_realtime': ['8BUS'],
+  });
+
+  @override
+  Future<Network> network(NetworkInfo info) async => Network.fromJson({
+    'version': 'mock',
+    'stops': _stops,
+    'routes': [
+      for (final l in _lines)
+        [
+          ...l.take(4),
+          [
+            [0, l[4]],
+            [1, l[5]],
+          ],
+        ],
+    ],
+  });
+
+  @override
+  Future<Arrivals> arrivals(List<String> stopIds, {List<String> lineIds = const []}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final now = DateTime.now().toUtc();
+    String at(int minutes) => now.add(Duration(minutes: minutes)).toIso8601String();
+    Map<String, dynamic> arrival(String line, String status, int minutes, {Map<String, dynamic>? signal}) => {
+      'trip_id': '$line-$minutes',
+      'route_id': line,
+      'direction_id': 1,
+      'headsign': _lines.firstWhere((l) => l[0] == line)[5],
+      'status': status,
+      'time': status == 'confirmed' && minutes < 0 ? null : at(minutes.abs()),
+      'minutes': status == 'confirmed' || status == 'uncertain' ? minutes.abs() : null,
+      'approximate': minutes > 10,
+      'signal': signal,
+      'stops_away': status == 'scheduled' ? null : 3,
+      'vehicle': status == 'scheduled'
+          ? null
+          : {'id': 'v$line', 'label': '3001', 'lat': 41.8985, 'lon': 12.4870, 'gps_at': now.toIso8601String()},
+    };
+    return Arrivals.fromJson({
+      'computed_at': now.toIso8601String(),
+      'feed': {'status': 'ok', 'age_s': 20},
+      'stops': [
+        for (final id in stopIds)
+          {
+            'stop_id': id,
+            'alerts': id == '70001' ? ['a1'] : <String>[],
+            'arrivals': [
+              for (final (i, line)
+                  in (_stops.firstWhere((s) => s[0] == id, orElse: () => _stops.first)[4] as List)
+                      .cast<String>()
+                      .indexed)
+                ...switch (i) {
+                  _ when line == '8BUS' => [arrival(line, 'scheduled', 12), arrival(line, 'scheduled', 27)],
+                  0 => [arrival(line, 'confirmed', 4), arrival(line, 'confirmed', 14), arrival(line, 'confirmed', -21)],
+                  1 => [
+                    arrival(line, 'uncertain', 7, signal: {'code': 'S3', 'min': 8}),
+                    arrival(line, 'suppressed', 9, signal: {'code': 'S2', 'min': 6}),
+                  ],
+                  2 => [
+                    arrival(
+                      line,
+                      'uncertain',
+                      11,
+                      signal: {'code': 'S5', 'at': now.millisecondsSinceEpoch ~/ 1000 + 600},
+                    ),
+                    arrival(line, 'canceled', 18, signal: {'code': 'S1'}),
+                  ],
+                  _ => [arrival(line, 'scheduled', 33)],
+                },
+            ],
+          },
+      ],
+      'alerts': [
+        {
+          'id': 'a1',
+          'severity': 1,
+          'title': 'Linea 40 deviata',
+          'body': 'Per lavori in via Nazionale la linea 40 non transita in piazza Venezia.',
+          'route_ids': ['40'],
+          'stop_ids': <String>[],
+          'general': false,
+        },
+      ],
+      'routes': [
+        for (final l in lineIds) {'route_id': l, 'vehicles_in_service': l == '8BUS' ? 0 : 7},
+      ],
+    });
+  }
+
+  @override
+  Future<LineDetail?> line(String lineId, int directionId) async {
+    final stops = _stops.where((s) => (s[4] as List).contains(lineId)).map((s) => s[0]).toList();
+    final idle = lineId == '8BUS' || lineId == 'n11';
+    final now = DateTime.now().toUtc();
+    return LineDetail.fromJson({
+      'headsign': _lines.firstWhere((l) => l[0] == lineId)[directionId == 0 ? 4 : 5],
+      'stops': directionId == 0 ? stops.reversed.toList() : stops,
+      'shape': [
+        for (final s in _stops.where((s) => stops.contains(s[0]))) [s[2], s[3]],
+      ],
+      'vehicles': idle
+          ? <Map<String, dynamic>>[]
+          : [
+              {
+                'id': 'v1',
+                'label': '3104',
+                'lat': 41.8990,
+                'lon': 12.4880,
+                'gps_at': now.toIso8601String(),
+                'index': 1,
+              },
+              {
+                'id': 'v2',
+                'label': '2871',
+                'lat': 41.8966,
+                'lon': 12.4830,
+                'gps_at': now.toIso8601String(),
+                'index': 2,
+                'signal': {'code': 'S3', 'min': 8},
+              },
+            ],
+      'alerts': <Map<String, dynamic>>[],
+      'next_departure': idle ? now.add(const Duration(hours: 5)).toIso8601String() : null,
+      'feed': {'status': 'ok'},
+    });
+  }
+
+  @override
+  Future<List<TimetableDirection>> timetable(String stopId, String lineId, DateTime day) async => [
+    TimetableDirection.fromJson({
+      'direction_id': 1,
+      'headsign': _lines.firstWhere((l) => l[0] == lineId)[5],
+      'departures': [for (var s = 5 * 3600 + 1800; s <= 23 * 3600 + 2040; s += 900) s],
+    }),
+  ];
+
+  @override
+  Future<List<ServiceAlert>> alerts() async => [
+    ServiceAlert.fromJson({
+      'id': 'a2',
+      'severity': 2,
+      'title': 'Sciopero 3 ottobre',
+      'body': 'Venerdì 3 ottobre possibili interruzioni del servizio dalle 8:30 alle 17.',
+      'route_ids': <String>[],
+    }),
+    ServiceAlert.fromJson({
+      'id': 'a1',
+      'severity': 1,
+      'title': 'Linea 40 deviata',
+      'body': 'Per lavori in via Nazionale la linea 40 non transita in piazza Venezia.',
+      'route_ids': ['40'],
+    }),
+  ];
+}

@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veribus/core/utils/app_failure.dart';
-import 'package:veribus/core/utils/money.dart';
 import 'package:veribus/core/utils/validators.dart';
 import 'package:veribus/extensions/app_failure_extensions.dart';
 import 'package:veribus/l10n/gen/app_localizations_en.dart';
@@ -53,26 +52,6 @@ void main() {
       const failure = AuthFailure(AuthErrorCode.emailInUse);
       expect(AppFailure.from(failure), same(failure));
       expect(AppFailure.from(StateError('x')), isA<UnknownFailure>());
-    });
-  });
-
-  group('Money', () {
-    test('parses user input in both decimal styles', () {
-      expect(Money.parse('12'), 1200);
-      expect(Money.parse('12,5'), 1250);
-      expect(Money.parse('12.50'), 1250);
-      expect(Money.parse('1.234,56'), 123456);
-      expect(Money.parse('1,234.56'), 123456);
-      expect(Money.parse('1.234'), 123400);
-      expect(Money.parse('€ 7,99'), 799);
-      expect(Money.parse('0'), isNull);
-      expect(Money.parse('abc'), isNull);
-    });
-
-    test('formats signed amounts', () {
-      expect(Money.format(-1250), startsWith('−'));
-      expect(Money.format(1250, signed: true), startsWith('+'));
-      expect(Money.format(0, signed: true), isNot(startsWith('+')));
     });
   });
 }

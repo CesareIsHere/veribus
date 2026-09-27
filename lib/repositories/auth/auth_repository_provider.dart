@@ -11,6 +11,4 @@ part 'auth_repository_provider.g.dart';
 IAuthRepository authRepository(Ref ref) => switch (AppConfig.backend) {
   Backend.mock => MockAuthRepository(),
   Backend.supabase => SupabaseAuthRepository(), // backend:supabase
-  // tool/setup.dart enables this fallback when it removes a backend.
-  _ => MockAuthRepository(),
 };

@@ -8,7 +8,10 @@ import 'package:veribus/core/config.dart';
 import 'package:veribus/core/navigation/router.dart';
 import 'package:veribus/core/providers/auth_notifier.dart';
 import 'package:veribus/core/providers/locale_notifier.dart';
+import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/providers/package_info_provider.dart';
 import 'package:veribus/core/providers/theme_mode_notifier.dart';
+import 'package:veribus/core/widgets/update_required_page.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/styles/app_theme.dart';
 
@@ -41,7 +44,12 @@ class App extends ConsumerWidget {
       builder: (context, child) {
         // DateFormat & co. follow the app language.
         Intl.defaultLocale = Localizations.localeOf(context).toLanguageTag();
-        final app = child!;
+        final minVersion = ref.watch(networkInfoProvider).value?.minAppVersion;
+        final version = ref.watch(packageInfoProvider).value;
+        // RNF-08: below the minimum version the API may have changed incompatibly.
+        final app = minVersion != null && version != null && isOlderVersion(version.version, minVersion)
+            ? UpdateRequiredPage(packageName: version.packageName)
+            : child!;
         // Tap outside a text field closes the keyboard.
         return GestureDetector(onTap: () => FocusManager.instance.primaryFocus?.unfocus(), child: app);
       },

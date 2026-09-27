@@ -113,7 +113,7 @@ insert into config.setting (key, value) values
   ('suppressed_min', '5'),
   ('completed_ratio', '0.9'),
   ('no_realtime_days', '3'),
-  ('min_app_version', '"1.0.0"'),
+  ('min_app_version', '"0.1.0"'),  -- the pubspec version the first release ships with
   -- Map tiles stay configurable until the provider is chosen (spec, section 11).
   ('tile_url', '"https://tile.openstreetmap.org/{z}/{x}/{y}.png"');
 

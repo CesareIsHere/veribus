@@ -8,15 +8,22 @@ import 'package:veribus/core/navigation/app_shell.dart';
 import 'package:veribus/core/navigation/pages/not_found_page.dart';
 import 'package:veribus/core/navigation/pages/splash_page.dart';
 import 'package:veribus/core/providers/auth_notifier.dart';
+import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/utils/logger.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/alerts/alerts_page.dart';
 import 'package:veribus/features/auth/forgot_password_page.dart';
 import 'package:veribus/features/auth/login_page.dart';
 import 'package:veribus/features/auth/register_page.dart';
 import 'package:veribus/features/auth/reset_password_page.dart';
-import 'package:veribus/features/home/home_page.dart';
+import 'package:veribus/features/favorites/favorites_page.dart';
+import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/nearby/nearby_page.dart';
+import 'package:veribus/features/search/search_page.dart';
 import 'package:veribus/features/settings/profile_page.dart';
 import 'package:veribus/features/settings/settings_page.dart';
+import 'package:veribus/features/stop/stop_page.dart';
+import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/user/user_model.dart';
 
 part 'router.g.dart';
@@ -39,8 +46,14 @@ const Set<String> _transitRoutes = {SplashPage.route, '/onboarding'};
 /// - session still loading → splash (remembering the requested page)
 /// - onboarding not done → onboarding
 /// - signed out on a private page → `login?from=<page>`
-/// - signed in on a public/transit page → `from` or home
-String? appRedirect({required AsyncValue<UserModel?> auth, required Uri uri, bool onboardingDone = true}) {
+/// - signed in on a public/transit page → `from` or [home]
+/// - `/` → [home]: favorites when there are some, otherwise nearby (RF-42)
+String? appRedirect({
+  required AsyncValue<UserModel?> auth,
+  required Uri uri,
+  bool onboardingDone = true,
+  String home = NearbyPage.route,
+}) {
   final path = uri.path;
   final from = uri.queryParameters['from'];
   final requested = _transitRoutes.contains(path) ? from : uri.toString();
@@ -54,15 +67,13 @@ String? appRedirect({required AsyncValue<UserModel?> auth, required Uri uri, boo
   final isPublic = _publicRoutes.contains(path);
   if (!signedIn) return isPublic ? null : _withFrom(LoginPage.route, requested);
   if (isPublic || _transitRoutes.contains(path)) {
-    return _isReturnTarget(from) ? from : HomePage.route;
+    return _isReturnTarget(from) ? from : home;
   }
-  return null;
+  return path == '/' ? home : null;
 }
 
-String _withFrom(String path, String? from) => Uri(
-  path: path,
-  queryParameters: _isReturnTarget(from) && from != HomePage.route ? {'from': from} : null,
-).toString();
+String _withFrom(String path, String? from) =>
+    Uri(path: path, queryParameters: _isReturnTarget(from) && from != '/' ? {'from': from} : null).toString();
 
 /// A page worth returning to after login: an in-app path (never an external
 /// or protocol-relative URL, to avoid open redirects) that isn't a public or
@@ -81,38 +92,43 @@ GoRouter router(Ref ref) {
     ..listen(authProvider, bump)
     ..onDispose(refresh.dispose);
 
-  final tabs = <({String route, Widget page, List<RouteBase> routes, ShellDestination Function(BuildContext) nav})>[
-    if (!Features.demo)
-      (
-        route: HomePage.route,
-        page: const HomePage(),
-        routes: const <RouteBase>[],
-        nav: (c) => (icon: Icons.home_outlined, selectedIcon: Icons.home, label: c.l10n.home),
-      ),
+  final tabs = <({String route, Widget page, ShellDestination Function(BuildContext) nav})>[
     (
-      route: SettingsPage.route,
-      page: const SettingsPage(),
-      routes: [
-        GoRoute(path: 'profile', builder: (_, _) => const ProfilePage()),
-        GoRoute(
-          path: 'logs',
-          builder: (_, _) => TalkerScreen(talker: talker),
-        ),
-      ],
-      nav: (c) => (icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: c.l10n.settings),
+      route: NearbyPage.route,
+      page: const NearbyPage(),
+      nav: (c) => (icon: Icons.near_me_outlined, selectedIcon: Icons.near_me, label: c.l10n.nearby),
+    ),
+    (
+      route: SearchPage.route,
+      page: const SearchPage(),
+      nav: (c) => (icon: Icons.search, selectedIcon: Icons.search, label: c.l10n.search),
+    ),
+    (
+      route: FavoritesPage.route,
+      page: const FavoritesPage(),
+      nav: (c) => (icon: Icons.star_outline, selectedIcon: Icons.star, label: c.l10n.favorites),
+    ),
+    (
+      route: AlertsPage.route,
+      page: const AlertsPage(),
+      nav: (c) => (icon: Icons.warning_amber_outlined, selectedIcon: Icons.warning_amber, label: c.l10n.alerts),
     ),
   ];
 
+  String home() => ref.read(favoritesProvider).stops.isEmpty && ref.read(favoritesProvider).lines.isEmpty
+      ? NearbyPage.route
+      : FavoritesPage.route;
+
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: HomePage.route,
+    initialLocation: '/',
     refreshListenable: refresh,
     debugLogDiagnostics: !AppConfig.isProd,
     observers: [if (AppConfig.sentryDsn.isNotEmpty) SentryNavigatorObserver()],
-    redirect: (_, state) => appRedirect(auth: ref.read(authProvider), uri: state.uri),
+    redirect: (_, state) => appRedirect(auth: ref.read(authProvider), uri: state.uri, home: home()),
     errorBuilder: (_, _) => const NotFoundPage(),
     routes: [
-      GoRoute(path: '/', redirect: (_, _) => HomePage.route),
+      GoRoute(path: '/', builder: (_, _) => const SplashPage()),
       GoRoute(path: SplashPage.route, builder: (_, _) => const SplashPage()),
       GoRoute(path: LoginPage.route, builder: (_, _) => const LoginPage()),
       GoRoute(path: RegisterPage.route, builder: (_, _) => const RegisterPage()),
@@ -122,12 +138,38 @@ GoRouter router(Ref ref) {
         builder: (_, state) =>
             ResetPasswordPage(token: state.uri.queryParameters['token'] ?? state.uri.queryParameters['oobCode'] ?? ''),
       ),
+      GoRoute(
+        path: '/stop/:id',
+        builder: (_, state) => StopPage(stopId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'timetable',
+            builder: (_, state) =>
+                TimetablePage(stopId: state.pathParameters['id']!, lineId: state.uri.queryParameters['line'] ?? ''),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/line/:id',
+        builder: (_, state) => LinePage(lineId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: SettingsPage.route,
+        builder: (_, _) => const SettingsPage(),
+        routes: [
+          GoRoute(path: 'profile', builder: (_, _) => const ProfilePage()),
+          GoRoute(
+            path: 'logs',
+            builder: (_, _) => TalkerScreen(talker: talker),
+          ),
+        ],
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, _, shell) => AppShell(shell: shell, destinations: [for (final t in tabs) t.nav(context)]),
         branches: [
           for (final t in tabs)
             StatefulShellBranch(
-              routes: [GoRoute(path: t.route, builder: (_, _) => t.page, routes: t.routes)],
+              routes: [GoRoute(path: t.route, builder: (_, _) => t.page)],
             ),
         ],
       ),
