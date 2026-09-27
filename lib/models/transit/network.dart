@@ -99,8 +99,8 @@ class Line {
   final bool night;
   final List<({int id, String headsign})> directions;
 
-  /// "Stazione Trastevere ⇄ Termini", or the single headsign of a circular line.
-  String get ends => directions.map((d) => d.headsign).toSet().join(' ⇄ ');
+  /// "Stazione Trastevere – Termini", or the single headsign of a circular line. An en dash, not ⇄: every font has it.
+  String get ends => directions.map((d) => d.headsign).toSet().join(' – ');
 }
 
 /// Active network version and remote configuration, from `api.network` (RNF-06, RNF-08, RF-35).

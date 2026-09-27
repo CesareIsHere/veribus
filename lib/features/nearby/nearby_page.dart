@@ -246,7 +246,7 @@ class _StopCard extends StatelessWidget {
                       network?.lines[a.lineId]?.name ?? a.lineId,
                       withoutRealtime: noRealtime.contains(a.lineId),
                     ),
-                    Expanded(child: Text('→ ${a.headsign}', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text('→ ${a.headsign}', maxLines: 2)),
                     ArrivalTime(a, large: false),
                     StatusTag(a.status),
                   ],

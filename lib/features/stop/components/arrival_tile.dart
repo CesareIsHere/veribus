@@ -164,25 +164,54 @@ class ArrivalTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final gone = arrival.status == ArrivalStatus.canceled || arrival.status == ArrivalStatus.suppressed;
     final reason = ArrivalText.reason(context.l10n, arrival, lineWithoutRealtime: lineWithoutRealtime);
-    return ListTile(
+    final headsign = context.textTheme.bodyLarge?.copyWith(
+      color: gone ? context.colors.outline : null,
+      decoration: gone ? TextDecoration.lineThrough : null,
+    );
+    // Wireframe "Fermata": destination and time on the first row, status and reason below at full width,
+    // so long destinations are not squeezed by the time.
+    return InkWell(
       onTap: onTap,
-      leading: LineBadge(lineName, withoutRealtime: lineWithoutRealtime, muted: gone),
-      title: Text(
-        '→ ${arrival.headsign}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: gone ? TextStyle(color: context.colors.outline, decoration: TextDecoration.lineThrough) : null,
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: Spacing.xs),
-        child: Wrap(
-          spacing: Spacing.s,
-          runSpacing: Spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [StatusTag(arrival.status), if (reason.isNotEmpty) Text(reason)],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.l, vertical: Spacing.m),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: Spacing.l,
+          children: [
+            LineBadge(lineName, withoutRealtime: lineWithoutRealtime, muted: gone),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: Spacing.xs,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    spacing: Spacing.s,
+                    children: [
+                      Expanded(child: Text('→ ${arrival.headsign}', maxLines: 2, style: headsign)),
+                      ArrivalTime(arrival),
+                    ],
+                  ),
+                  Wrap(
+                    spacing: Spacing.s,
+                    runSpacing: Spacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      StatusTag(arrival.status),
+                      if (reason.isNotEmpty)
+                        Text(
+                          reason,
+                          style: context.textTheme.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      trailing: ArrivalTime(arrival),
     );
   }
 }
