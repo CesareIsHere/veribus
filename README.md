@@ -26,6 +26,16 @@ flutter run --dart-define-from-file=env/dev.json
 `env/dev.json` usa il backend **mock**: una manciata di fermate intorno a Termini con arrivi in tutti gli stati.
 Il login è obbligatorio, ma con il mock va bene qualsiasi email (la password `wrongpass` simula un errore).
 
+**Modalità mock completa**, per controllare la grafica di ogni schermata (anche sul web, `-d chrome`):
+
+```bash
+flutter run --dart-define-from-file=env/mock.json
+```
+
+Parte già loggata (`MOCK_SIGNED_IN`) e con una posizione fissa vicino a Termini (`MOCK_POSITION`). I dati mock
+coprono apposta i casi limite: arrivi in tutti gli stati e con ogni segnale, CAVOUR con i dati in tempo reale fermi
+(RF-60), MANIN senza arrivi, 8BUS senza tempo reale, n11 senza corse in servizio, la 64 con fermate di variante.
+
 ---
 
 ## Architettura
@@ -123,6 +133,9 @@ docker exec vb-test bash /repo/supabase/tests/run.sh
 
 # Poller sui feed veri contro un Postgres locale (archivio in backend/archive)
 cd backend && DB_URL=postgres://postgres:postgres@localhost:54322/postgres deno task poller
+
+# Riesecuzione del motore su un archivio (RF-85): un CSV con i cambi di stato di ogni corsa
+cd backend && DB_URL=... deno run -A replay/main.ts archive > changes.csv
 ```
 
 Per importare il GTFS vero in locale: `GTFS_DIR=<cartella dello zip scompattato> DB_URL=... bash backend/static-import/import.sh`
