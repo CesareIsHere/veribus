@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/styles/app_spacing.dart';
 import 'package:veribus/styles/app_theme.dart';
 
 /// Rome's center, used when the position is not available (RF-02).
@@ -80,18 +82,45 @@ class StopMarker extends Marker {
       );
 }
 
-/// A vehicle on the map with its fleet number.
+IconData vehicleIcon(LineKind? kind) => kind == LineKind.tram ? Icons.tram : Icons.directions_bus;
+
+/// A vehicle on the map: bus or tram icon and fleet number.
 class VehicleMarker extends Marker {
-  VehicleMarker({required super.point, required String label})
+  VehicleMarker({required super.point, required String label, LineKind? kind})
     : super(
-        width: 72,
+        width: 84,
         height: 28,
         child: Builder(
           builder: (context) => Container(
             alignment: Alignment.center,
             decoration: BoxDecoration(color: context.colors.inverseSurface, borderRadius: BorderRadius.circular(14)),
-            child: Text(label, style: context.textTheme.labelMedium?.copyWith(color: context.colors.onInverseSurface)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: Spacing.xs,
+              children: [
+                Icon(vehicleIcon(kind), size: 16, color: context.colors.onInverseSurface),
+                Text(label, style: context.textTheme.labelMedium?.copyWith(color: context.colors.onInverseSurface)),
+              ],
+            ),
           ),
         ),
       );
+}
+
+/// The part of [shape] from the point nearest to [from] to the one nearest to [to]. The whole shape when [to] comes
+/// first: the trip is a variant that leaves the main path.
+// ponytail: nearest point, wrong on loop lines where the stop is near both ends; per-trip shapes if it matters.
+List<LatLng> pathBetween(List<LatLng> shape, LatLng from, LatLng to) {
+  if (shape.isEmpty) return const [];
+  int nearest(LatLng p) {
+    var best = 0;
+    for (var i = 1; i < shape.length; i++) {
+      if (const Distance().distance(p, shape[i]) < const Distance().distance(p, shape[best])) best = i;
+    }
+    return best;
+  }
+
+  final a = nearest(from);
+  final b = nearest(to);
+  return a <= b ? [from, ...shape.sublist(a, b + 1), to] : shape;
 }

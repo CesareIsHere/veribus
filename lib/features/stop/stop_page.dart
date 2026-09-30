@@ -15,6 +15,7 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
@@ -183,6 +184,7 @@ class _StopPageState extends ConsumerState<StopPage> {
     final l10n = context.l10n;
     final v = a.vehicle!;
     final old = DateTime.now().difference(v.gpsAt) > const Duration(minutes: 2);
+    final kind = ref.read(networkProvider).value?.lines[a.lineId]?.kind;
     unawaited(
       showModalBottomSheet<void>(
         context: context,
@@ -199,10 +201,24 @@ class _StopPageState extends ConsumerState<StopPage> {
                 ),
                 zoom: 15,
                 children: [
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final shape = ref.watch(lineDetailProvider(a.lineId, a.directionId)).value?.shape ?? const [];
+                      return PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: pathBetween(shape, v.position, stop.position),
+                            strokeWidth: 4,
+                            color: context.colors.primary,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                   MarkerLayer(
                     markers: [
                       StopMarker(point: stop.position, label: stop.name, selected: true, onTap: () {}),
-                      VehicleMarker(point: v.position, label: v.label ?? v.id),
+                      VehicleMarker(point: v.position, label: v.label ?? v.id, kind: kind),
                     ],
                   ),
                 ],

@@ -127,6 +127,7 @@ class _LinePageState extends ConsumerState<LinePage> {
 
   Widget _listView(BuildContext context, LineDetail d, Network network, bool withoutRealtime) {
     final l10n = context.l10n;
+    final kind = network.lines[widget.lineId]?.kind;
     final byIndex = <int, List<VehicleInfo>>{};
     for (final v in d.vehicles) {
       if (v.index != null) byIndex.putIfAbsent(v.index!, () => []).add(v);
@@ -151,13 +152,13 @@ class _LinePageState extends ConsumerState<LinePage> {
                 : Text(l10n.nextDeparture(DateFormat.Hm().format(d.nextDeparture!.toLocal()))),
           )
         else
-          ListTile(leading: const Icon(Icons.directions_bus), title: Text(l10n.vehiclesInService(d.vehicles.length))),
+          ListTile(leading: Icon(vehicleIcon(kind)), title: Text(l10n.vehiclesInService(d.vehicles.length))),
         for (final (i, id) in d.stopIds.indexed) ...[
           // Vehicles heading to stop i are drawn just above it.
           for (final v in byIndex[i] ?? const <VehicleInfo>[])
             ListTile(
               dense: true,
-              leading: const SizedBox(width: Spacing.xl, child: Icon(Icons.directions_bus, size: 20)),
+              leading: SizedBox(width: Spacing.xl, child: Icon(vehicleIcon(kind), size: 20)),
               title: Text(l10n.vehicle(v.label ?? v.id)),
               subtitle: v.signal == null ? null : Text(ArrivalText.signal(l10n, v.signal!)),
             ),
@@ -198,7 +199,8 @@ class _LinePageState extends ConsumerState<LinePage> {
           markers: [
             for (final s in stops)
               StopMarker(point: s.position, label: s.name, onTap: () => context.push(StopPage.route(s.id))),
-            for (final v in d.vehicles) VehicleMarker(point: v.position, label: v.label ?? v.id),
+            for (final v in d.vehicles)
+              VehicleMarker(point: v.position, label: v.label ?? v.id, kind: network.lines[widget.lineId]?.kind),
           ],
         ),
       ],
