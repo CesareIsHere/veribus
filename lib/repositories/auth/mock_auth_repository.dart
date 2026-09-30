@@ -8,22 +8,22 @@ import 'package:veribus/repositories/auth/i_auth_repository.dart';
 /// In-memory auth: any email works, password `wrongpass` fails.
 /// Used for demos, UI work without a server, and tests.
 class MockAuthRepository implements IAuthRepository {
-  MockAuthRepository({this.latency = const Duration(milliseconds: 400), this._user});
+  MockAuthRepository({this.latency = const Duration(milliseconds: 400), this.user});
 
   final Duration latency;
   final _controller = StreamController<UserModel?>.broadcast();
-  UserModel? _user;
+  UserModel? user;
 
-  void _emit(UserModel? user) => _controller.add(_user = user);
+  void _emit(UserModel? user) => _controller.add(this.user = user);
 
   @override
   Stream<UserModel?> authStateChanges() async* {
-    yield _user;
+    yield user;
     yield* _controller.stream;
   }
 
   @override
-  Future<String?> accessToken() async => _user == null ? null : 'mock-token';
+  Future<String?> accessToken() async => user == null ? null : 'mock-token';
 
   @override
   Future<String?> refreshAccessToken() => accessToken();
@@ -63,7 +63,7 @@ class MockAuthRepository implements IAuthRepository {
   @override
   Future<void> updateProfile({String? displayName, Uint8List? avatar}) async {
     await Future<void>.delayed(latency);
-    final user = _user;
+    final user = this.user;
     if (user == null) throw const UnauthorizedFailure();
     _emit(user.copyWith(displayName: displayName ?? user.displayName));
   }
