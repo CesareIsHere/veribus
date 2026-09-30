@@ -87,7 +87,7 @@ quella nuova convivono e si sale a circa 880 MB, quindi:
 2. **Esporre l'API**: dashboard → *Settings → API → Exposed schemas*, aggiungi `api` (in locale lo fa `supabase/config.toml`).
 3. **Ruolo del poller**: `alter role poller with login password '<password>';`
 4. **Import iniziale**: nei secret del repository GitHub metti `SUPABASE_DB_URL` (pooler in modalità *session*,
-   utente `postgres`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, poi lancia a mano il workflow *Static import*.
+   utente `postgres.<ref>`, non solo `postgres`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, poi lancia a mano il workflow *Static import*.
    Da lì gira ogni notte alle 06:30.
 5. **Archivio su R2**: crea un bucket (es. `veribus-archive`), nelle sue impostazioni una regola *Object lifecycle*
    che cancella gli oggetti dopo 90 giorni (RF-83), e un token API R2 con permesso *Object Read & Write* solo su quel

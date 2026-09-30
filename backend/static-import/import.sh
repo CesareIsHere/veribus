@@ -13,7 +13,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 GTFS_URL=${GTFS_URL:-https://romamobilita.it/wp-content/uploads/shared/rome_static_gtfs.zip}
-psql() { command psql "$DB_URL" -v ON_ERROR_STOP=1 -q "$@"; }
+# Supabase cancels long statements (statement_timeout): the import turns it off in every session it opens.
+psql() { command psql "$DB_URL" -v ON_ERROR_STOP=1 -q -c "set statement_timeout = 0" "$@"; }
 
 if [ -z "${GTFS_DIR:-}" ]; then
   MD5=$(curl -fsSL "$GTFS_URL.md5" | cut -d' ' -f1)
@@ -38,7 +39,7 @@ echo "Importing $MD5"
     echo "\\copy network_staging.\"$t\" from '$f' with (format csv, header true)"
   done
   echo "\\i keep.sql"
-} | psql
+} | psql -f -
 KEEP=$(mktemp)
 psql -Atc "copy network_staging.keep to stdout" > "$KEEP"
 
