@@ -29,14 +29,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep links / App Links (e.g. https://example.com/reset-password?token=...).
-                 Also the Supabase OAuth return (AUTH_REDIRECT_URL = https://example.com/).
-                 Replace the host and publish /.well-known/assetlinks.json (see README). -->
+            <!-- Deep links / App Links (e.g. https://veribus-f329e.web.app/reset-password?token=...).
+                 Also the Supabase OAuth return (AUTH_REDIRECT_URL = https://veribus-f329e.web.app/).
+                 Publish /.well-known/assetlinks.json on this host (see README). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="example.com"/>
+                <data android:scheme="https" android:host="veribus-f329e.web.app"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
