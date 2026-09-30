@@ -1,0 +1,18 @@
+{
+  "APP_STAGE": "dev",
+  "APP_NAME": "Veribus Local",
+  "BACKEND": "supabase",
+  "SENTRY_DSN": "",
+  "SUPPORT_EMAIL": "support@example.com",
+  "TERMS_URL": "https://example.com/terms",
+  "PRIVACY_URL": "https://example.com/privacy",
+  "SEED_COLOR": "0xFF3F51B5",
+  "APP_STORE_ID": "",
+  "GOOGLE_SERVER_CLIENT_ID": "",
+  "SUPABASE_URL": "http://127.0.0.1:54321",
+  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+  "AUTH_REDIRECT_URL": "https://example.com/",
+  "FEATURE_SOCIAL_LOGIN": false,
+  "FEATURE_CONNECTIVITY": true,
+  "FEATURE_FEEDBACK": true
+}

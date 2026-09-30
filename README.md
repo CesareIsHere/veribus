@@ -128,6 +128,23 @@ Il lease in `live.lease` evita cicli doppi durante il passaggio.
 
 ---
 
+## Dati veri in locale
+
+L'app sul tuo computer con gli autobus veri, senza progetto Supabase in cloud (serve Docker con almeno 4 GB di RAM):
+
+```bash
+supabase start                                   # stack completo: Postgres, Auth, API, Storage (migration incluse)
+bash backend/static-import/local.sh              # scarica il GTFS di oggi e lo importa (~3 minuti)
+cd backend && DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres deno task poller   # lascialo girare
+flutter run --dart-define-from-file=env/local.json                                              # in un altro terminale
+```
+
+Registrati con un'email qualsiasi: in locale non serve confermarla (le email finiscono in Mailpit,
+http://127.0.0.1:54324). Il poller scarica i feed veri ogni 10 secondi e archivia gli snapshot in `backend/archive`.
+Sull'emulatore Android usa `SUPABASE_URL: http://10.0.2.2:54321`; nel browser e sul desktop la posizione si può
+fissare con `--dart-define=MOCK_POSITION=41.9005,12.4960`. In locale non c'è l'import notturno: la rete
+copre da ieri a 7 giorni avanti, quindi rilancia `local.sh` almeno una volta a settimana.
+
 ## Sviluppo in locale
 
 ```bash

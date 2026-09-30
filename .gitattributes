@@ -1,3 +1,4 @@
 # Scripts and SQL run on Linux (CI, containers): keep LF on every checkout.
 *.sh text eol=lf
 *.sql text eol=lf
+*.awk text eol=lf

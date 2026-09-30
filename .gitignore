@@ -64,3 +64,4 @@ env/*.local.json
 
 # Supabase CLI local state (linked project, versions)
 /supabase/.temp/
+/supabase/.branches/
