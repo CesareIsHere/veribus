@@ -11,7 +11,8 @@ const epoch = (d: Date | null) => (d == null ? null : Math.floor(d.getTime() / 1
 type Row = Record<string, any>;
 
 export function postgresStore(url: string): StateStore & { close(): Promise<void> } {
-  // prepare: false for the transaction pooler.
+  // Session pooler (5432), not the transaction one (6543): postgres.js pipelines concurrent queries on one connection,
+  // and the transaction pooler can route the pieces to different backends ("bind message supplies 3 parameters").
   const sql = postgres(url, { prepare: false, max: 2, idle_timeout: 20 });
 
   return {

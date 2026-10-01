@@ -13,7 +13,7 @@ e pubblicare il progetto.
 | Import del GTFS statico | `backend/static-import` | bash + psql, ogni notte su GitHub Actions |
 | Poller realtime e motore | `backend/core`, `backend/adapters`, `backend/runtimes` | TypeScript su Deno (Edge Function oggi, container domani) |
 | Database e API | `supabase/migrations` | Supabase: Postgres, funzioni SQL nello schema `api`, Storage, pg_cron |
-| Archivio degli snapshot grezzi | Cloudflare R2 | bucket S3, scadenza a 90 giorni con una regola del bucket |
+| Archivio degli snapshot grezzi | Cloudflare R2 | bucket S3, scadenza a 30 giorni con una regola del bucket |
 
 ---
 
@@ -90,13 +90,13 @@ quella nuova convivono e si sale a circa 880 MB, quindi:
    utente `postgres.<ref>`, non solo `postgres`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, poi lancia a mano il workflow *Static import*.
    Da lì gira ogni notte alle 06:30.
 5. **Archivio su R2**: crea un bucket (es. `veribus-archive`), nelle sue impostazioni una regola *Object lifecycle*
-   che cancella gli oggetti dopo 90 giorni (RF-83), e un token API R2 con permesso *Object Read & Write* solo su quel
-   bucket. Costo: circa 1 GB al giorno, a regime ~95 GB, circa 1,3 $ al mese oltre i 10 GB gratuiti; le scritture
+   che cancella gli oggetti dopo 30 giorni (la specifica RF-83 ne chiede 90), e un token API R2 con permesso *Object Read & Write* solo su quel
+   bucket. Costo: 0,65-1 GB al giorno (misurato il 01/10), a regime ~20-30 GB, 0,15-0,30 $ al mese oltre i 10 GB gratuiti (con 7 giorni è gratis); le scritture
    (~180.000 al mese) stanno nel milione gratuito.
 6. **Poller**:
    ```bash
    supabase secrets set POLLER_SECRET=<stringa casuale> \
-     POLLER_DB_URL=postgres://poller.<ref>:<password>@<pooler-host>:6543/postgres \
+     POLLER_DB_URL=postgres://poller.<ref>:<password>@<pooler-host>:5432/postgres \
      R2_ACCOUNT_ID=<account id> R2_ACCESS_KEY_ID=<key> R2_SECRET_ACCESS_KEY=<secret> R2_BUCKET=veribus-archive \
      HEALTHCHECKS_URL=https://hc-ping.com/<uuid>
    supabase functions deploy poller

@@ -34,7 +34,7 @@ export function archivePath(feed: Feed, fetchedAt: number): string {
 }
 
 /** Raw snapshots on Cloudflare R2 (S3 API): ~1 GB a day would not fit Supabase Storage on the free plan.
- * Retention (90 days) is an R2 lifecycle rule on the bucket, not code. */
+ * Retention (30 days) is an R2 lifecycle rule on the bucket, not code. */
 export function r2Archive(
   env: { accountId: string; accessKeyId: string; secretAccessKey: string; bucket: string },
 ): Archive {

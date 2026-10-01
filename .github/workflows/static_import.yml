@@ -1,4 +1,4 @@
-# Nightly import of the RSM static GTFS (RF-80). The snapshot archive expires by itself (R2 lifecycle rule, 90 days).
+# Nightly import of the RSM static GTFS (RF-80). The snapshot archive expires by itself (R2 lifecycle rule, 30 days).
 # A failed import fails the workflow and GitHub sends the email (RF-86); the active version stays.
 #
 # Secrets: SUPABASE_DB_URL (session pooler, user postgres.<project ref>), SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
