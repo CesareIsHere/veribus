@@ -138,11 +138,8 @@ class _StopPageState extends ConsumerState<StopPage> {
     final line = _line ?? stop?.lineIds.firstOrNull;
     final seconds = DateTime.now().difference(data.computedAt).inSeconds.clamp(0, 3600);
     return [
-      for (final alert in data.alertsAt(widget.stopId))
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: context.pageMargin, vertical: Spacing.xs),
-          child: AlertCard(alert),
-        ),
+      if (data.alertsAt(widget.stopId) case final alerts when alerts.isNotEmpty)
+        AlertsTile(alerts, onTapLine: (id) => context.push(LinePage.route(id))),
       StaleBanner(data.feed),
       if (list.isEmpty)
         MessageView(icon: Icons.nights_stay_outlined, title: l10n.noArrivals)

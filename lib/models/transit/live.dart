@@ -90,6 +90,8 @@ class ServiceAlert {
   final String title;
   final String body;
   final List<String> lineIds;
+
+  bool get isSevere => severity == 2;
 }
 
 /// `api.arrivals`: arrivals per stop, the alerts that concern them, vehicles in service per line.

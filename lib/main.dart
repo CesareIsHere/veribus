@@ -46,17 +46,23 @@ Future<void> main() async {
       ],
       // No automatic retries: errors surface immediately, users retry explicitly.
       retry: (_, _) => null,
+      // It is the root scope: RestartWidget above only rebuilds it with a new key, which the lint cannot see.
+      // ignore: riverpod_lint/scoped_providers_should_specify_dependencies
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const App(),
     ),
   );
 
+  // `app` is RestartWidget(ProviderScope(...)): the scope is there, behind a variable and a wrapper.
+  // ignore: riverpod_lint/missing_provider_scope
   if (AppConfig.sentryDsn.isEmpty) return runApp(app);
   await SentryFlutter.init(
     (options) => options
       ..dsn = AppConfig.sentryDsn
       ..environment = AppConfig.stage
       ..tracesSampleRate = AppConfig.isProd ? 0.2 : 1.0,
+    // Same as above, inside SentryWidget.
+    // ignore: riverpod_lint/missing_provider_scope
     appRunner: () => runApp(SentryWidget(child: app)),
   );
 }

@@ -7,7 +7,8 @@
 set -euo pipefail
 cd /repo
 export DB_URL=postgres://postgres:postgres@localhost:5432/postgres
-until psql -U supabase_admin -d postgres -Atc "select 1 from pg_roles where rolname = 'authenticated'" 2>/dev/null | grep -q 1; do
+# Over TCP: the image's init runs a temporary socket-only server (roles already there), then restarts it.
+until psql "$DB_URL" -Atc "select 1 from pg_roles where rolname = 'authenticated'" 2>/dev/null | grep -q 1; do
   sleep 1
 done
 

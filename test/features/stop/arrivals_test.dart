@@ -81,7 +81,15 @@ void main() {
     for (final label in ['Confermato', 'Da verificare', 'Programmato', 'Soppressa', 'Cancellata']) {
       expect(find.text(label), findsWidgets, reason: label);
     }
+    // Alerts fold into one row; the full text opens on demand.
+    expect(find.text('1 avviso'), findsOneWidget);
     expect(find.text('Linea 40 deviata'), findsOneWidget);
+    await tester.tap(find.text('1 avviso'));
+    await tester.pumpAndSettle();
+    expect(find.text('Linea 40 deviata'), findsNWidgets(2)); // tile subtitle + card in the sheet
+    expect(find.textContaining('Per lavori in via Nazionale'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Avvisi'))).pop();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('8BUS').first); // filter on one line (RF-27)
     await tester.pump();

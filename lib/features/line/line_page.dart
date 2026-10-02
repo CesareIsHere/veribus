@@ -109,7 +109,7 @@ class _LinePageState extends ConsumerState<LinePage> {
             ),
           Expanded(
             child: switch (detail) {
-              AsyncValue(:final value?) when network != null =>
+              AsyncValue(:final value, hasValue: true) when value != null && network != null =>
                 _map ? _mapView(value, network) : _listView(context, value, network, withoutRealtime),
               AsyncValue(hasValue: true) => MessageView(icon: Icons.directions_bus_outlined, title: l10n.lineNotServed),
               AsyncValue(:final error?) => MessageView.error(
@@ -136,11 +136,7 @@ class _LinePageState extends ConsumerState<LinePage> {
       padding: context.listPadding(),
       children: [
         StaleBanner(d.feed),
-        for (final alert in d.alerts)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.pageMargin, vertical: Spacing.xs),
-            child: AlertCard(alert),
-          ),
+        if (d.alerts.isNotEmpty) AlertsTile(d.alerts),
         if (withoutRealtime)
           ListTile(leading: const Icon(Icons.schedule), title: Text(l10n.lineWithoutRealtime))
         else if (d.vehicles.isEmpty)

@@ -253,6 +253,14 @@
   "noFavorites": "No favorites yet",
   "noFavoritesHint": "Tap the star on a stop or a line: the app will open here.",
   "noAlerts": "No active alerts",
+  "alertsCount": "{n, plural, =1{1 alert} other{{n} alerts}}",
+  "@alertsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "arrivalStates": "Arrival states",
   "stateConfirmedMeaning": "A vehicle located a moment ago and moving is on this trip.",
   "stateUncertainMeaning": "There is a prediction, but something makes it doubtful: the reason is always written.",

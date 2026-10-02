@@ -938,6 +938,12 @@ abstract class AppLocalizations {
   /// **'No active alerts'**
   String get noAlerts;
 
+  /// No description provided for @alertsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 alert} other{{n} alerts}}'**
+  String alertsCount(int n);
+
   /// No description provided for @arrivalStates.
   ///
   /// In en, this message translates to:
