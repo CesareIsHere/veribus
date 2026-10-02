@@ -109,7 +109,7 @@ class _LinePageState extends ConsumerState<LinePage> {
             ),
           Expanded(
             child: switch (detail) {
-              AsyncValue(:final value?) when network != null =>
+              AsyncValue(:final value, hasValue: true) when value != null && network != null =>
                 _map ? _mapView(value, network) : _listView(context, value, network, withoutRealtime),
               AsyncValue(hasValue: true) => MessageView(icon: Icons.directions_bus_outlined, title: l10n.lineNotServed),
               AsyncValue(:final error?) => MessageView.error(
