@@ -45,7 +45,7 @@ final class NetworkInfoProvider extends $FunctionalProvider<AsyncValue<NetworkIn
   }
 }
 
-String _$networkInfoHash() => r'e84928efc6bc6a58eff88477cb56d24e18a9985f';
+String _$networkInfoHash() => r'6746e6a24e3a5d6b30c848274f4a299675f3bd54';
 
 /// Stops and lines, in memory for the whole session (search and nearby run on the phone: RF-11).
 
