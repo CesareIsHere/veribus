@@ -141,6 +141,7 @@
   "noFavorites": "Nessun preferito",
   "noFavoritesHint": "Tocca la stella su una fermata o una linea: l'app si aprirà qui.",
   "noAlerts": "Nessun avviso attivo",
+  "alertsCount": "{n, plural, =1{1 avviso} other{{n} avvisi}}",
   "arrivalStates": "Stati degli arrivi",
   "stateConfirmedMeaning": "Un mezzo localizzato da poco e in movimento sta facendo questa corsa.",
   "stateUncertainMeaning": "C'è una previsione, ma qualcosa la rende dubbia: il motivo è sempre scritto.",

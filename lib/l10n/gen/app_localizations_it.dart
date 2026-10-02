@@ -481,6 +481,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get noAlerts => 'Nessun avviso attivo';
 
   @override
+  String alertsCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n avvisi', one: '1 avviso');
+    return '$_temp0';
+  }
+
+  @override
   String get arrivalStates => 'Stati degli arrivi';
 
   @override
