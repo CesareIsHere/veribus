@@ -26,7 +26,7 @@ dependencies:
   http: ^1.6.0
   shared_preferences: ^2.5.5
   intl: any
-  google_fonts: ^8.2.1
+  google_fonts: ^9.0.0
   skeletonizer: ^3.0.0
   package_info_plus: ^10.2.1
   url_launcher: ^6.3.2
