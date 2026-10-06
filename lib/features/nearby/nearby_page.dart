@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
@@ -13,7 +14,6 @@ import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
-import 'package:veribus/services/location_service.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Nearby stops on a map or in a list (RF-01..07).
@@ -52,10 +52,8 @@ class NearbyPage extends ConsumerWidget {
                 leading: const Icon(Icons.location_disabled),
                 title: Text(l10n.locationDenied),
                 trailing: TextButton(
-                  onPressed: () async {
-                    await ref.read(locationServiceProvider).openSettings();
-                    ref.invalidate(positionProvider);
-                  },
+                  // Asks again or opens the right settings page; the position comes back by itself afterwards.
+                  onPressed: () => ref.read(locationTrackerProvider).enable(),
                   child: Text(l10n.enableLocation),
                 ),
               ),
@@ -94,39 +92,14 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
   @override
   Widget build(BuildContext context) {
     final network = ref.watch(networkProvider).value;
-    return Stack(
-      children: [
-        TransitMap(
-          controller: _controller,
-          center: widget.position ?? rome,
-          children: [
-            if (network != null) _StopsLayer(network),
-            if (widget.position case final p?)
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: p,
-                    // Builder: the map's light theme, not the page's.
-                    child: Builder(
-                      builder: (context) =>
-                          Icon(Icons.my_location, color: context.colors.primary, semanticLabel: context.l10n.you),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-        if (widget.position case final p?)
-          Positioned(
-            right: Spacing.l,
-            bottom: Spacing.xxxl + Spacing.l, // above the map attribution button
-            child: FloatingActionButton.small(
-              tooltip: context.l10n.backToMyPosition,
-              onPressed: () => _controller.move(p, 16),
-              child: const Icon(Icons.my_location),
-            ),
-          ),
-      ],
+    // The GPS was off or denied when the map opened and is on now: go to the user once, then leave the camera alone.
+    ref.listen(positionProvider.select((p) => p.value), (previous, next) {
+      if (previous == null && next != null) _controller.move(next, 16);
+    });
+    return TransitMap(
+      controller: _controller,
+      center: widget.position ?? rome,
+      children: [if (network != null) _StopsLayer(network)],
     );
   }
 }
