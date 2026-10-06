@@ -71,6 +71,8 @@
   "validationPasswordsMatch": "Passwords don't match",
   "validationRequired": "Required",
   "version": "Version",
+  "appUpdates": "App updates",
+  "appUpdatesBody": "Download the latest version from the GitHub releases",
   "nearby": "Nearby",
   "search": "Search",
   "favorites": "Favorites",

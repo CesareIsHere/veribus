@@ -181,10 +181,15 @@ Per importare il GTFS vero in locale: `GTFS_DIR=<cartella dello zip scompattato>
 |---|---|---|
 | `ci.yml` | ogni PR e push su main | app: codegen, format, analyze, test, build web; backend: `deno task check` e test SQL |
 | `static_import.yml` | ogni notte e a mano | import del GTFS se l'md5 è cambiato (`vars.IN_PLACE=1` sul piano gratuito) |
-| `release.yml` | merge PR su main | bump semver dal titolo PR (Conventional Commits), tag + GitHub Release |
+| `release.yml` | ogni push su main | bump semver dai commit (Conventional Commits; `[skip release]` per saltarlo), tag + GitHub Release con l'APK release arm64 allegato (`veribus-vX.Y.Z+N-arm64.apk`) |
 | `deploy_android.yml` / `deploy_ios.yml` | dopo release, se `vars.DEPLOY_ANDROID` / `vars.DEPLOY_IOS` | Play Store (internal) / TestFlight |
 
 Secret e variabili richiesti sono elencati in testa a ogni workflow.
+
+**Firma dell'APK.** Perché un APK scaricato dalle release si installi *sopra* quello precedente, tutte le build devono
+essere firmate con la stessa chiave. Una volta sola: `bash tool/android_signing.sh` (serve `gh` autenticato) crea il
+keystore e imposta i secret `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` del repo; conserva `veribus-release.jks`. Senza
+quei secret `release.yml` firma con una chiave di debug diversa a ogni build (si installa, ma non si aggiorna).
 
 ---
 

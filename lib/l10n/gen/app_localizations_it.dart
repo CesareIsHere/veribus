@@ -224,6 +224,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get version => 'Versione';
 
   @override
+  String get appUpdates => 'Aggiornamenti';
+
+  @override
+  String get appUpdatesBody => 'Scarica l\'ultima versione dalle release di GitHub';
+
+  @override
   String get nearby => 'Vicino a me';
 
   @override

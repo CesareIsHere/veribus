@@ -71,6 +71,8 @@
   "validationPasswordsMatch": "Le password non coincidono",
   "validationRequired": "Campo obbligatorio",
   "version": "Versione",
+  "appUpdates": "Aggiornamenti",
+  "appUpdatesBody": "Scarica l'ultima versione dalle release di GitHub",
   "nearby": "Vicino a me",
   "search": "Cerca",
   "favorites": "Preferiti",

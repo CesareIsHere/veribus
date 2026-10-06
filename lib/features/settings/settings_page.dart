@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -131,6 +132,15 @@ class SettingsPage extends ConsumerWidget {
             title: Text(l10n.version),
             subtitle: Text('${version?.version ?? ''} (${version?.buildNumber ?? ''}) · ${AppConfig.stage}'),
           ),
+          // The web app is always the latest deploy: there is nothing to download.
+          if (!kIsWeb)
+            ListTile(
+              leading: const Icon(Icons.system_update_alt),
+              title: Text(l10n.appUpdates),
+              subtitle: Text(l10n.appUpdatesBody),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => launchUrl(Uri.parse(AppConfig.releasesUrl), mode: LaunchMode.externalApplication),
+            ),
           ListTile(
             leading: const Icon(Icons.gavel_outlined),
             title: Text(l10n.licenses),
