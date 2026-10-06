@@ -12,6 +12,13 @@ name: Release
 on:
   push:
     branches: [main]
+  # Rebuilds and attaches the APK of an existing release (a failed build, a lost runner) without a new version.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build the APK for (e.g. v0.3.0+3)
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -25,6 +32,7 @@ jobs:
   release:
     # The version bump and revert commits come from this repo's own workflows; Revert PRs are handled by revert_release.yml.
     if: >-
+      github.event_name == 'push' &&
       !startsWith(github.event.head_commit.message, 'chore: bump version') &&
       !startsWith(github.event.head_commit.message, 'Revert') &&
       !contains(github.event.head_commit.message, '[skip release]')
@@ -87,12 +95,18 @@ jobs:
 
   apk:
     needs: release
+    # After a release, or on its own for an existing tag (workflow_dispatch: the release job is skipped then).
+    if: ${{ !cancelled() && (needs.release.result == 'success' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
+    # A build is ~10 minutes: a hung one must fail loudly, not hold the runner for hours.
+    timeout-minutes: 40
+    env:
+      TAG: ${{ inputs.tag || needs.release.outputs.tag }}
     steps:
       # The tag is the bumped commit: the APK carries the version of the release it is attached to.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release.outputs.tag }}
+          ref: ${{ env.TAG }}
 
       - uses: actions/setup-java@v4
         with:
@@ -123,6 +137,20 @@ jobs:
             echo "keyPassword=$KEY_PASSWORD"
           } > android/key.properties
 
+      # The project's android/gradle.properties allows a 8 GB heap, more than the whole runner (7 GB): the build
+      # stalled and the runner was lost. The user-level file wins over the project's; no daemon and no file watcher
+      # (its "Already watching path" error was the last line before the stall) on a one-shot machine.
+      - name: Gradle for a small runner
+        run: |
+          mkdir -p ~/.gradle
+          cat >> ~/.gradle/gradle.properties <<'PROPS'
+          org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError
+          org.gradle.daemon=false
+          org.gradle.vfs.watch=false
+          org.gradle.workers.max=2
+          kotlin.daemon.jvm.options=-Xmx1g
+          PROPS
+
       - run: flutter pub get
 
       # Release mode with R8 code/resource shrinking (Flutter's default), a single arm64 build (every phone of the
@@ -136,7 +164,6 @@ jobs:
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.release.outputs.tag }}
         run: |
           APK="veribus-$TAG-arm64.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "$APK"
@@ -146,6 +173,6 @@ jobs:
       # Needed to read stack traces of the obfuscated build.
       - uses: actions/upload-artifact@v4
         with:
-          name: debug-symbols-${{ needs.release.outputs.tag }}
+          name: debug-symbols-${{ env.TAG }}
           path: build/symbols
           retention-days: 90
