@@ -8,6 +8,7 @@ import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
+import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
@@ -92,6 +93,7 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
   @override
   Widget build(BuildContext context) {
     final network = ref.watch(networkProvider).value;
+    final arrivals = ref.watch(nearbyArrivalsProvider).value;
     // The GPS was off or denied when the map opened and is on now: go to the user once, then leave the camera alone.
     ref.listen(positionProvider.select((p) => p.value), (previous, next) {
       if (previous == null && next != null) _controller.move(next, 16);
@@ -99,7 +101,11 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
     return TransitMap(
       controller: _controller,
       center: widget.position ?? rome,
-      children: [if (network != null) _StopsLayer(network)],
+      children: [
+        if (network != null) _StopsLayer(network),
+        // The vehicles heading to the nearby stops, moving: the arrivals refresh every 15 s while the map is open.
+        VehiclesLayer(vehiclesOfArrivals(arrivals?.byStop.values.expand((list) => list) ?? const [], network)),
+      ],
     );
   }
 }

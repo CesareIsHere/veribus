@@ -5,18 +5,22 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:veribus/core/providers/network_provider.dart';
+import 'package:vector_map_tiles/vector_map_tiles.dart';
+import 'package:veribus/core/providers/map_theme_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/services/map_tile_service.dart';
 import 'package:veribus/styles/app_spacing.dart';
 import 'package:veribus/styles/app_theme.dart';
+import 'package:veribus/styles/minimal_map_style.dart';
 
 /// Rome's center, used when the position is not available (RF-02).
 const rome = LatLng(41.8986, 12.4768);
 
-/// Map with the tile provider from the remote config (the provider is still to be chosen: spec 11). Every map shows
-/// the device position as a blue dot above everything else, with a button to come back to it.
+/// The app's map: a minimal base (roads, water, green, street names: `styles/minimal_map_style.dart`) drawn from
+/// OpenFreeMap vector tiles, in the light or dark variant of the app theme. Every map shows the device position as a
+/// blue dot above everything else, with a button to come back to it.
 class TransitMap extends ConsumerStatefulWidget {
   const TransitMap({required this.children, this.center = rome, this.zoom = 16, this.controller, super.key});
 
@@ -42,11 +46,12 @@ class _TransitMapState extends ConsumerState<TransitMap> {
 
   @override
   Widget build(BuildContext context) {
-    final tileUrl = ref.watch(networkInfoProvider).value?.tileUrl;
+    final brightness = Theme.of(context).brightness;
+    final tiles = ref.watch(mapTilesProvider).value;
     final position = ref.watch(positionProvider).value;
-    // Tiles are always light: markers use the light scheme too, or in dark mode they turn into black dots.
+    // The markers use the scheme of the map's own brightness, like the tiles.
     return Theme(
-      data: AppTheme.light(),
+      data: brightness == Brightness.dark ? AppTheme.dark() : AppTheme.light(),
       child: Stack(
         children: [
           FlutterMap(
@@ -56,16 +61,22 @@ class _TransitMapState extends ConsumerState<TransitMap> {
               initialZoom: widget.zoom,
               minZoom: 10,
               maxZoom: 19,
+              backgroundColor: minimalMapLand(brightness),
               interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
             ),
             children: [
-              if (tileUrl != null) TileLayer(urlTemplate: tileUrl, userAgentPackageName: 'com.emilianocesare.veribus'),
+              if (tiles != null) VectorTileLayer(theme: ref.watch(mapThemeProvider(brightness)), tileProviders: tiles),
               ...widget.children,
               if (position != null) MarkerLayer(markers: [UserMarker(point: position)]),
               RichAttributionWidget(
                 attributions: [
+                  TextSourceAttribution('OpenFreeMap', onTap: () => launchUrl(Uri.parse('https://openfreemap.org'))),
                   TextSourceAttribution(
-                    'OpenStreetMap',
+                    '© OpenMapTiles',
+                    onTap: () => launchUrl(Uri.parse('https://openmaptiles.org')),
+                  ),
+                  TextSourceAttribution(
+                    'OpenStreetMap contributors',
                     onTap: () => launchUrl(Uri.parse('https://www.openstreetmap.org/copyright')),
                   ),
                 ],
@@ -113,7 +124,7 @@ class UserMarker extends Marker {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: blue,
-                      border: Border.all(color: context.colors.surface, width: 3),
+                      border: Border.all(color: context.appColors.onLocation, width: 3),
                       boxShadow: [BoxShadow(color: context.colors.shadow.withValues(alpha: 0.35), blurRadius: 4)],
                     ),
                     child: const SizedBox.square(dimension: 22),

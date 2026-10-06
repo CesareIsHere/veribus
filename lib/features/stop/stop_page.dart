@@ -1,22 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/alert_card.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
-import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/line_page.dart';
-import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
+import 'package:veribus/features/stop/components/vehicle_sheet.dart';
 import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -149,7 +143,7 @@ class _StopPageState extends ConsumerState<StopPage> {
             arrival: a,
             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
             lineWithoutRealtime: noRealtime.contains(a.lineId),
-            onTap: a.vehicle == null || stop == null ? null : () => _showVehicle(context, a, stop),
+            onTap: a.vehicle == null || stop == null ? null : () => showVehicleSheet(context, stop: stop, arrival: a),
           ),
       const Divider(),
       Padding(
@@ -174,68 +168,5 @@ class _StopPageState extends ConsumerState<StopPage> {
         ),
       ),
     ];
-  }
-
-  /// The vehicle on the map with fleet number and stops left (RF-23).
-  void _showVehicle(BuildContext context, Arrival a, Stop stop) {
-    final l10n = context.l10n;
-    final v = a.vehicle!;
-    final old = DateTime.now().difference(v.gpsAt) > const Duration(minutes: 2);
-    final kind = ref.read(networkProvider).value?.lines[a.lineId]?.kind;
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (context) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: 260,
-              child: TransitMap(
-                center: LatLng(
-                  (v.position.latitude + stop.position.latitude) / 2,
-                  (v.position.longitude + stop.position.longitude) / 2,
-                ),
-                zoom: 15,
-                children: [
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final shape = ref.watch(lineDetailProvider(a.lineId, a.directionId)).value?.shape ?? const [];
-                      return PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: pathBetween(shape, v.position, stop.position),
-                            strokeWidth: 4,
-                            color: context.colors.primary,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      StopMarker(point: stop.position, label: stop.name, selected: true, onTap: () {}),
-                      VehicleMarker(point: v.position, label: v.label ?? v.id, kind: kind),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: StatusTag(a.status),
-              title: Text(v.label == null ? a.headsign : l10n.vehicle(v.label!)),
-              subtitle: Text(
-                [
-                  if (a.stopsAway case final n?) l10n.stopsAway(n),
-                  if (old) l10n.lastPositionAt(DateFormat.Hm().format(v.gpsAt.toLocal())),
-                  if (a.signal case final s?) ArrivalText.signal(l10n, s, stopsAway: a.stopsAway),
-                ].join(' · '),
-              ),
-            ),
-            const SizedBox(height: Spacing.l),
-          ],
-        ),
-      ),
-    );
   }
 }

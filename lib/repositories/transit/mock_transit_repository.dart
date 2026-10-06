@@ -80,7 +80,6 @@ class MockTransitRepository implements ITransitRepository {
     'version': 'mock',
     'path': 'vmock.json',
     'min_app_version': '0.1.0',
-    'tile_url': 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     'no_realtime': ['8BUS'],
   });
 

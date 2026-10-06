@@ -34,6 +34,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.successContainer,
     required this.onSuccessContainer,
     required this.location,
+    required this.onLocation,
   });
 
   factory AppColors.from(Brightness brightness) {
@@ -46,6 +47,7 @@ class AppColors extends ThemeExtension<AppColors> {
       onSuccessContainer: green.onPrimaryContainer,
       // The "you are here" blue every map app uses: it has to stand out from the route (primary) and the vehicles.
       location: const Color(0xFF1A73E8),
+      onLocation: const Color(0xFFFFFFFF),
     );
   }
 
@@ -54,8 +56,9 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color successContainer;
   final Color onSuccessContainer;
 
-  /// The device position on a map.
+  /// The device position on a map, and the ring around it (white on any tile, light or dark).
   final Color location;
+  final Color onLocation;
 
   @override
   AppColors copyWith({
@@ -64,12 +67,14 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? successContainer,
     Color? onSuccessContainer,
     Color? location,
+    Color? onLocation,
   }) => AppColors(
     success: success ?? this.success,
     onSuccess: onSuccess ?? this.onSuccess,
     successContainer: successContainer ?? this.successContainer,
     onSuccessContainer: onSuccessContainer ?? this.onSuccessContainer,
     location: location ?? this.location,
+    onLocation: onLocation ?? this.onLocation,
   );
 
   @override
@@ -81,5 +86,6 @@ class AppColors extends ThemeExtension<AppColors> {
           successContainer: Color.lerp(successContainer, other.successContainer, t)!,
           onSuccessContainer: Color.lerp(onSuccessContainer, other.onSuccessContainer, t)!,
           location: Color.lerp(location, other.location, t)!,
+          onLocation: Color.lerp(onLocation, other.onLocation, t)!,
         );
 }

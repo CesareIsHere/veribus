@@ -11,6 +11,7 @@ import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
+import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
@@ -195,10 +196,9 @@ class _LinePageState extends ConsumerState<LinePage> {
           markers: [
             for (final s in stops)
               StopMarker(point: s.position, label: s.name, onTap: () => context.push(StopPage.route(s.id))),
-            for (final v in d.vehicles)
-              VehicleMarker(point: v.position, label: v.label ?? v.id, kind: network.lines[widget.lineId]?.kind),
           ],
         ),
+        VehiclesLayer([for (final v in d.vehicles) mapVehicle(v, network.lines[widget.lineId]?.kind)]),
       ],
     );
   }

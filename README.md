@@ -196,7 +196,9 @@ quei secret `release.yml` firma con una chiave di debug diversa a ogni build (si
 ## Da decidere prima del rilascio
 
 - Nome dell'app (senza richiami ad Atac) e icona (`assets/images/logo.png`, poi `dart run flutter_launcher_icons`).
-- Fornitore delle tile della mappa: oggi `config.setting.tile_url` punta a OpenStreetMap, che non va usato in produzione.
+- Fornitore delle tile della mappa: l'app disegna lo stile minimal da tile vettoriali OpenFreeMap (nessuna chiave,
+  `lib/styles/minimal_map_style.dart`); `config.setting.tile_url` del server non è più usato. Verifica i termini d'uso
+  di OpenFreeMap prima del lancio pubblico e valuta di ospitare le tile.
 - Licenza dei dati RSM e testo di attribuzione; privacy policy (`PRIVACY_URL`), obbligatoria per gli store.
 - Limite di richieste per client sull'API (RNF-09).
 
