@@ -1,3 +1,6 @@
+// Tests override autoDispose providers directly in the root scope: they are not scoped providers of the app.
+// ignore_for_file: riverpod_lint/scoped_providers_should_specify_dependencies
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
