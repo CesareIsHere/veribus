@@ -11,6 +11,7 @@ import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
+import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -35,17 +36,21 @@ class NearbyPage extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.s),
-              child: SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
-                    ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
-                  ],
-                  selected: {map},
-                  onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
-                ),
+              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, Spacing.xs, Spacing.s),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
+                        ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
+                      ],
+                      selected: {map},
+                      onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
+                    ),
+                  ),
+                  const SettingsButton(),
+                ],
               ),
             ),
             if (position case AsyncData(value: null))

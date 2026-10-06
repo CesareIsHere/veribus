@@ -9,7 +9,7 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/favorites/providers/favorites_arrivals_provider.dart';
 import 'package:veribus/features/line/line_page.dart';
-import 'package:veribus/features/settings/settings_page.dart';
+import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/styles/app_spacing.dart';
@@ -30,16 +30,7 @@ class FavoritesPage extends ConsumerWidget {
     final data = arrivals.value;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.favorites),
-        actions: [
-          IconButton(
-            tooltip: l10n.settings,
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => context.push(SettingsPage.route),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(l10n.favorites), actions: const [SettingsButton()]),
       body: favorites.stops.isEmpty && favorites.lines.isEmpty
           ? MessageView(icon: Icons.star_outline, title: l10n.noFavorites, description: l10n.noFavoritesHint)
           : RefreshIndicator(

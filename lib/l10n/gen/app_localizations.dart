@@ -962,6 +962,12 @@ abstract class AppLocalizations {
   /// **'Arrival states'**
   String get arrivalStates;
 
+  /// No description provided for @arrivalStatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What Confirmed, To be checked, Scheduled… mean'**
+  String get arrivalStatesHint;
+
   /// No description provided for @stateConfirmedMeaning.
   ///
   /// In en, this message translates to:

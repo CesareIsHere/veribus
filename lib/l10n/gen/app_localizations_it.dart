@@ -496,6 +496,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get arrivalStates => 'Stati degli arrivi';
 
   @override
+  String get arrivalStatesHint => 'Cosa significano Confermato, Da verificare, Programmato…';
+
+  @override
   String get stateConfirmedMeaning => 'Un mezzo localizzato da poco e in movimento sta facendo questa corsa.';
 
   @override

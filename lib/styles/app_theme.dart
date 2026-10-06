@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:veribus/core/config.dart';
 
 /// Material 3 theme. Components keep their M3 defaults (sizes, shapes,
-/// colors): change `SEED_COLOR` in env/*.json to rebrand and only override
-/// here what the brand really needs, never inside widgets.
+/// colors, typography: the system font, Roboto on Android): change `SEED_COLOR`
+/// in env/*.json to rebrand and only override here what the brand really needs,
+/// never inside widgets. A font downloaded at runtime (google_fonts) is not an
+/// option: text is measured with the fallback before it loads and chips clip.
 abstract final class AppTheme {
   static ThemeData light() => _build(Brightness.light);
 
@@ -14,7 +15,6 @@ abstract final class AppTheme {
     final colors = ColorScheme.fromSeed(seedColor: AppConfig.seedColor, brightness: brightness);
     final base = ThemeData(colorScheme: colors);
     return base.copyWith(
-      textTheme: GoogleFonts.interTextTheme(base.textTheme),
       // M3 has two text field styles, filled and outlined: pick one app-wide.
       inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
       snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),

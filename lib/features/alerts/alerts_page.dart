@@ -6,6 +6,7 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/alerts/providers/alerts_provider.dart';
 import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Every active alert, most severe first (RF-50).
@@ -18,7 +19,7 @@ class AlertsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.alerts)),
+      appBar: AppBar(title: Text(l10n.alerts), actions: const [SettingsButton()]),
       body: switch (ref.watch(alertsProvider)) {
         AsyncValue(:final value?) when value.isEmpty => MessageView(
           icon: Icons.check_circle_outline,

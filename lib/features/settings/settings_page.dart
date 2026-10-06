@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,15 +90,14 @@ class SettingsPage extends ConsumerWidget {
               if (code != null) await ref.read(localeProvider.notifier).set(code.isEmpty ? null : Locale(code));
             },
           ),
-          SectionHeader(l10n.arrivalStates),
-          for (final (status, meaning) in [
-            (ArrivalStatus.confirmed, l10n.stateConfirmedMeaning),
-            (ArrivalStatus.uncertain, l10n.stateUncertainMeaning),
-            (ArrivalStatus.scheduled, l10n.stateScheduledMeaning),
-            (ArrivalStatus.suppressed, l10n.stateSuppressedMeaning),
-            (ArrivalStatus.canceled, l10n.stateCanceledMeaning),
-          ])
-            ListTile(leading: StatusTag(status), title: Text(meaning)),
+          // Reference text, read when needed: not five paragraphs between the settings people come here for.
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: Text(l10n.arrivalStates),
+            subtitle: Text(l10n.arrivalStatesHint),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showArrivalStates(context),
+          ),
           SectionHeader(l10n.dataSource),
           ListTile(
             leading: const Icon(Icons.dataset_outlined),
@@ -154,6 +155,35 @@ class SettingsPage extends ConsumerWidget {
             ),
           const SizedBox(height: Spacing.l),
         ],
+      ),
+    );
+  }
+
+  /// What each arrival status means (the labels on the arrivals are always spelled out: RNF-07).
+  void _showArrivalStates(BuildContext context) {
+    final l10n = context.l10n;
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (context) => SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              SectionHeader(l10n.arrivalStates),
+              for (final (status, meaning) in [
+                (ArrivalStatus.confirmed, l10n.stateConfirmedMeaning),
+                (ArrivalStatus.uncertain, l10n.stateUncertainMeaning),
+                (ArrivalStatus.scheduled, l10n.stateScheduledMeaning),
+                (ArrivalStatus.suppressed, l10n.stateSuppressedMeaning),
+                (ArrivalStatus.canceled, l10n.stateCanceledMeaning),
+              ])
+                ListTile(leading: StatusTag(status), title: Text(meaning)),
+              const SizedBox(height: Spacing.l),
+            ],
+          ),
+        ),
       ),
     );
   }
