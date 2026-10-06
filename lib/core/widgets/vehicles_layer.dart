@@ -5,91 +5,55 @@ import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
 
-/// A vehicle as the map draws it.
-typedef MapVehicle = ({String id, String label, LatLng position, LineKind? kind});
+/// A vehicle as the map draws it: the pill shows the `label` (the line's code), the fleet number is for the details.
+typedef MapVehicle = ({
+  String id,
+  String label,
+  String? fleet,
+  String lineId,
+  int directionId,
+  LatLng position,
+  LineKind? kind,
+});
 
-MapVehicle mapVehicle(VehicleInfo v, LineKind? kind) =>
-    (id: v.id, label: v.label ?? v.id, position: v.position, kind: kind);
+extension MapVehicleMoved on MapVehicle {
+  MapVehicle movedTo(LatLng to) =>
+      (id: id, label: label, fleet: fleet, lineId: lineId, directionId: directionId, position: to, kind: kind);
+}
 
-/// The vehicles of a map, in motion. Data arrives every ~15 s: instead of jumping, each vehicle glides from where it is
-/// drawn to where the new data puts it, over about the time until the next update, so buses are seen moving.
-class VehiclesLayer extends StatefulWidget {
-  const VehiclesLayer(this.vehicles, {super.key});
+MapVehicle mapVehicle(VehicleInfo v, {required String lineId, required int directionId, required Network? network}) => (
+  id: v.id,
+  label: network?.lines[lineId]?.name ?? lineId,
+  fleet: v.label,
+  lineId: lineId,
+  directionId: directionId,
+  position: v.position,
+  kind: network?.lines[lineId]?.kind,
+);
+
+/// The vehicles of a map, where the last data puts them (it arrives every ~15 s). They jump there: a straight glide
+/// would cut across blocks, and the app has no way to follow the real street between two fixes.
+class VehiclesLayer extends StatelessWidget {
+  const VehiclesLayer(this.vehicles, {this.selectedId, this.onTap, super.key});
 
   final List<MapVehicle> vehicles;
 
-  @override
-  State<VehiclesLayer> createState() => _VehiclesLayerState();
-}
-
-class _VehiclesLayerState extends State<VehiclesLayer> with SingleTickerProviderStateMixin {
-  /// A bit less than the refresh period (`AutoRefresh`): the glide ends as the next data arrives.
-  static const glide = Duration(seconds: 14);
-
-  /// Farther than this between two updates is not a bus driving: a new trip or a data jump, so no glide.
-  static const _snapMeters = 1500.0;
-
-  late final _controller = AnimationController(vsync: this, duration: glide);
-  late Map<String, LatLng> _from = _targets(widget.vehicles);
-  late Map<String, LatLng> _to = _from;
-
-  static Map<String, LatLng> _targets(List<MapVehicle> vehicles) => {for (final v in vehicles) v.id: v.position};
+  /// The vehicle whose route is shown, drawn emphasized.
+  final String? selectedId;
+  final ValueChanged<MapVehicle>? onTap;
 
   @override
-  void didUpdateWidget(VehiclesLayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final targets = _targets(widget.vehicles);
-    // The parent rebuilds for many reasons (the GPS fix, a rebuilt page): only new data restarts the glide, or the
-    // vehicles would slow down at every rebuild.
-    if (_sameTargets(targets, _to)) return;
-    final shown = _shown();
-    _from = {
-      for (final e in targets.entries)
-        e.key: switch (shown[e.key]) {
-          final s? when const Distance()(s, e.value) < _snapMeters => s,
-          _ => e.value,
-        },
-    };
-    _to = targets;
-    _controller.forward(from: 0);
-  }
-
-  static bool _sameTargets(Map<String, LatLng> a, Map<String, LatLng> b) =>
-      a.length == b.length && a.entries.every((e) => b[e.key] == e.value);
-
-  /// Where each vehicle is drawn right now.
-  Map<String, LatLng> _shown() {
-    final t = _controller.value;
-    return {
-      for (final e in _to.entries)
-        e.key: switch (_from[e.key]) {
-          final from? => LatLng(
-            from.latitude + (e.value.latitude - from.latitude) * t,
-            from.longitude + (e.value.longitude - from.longitude) * t,
-          ),
-          _ => e.value,
-        },
-    };
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    builder: (context, _) {
-      final shown = _shown();
-      return MarkerLayer(
-        markers: [
-          for (final v in widget.vehicles)
-            VehicleMarker(point: shown[v.id] ?? v.position, label: v.label, kind: v.kind),
-        ],
-      );
-    },
+  Widget build(BuildContext context) => MarkerLayer(
+    markers: [
+      for (final v in vehicles)
+        VehicleMarker(
+          point: v.position,
+          label: v.label,
+          kind: v.kind,
+          selected: v.id == selectedId,
+          onTap: onTap == null ? null : () => onTap!(v),
+        ),
+    ],
   );
 }
 
@@ -99,5 +63,5 @@ List<MapVehicle> vehiclesOfArrivals(Iterable<Arrival> arrivals, Network? network
     for (final a in arrivals)
       if (a.vehicle != null) a.vehicle!.id: a,
   }.values)
-    mapVehicle(a.vehicle!, network?.lines[a.lineId]?.kind),
+    mapVehicle(a.vehicle!, lineId: a.lineId, directionId: a.directionId, network: network),
 ];

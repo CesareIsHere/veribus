@@ -1,207 +1,410 @@
-# Veribus (nome provvisorio)
+<div align="center">
 
-App per bus e tram di Roma: **tutto quello che si sa davvero sul tuo bus, scritto in modo leggibile**.
-Stessi open data pubblici di Roma Servizi per la Mobilità (RSM), mostrati per intero e con onestà: quanto è
-affidabile l'orario, se il mezzo è fermo o ancora al capolinea, e un avviso quando la corsa che aspettavi sparisce.
+<img src="assets/images/logo.png" alt="Veribus logo" width="96" height="96">
 
-Specifica, misure sui dati e documento tecnico sono su Notion (*App Bus Roma*). Questo README dice come far girare
-e pubblicare il progetto.
+# Veribus
 
-| Parte | Dove | Tecnologia |
-|---|---|---|
-| App (Android, iOS, web per sviluppo) | radice del repo (`lib/`) | Flutter 3.47.5, Riverpod 3, go_router, flutter_map |
-| Import del GTFS statico | `backend/static-import` | bash + psql, ogni notte su GitHub Actions |
-| Poller realtime e motore | `backend/core`, `backend/adapters`, `backend/runtimes` | TypeScript su Deno (Edge Function oggi, container domani) |
-| Database e API | `supabase/migrations` | Supabase: Postgres, funzioni SQL nello schema `api`, Storage, pg_cron |
-| Archivio degli snapshot grezzi | Cloudflare R2 | bucket S3, scadenza a 30 giorni con una regola del bucket |
+**The real Rome bus & tram tracker.**<br>
+Everything that is actually known about your bus, written so you can read it.
+
+[![CI](https://github.com/CesareIsHere/veribus/actions/workflows/ci.yml/badge.svg)](https://github.com/CesareIsHere/veribus/actions/workflows/ci.yml)
+[![Download APK](https://img.shields.io/badge/Android-download%20APK-3DDC84?logo=android&logoColor=white)](https://github.com/CesareIsHere/veribus/releases/latest)
+[![Flutter](https://img.shields.io/badge/Flutter-3.47.5-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Material 3](https://img.shields.io/badge/Material-3-6750A4?logo=materialdesign&logoColor=white)](https://m3.material.io)
+[![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+<img src="docs/screenshots/hero.jpg" alt="Veribus: arrivals at a stop, the nearby map, and a bus followed live on the map" width="100%">
+
+[Download](#download) · [Features](#features) · [Quick start](#quick-start) · [Architecture](#architecture) · [Contributing](#contributing)
+
+</div>
 
 ---
 
-## Quick start (senza server)
+## Table of contents
+
+- [Why Veribus](#why-veribus)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Download](#download)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Backend setup](#backend-setup)
+- [CI/CD and releases](#cicd-and-releases)
+- [Before the public launch](#before-the-public-launch)
+- [Contributing](#contributing)
+- [Data and attribution](#data-and-attribution)
+- [License](#license)
+
+---
+
+## Why Veribus
+
+Rome's public transport publishes the same open data to everyone, but most apps show a single number ("4 min") and
+hide how much it can be trusted. Veribus shows the whole picture, honestly: how reliable the prediction is, whether the
+vehicle is moving or stuck at the terminus, and a warning when the trip you were waiting for disappears.
+
+Every arrival has a **status** (Confirmed, To be checked, Scheduled, Suppressed, Canceled) that is always spelled out
+in words, never told by color alone, and a one-line **reason** underneath. A scheduled time is never dressed up as
+"minutes": minutes appear only for real-time predictions.
+
+> The product spec, data measurements and technical document live in Notion (*App Bus Roma*). This README explains
+> how to run, develop and ship the project.
+
+## Features
+
+- **Live arrivals** for every line at a stop, for the next 60 minutes, with status, reason and the vehicle behind them.
+- **Minimal live maps**: a clean navigation-style base map (roads, water, green, street names, no buildings or shops),
+  light and dark, with the buses (labelled with their line) refreshed every 15 seconds.
+- **Nearby**: stops around you on a map or in a list, with the next arrival of each line.
+- **Follow a bus**: tap an arrival to see its vehicle on the map, framed together with the stop and your position,
+  updating live. Tap any bus on a map to see its whole route: dashed where it has been, solid where it still goes.
+- **Line detail**: every stop in order with the vehicles between them, or the whole route on a map.
+- **Daily timetable** by line, direction and day.
+- **Search** for lines and stops, running entirely on the phone.
+- **Favorites** for stops and lines, and a dedicated **Alerts** section (severity is told by icon and text).
+- **Honest signals**: cancelled trips, vehicles that stopped transmitting, stuck vehicles, old GPS fixes, late data,
+  a stale feed. If the feed stops, the app says so.
+- **A GPS that recovers by itself**: turn the location on while the app is open and the blue dot comes back, no restart.
+- Material 3 design, light/dark theme, adaptive layouts, **Italian and English**.
+
+## Screenshots
+
+> Screenshots use the built-in demo data (`env/mock.json`): a handful of stops around Termini with arrivals in every status.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/stop.jpg" width="200" alt="Arrivals at a stop"><br><sub><b>Arrivals</b><br>status and reason for every trip</sub></td>
+    <td align="center"><img src="docs/screenshots/vehicle.jpg" width="200" alt="A bus followed live"><br><sub><b>Follow a bus</b><br>bus, stop and you in one view</sub></td>
+    <td align="center"><img src="docs/screenshots/line-list.jpg" width="200" alt="Line detail"><br><sub><b>Line detail</b><br>stops on a rail, buses where they are</sub></td>
+    <td align="center"><img src="docs/screenshots/line.jpg" width="200" alt="Line map"><br><sub><b>Line map</b><br>tap a bus: route travelled and still to go</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/nearby.jpg" width="200" alt="Nearby map"><br><sub><b>Nearby</b><br>minimal map, blue dot is you</sub></td>
+    <td align="center"><img src="docs/screenshots/nearby-dark.jpg" width="200" alt="Dark mode"><br><sub><b>Dark mode</b><br>the map follows the theme</sub></td>
+    <td align="center"><img src="docs/screenshots/alerts.jpg" width="200" alt="Service alerts"><br><sub><b>Alerts</b><br>one row, details on demand</sub></td>
+  </tr>
+</table>
+
+## Download
+
+The latest Android build is attached to every [GitHub Release](https://github.com/CesareIsHere/veribus/releases/latest)
+as `veribus-vX.Y.Z+N-arm64.apk` (release mode, arm64, about 24 MB).
+
+1. Open the release page on your phone and download the `.apk`.
+2. Allow *Install unknown apps* for your browser if Android asks.
+3. Open the file to install.
+
+To update, use **Settings → App updates**: it opens the releases page.
+
+> **Updating over an existing install** only works when both builds are signed with the same key. Builds from the
+> repository's CI use one stable key once the maintainer has run `tool/android_signing.sh` (see
+> [CI/CD and releases](#cicd-and-releases)); until then, uninstall the previous build first.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| **App** | Flutter 3.47.5 · Dart 3.13 · Material 3 · Riverpod 3 (codegen) · go_router · freezed / json_serializable |
+| **Maps** | flutter_map · [OpenFreeMap](https://openfreemap.org) vector tiles drawn with the app's own minimal style (`vector_map_tiles`) · geolocator |
+| **Backend** | [Supabase](https://supabase.com): Postgres 17 with SQL functions in the `api` schema, Auth, Storage, pg_cron, Edge Functions |
+| **Realtime poller** | TypeScript on Deno (an Edge Function today, a container tomorrow) |
+| **Raw archive** | Cloudflare R2 (S3-compatible, 30-day lifecycle rule) |
+| **Quality** | very_good_analysis · riverpod_lint · flutter_test · mocktail · Deno test · SQL API tests |
+| **CI/CD** | GitHub Actions: checks, nightly GTFS import, semver releases with an APK attached |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  RSM[("RSM open data<br/>GTFS + GTFS-Realtime")]
+  subgraph SB["Supabase"]
+    PG[("Postgres<br/>network · live · config · api")]
+    ST["Storage<br/>network/vMD5.json"]
+    EF["Edge Function<br/>poller"]
+    CR["pg_cron<br/>every 10 s"]
+  end
+  GH["GitHub Actions<br/>nightly import"]
+  R2[("Cloudflare R2<br/>raw snapshots")]
+  APP["Flutter app"]
+
+  RSM -- "GTFS zip" --> GH
+  GH --> PG
+  GH --> ST
+  CR --> EF
+  RSM -- "GTFS-RT feeds" --> EF
+  EF --> PG
+  EF --> R2
+  APP -- "RPC api.* (user JWT)" --> PG
+  APP -- "network file, once per version" --> ST
+```
+
+- The static network (stops, lines, trips, timetables) is imported every night and swapped atomically.
+- The poller reads the real-time feeds every 10 seconds. The data changes at most every 30 seconds, so the app polls
+  every 15 seconds while a page is open.
+- Search and nearby stops run on the phone, on the network file downloaded once per version.
+
+**Postgres schemas** (none exposed except `api`, row level security on everything):
+
+| Schema | Content | Written by |
+|---|---|---|
+| `network` | stops, lines, main paths, trips, timetables, service days | the import, with an atomic swap |
+| `network_meta` | imported versions, lines seen in real time | import, poller |
+| `live` | vehicles, trip state, alerts, feed status, snapshot index, lease | the poller (role `poller`) |
+| `config` | signal thresholds, minimum app version | by hand |
+| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()` | nothing: read-only functions |
+
+**Where the signals are computed.** What needs history is computed by the poller (S1 canceled, S2 trip vanished →
+suppressed, S3 vehicle stopped, S5 at the terminus). What depends on the moment of reading is computed by the API
+(S4 old GPS, S6 late data, stale feed, approximate time). If the poller dies, the API keeps telling the truth.
+
+**App layers** (see [CLAUDE.md](CLAUDE.md) for the conventions): UI → notifiers/providers (`features/*/providers`) →
+`repositories/` (backend data) and `services/` (SDK and platform wrappers). The backend is chosen only in the
+repository providers (`BACKEND=mock|supabase`); UI code never knows which one it talks to. One place turns status,
+signal and time into words: `features/stop/components/arrival_tile.dart`.
+
+## Project structure
+
+```
+.
+├── lib/
+│   ├── core/            app shell, router, config, shared widgets (TransitMap, VehiclesLayer, …)
+│   ├── features/        nearby · search · favorites · alerts · stop · line · settings · auth
+│   ├── models/          transit (network, live data), user
+│   ├── repositories/    I<X>Repository + mock_ / supabase_ implementations + providers
+│   ├── services/        location, map tiles, sign-in wrappers
+│   ├── styles/          Material 3 theme, spacing tokens, the minimal map style
+│   └── l10n/            ARB files (it, en) and generated localizations
+├── backend/
+│   ├── core/            the engine: pure TypeScript, no I/O (signals, cycle)
+│   ├── adapters/        HTTP and Postgres adapters
+│   ├── runtimes/        Edge Function and container entry points
+│   ├── static-import/   nightly GTFS import (bash + psql)
+│   └── replay/          re-run the engine over an archive
+├── supabase/            migrations and API tests
+├── env/                 per-stage configuration (dev, mock, local, staging, prod)
+├── tool/                project scripts (feature stripping, Android signing)
+├── test/                app tests
+└── .github/workflows/   CI, import, release, deploy
+```
+
+## Quick start
+
+### Run it with no server (demo data)
 
 ```bash
-fvm install && flutter pub get
+fvm install && flutter pub get          # or use Flutter 3.47.5 directly
 flutter run --dart-define-from-file=env/dev.json
 ```
 
-`env/dev.json` usa il backend **mock**: una manciata di fermate intorno a Termini con arrivi in tutti gli stati.
-Il login è obbligatorio, ma con il mock va bene qualsiasi email (la password `wrongpass` simula un errore).
+`env/dev.json` uses the **mock** backend: a handful of stops around Termini with arrivals in every status. Login is
+mandatory, but with the mock any email works (the password `wrongpass` simulates an error).
 
-**Modalità mock completa**, per controllare la grafica di ogni schermata (anche sul web, `-d chrome`):
+**Full mock mode**, to check the look of every screen (also on the web with `-d chrome`):
 
 ```bash
 flutter run --dart-define-from-file=env/mock.json
 ```
 
-Parte già loggata (`MOCK_SIGNED_IN`) e con una posizione fissa vicino a Termini (`MOCK_POSITION`). I dati mock
-coprono apposta i casi limite: arrivi in tutti gli stati e con ogni segnale, CAVOUR con i dati in tempo reale fermi
-(RF-60), MANIN senza arrivi, 8BUS senza tempo reale, n11 senza corse in servizio, la 64 con fermate di variante.
+It starts signed in (`MOCK_SIGNED_IN`) at a fixed position near Termini (`MOCK_POSITION`). The demo data covers the
+edge cases on purpose: arrivals in every status and with every signal, a stop whose real-time data is stale,
+a stop with no arrivals, a line without real time, a line with no trips in service, a line with variant stops.
 
----
+### Run it with real buses, locally
 
-## Architettura
+Everything on your machine, no cloud project (needs Docker with at least 4 GB of RAM):
 
+```bash
+supabase start                                   # full stack: Postgres, Auth, API, Storage (migrations included)
+bash backend/static-import/local.sh              # downloads today's GTFS and imports it (~3 minutes)
+cd backend && DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres deno task poller   # leave it running
+flutter run --dart-define-from-file=env/local.json                                              # in another terminal
 ```
-RSM (GTFS zip + feed GTFS-RT) ──► GitHub Actions: import notturno ──► Postgres `network` + Storage `network/v<md5>.json`
-                              └─► pg_cron ogni 10 s ──► Edge Function `poller` ──► Postgres `live` + R2 (archivio)
-App ──► RPC `api.*` (JWT dell'utente) ──► legge `network` + `live`, aggiunge i segnali che dipendono dall'istante
-App ──► Storage `network/v<md5>.json` una volta per versione (ricerca e fermate vicine girano sul telefono)
+
+Sign up with any email: locally there is no confirmation step (emails land in Mailpit, <http://127.0.0.1:54324>). The
+poller downloads the real feeds every 10 seconds and archives the snapshots in `backend/archive`.
+
+- On the Android emulator use `SUPABASE_URL: http://10.0.2.2:54321`.
+- In the browser and on desktop you can pin the position with `--dart-define=MOCK_POSITION=41.9005,12.4960`.
+- There is no nightly import locally: the network covers yesterday to 7 days ahead, so run `local.sh` at least once a week.
+
+## Configuration
+
+The app is configured at compile time with `--dart-define-from-file=env/<stage>.json`. Without a file it runs on the
+mock backend with every optional feature off.
+
+| Key | Meaning |
+|---|---|
+| `APP_STAGE`, `APP_NAME` | stage (`dev`, `staging`, `prod`) and display name |
+| `BACKEND` | `mock` or `supabase` |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | the Supabase project (publishable key only: it is public by design) |
+| `AUTH_REDIRECT_URL` | where OAuth returns on mobile (an App Link handled by the app) |
+| `GOOGLE_SERVER_CLIENT_ID` | web client id for Google sign-in |
+| `SEED_COLOR` | Material 3 seed color (`0xFF3F51B5`): change it to rebrand |
+| `SENTRY_DSN` | crash reporting, off when empty |
+| `SUPPORT_EMAIL`, `TERMS_URL`, `PRIVACY_URL`, `APP_STORE_ID` | support and legal links |
+| `RELEASES_URL` | where *Settings → App updates* points (defaults to this repository's latest release) |
+| `FEATURE_SOCIAL_LOGIN`, `FEATURE_CONNECTIVITY`, `FEATURE_FEEDBACK` | feature flags (compile-time: code behind a `false` flag is dropped) |
+| `MOCK_SIGNED_IN`, `MOCK_POSITION` | mock mode only: start signed in, at a fixed `"lat,lon"` |
+
+## Development
+
+```bash
+# App
+flutter run --dart-define-from-file=env/dev.json    # mock backend
+dart run build_runner watch -d                      # Riverpod / freezed / json codegen
+flutter gen-l10n                                    # after editing the ARB files (it + en)
+dart format lib test tool && flutter analyze && flutter test
+
+# Poller: format, lint, types, engine tests (one per signal) and cycle tests on real snapshots
+cd backend && deno task check
+
+# Database: migrations + a minimal GTFS generated on the fly + API tests (needs Docker)
+docker run -d --name vb-test -e POSTGRES_PASSWORD=postgres -v "$PWD:/repo" supabase/postgres:17.6.1.177 \
+  -c config_file=/etc/postgresql/postgresql.conf
+docker exec vb-test bash /repo/supabase/tests/run.sh
+
+# Poller on the real feeds against a local Postgres (without R2_* the archive goes to backend/archive)
+cd backend && DB_URL=postgres://postgres:postgres@localhost:54322/postgres deno task poller
+
+# Re-run the engine over an archive: a CSV with the state changes of every trip
+# (a day of production: rclone copy r2:veribus-archive/vp/2026/09/27 backend/archive/vp/2026/09/27, same for tu)
+cd backend && DB_URL=... deno run -A replay/main.ts archive > changes.csv
 ```
 
-**Schemi Postgres** (nessuno esposto tranne `api`, RLS attiva su tutto):
+To import the real GTFS locally: `GTFS_DIR=<unzipped folder> DB_URL=... bash backend/static-import/import.sh`
+(about a minute; without `SUPABASE_URL` the network file stays in `network.json`).
 
-| Schema | Contenuto | Chi scrive |
-|---|---|---|
-| `network` | fermate, linee, percorsi principali, corse, orari, giorni di servizio | import, con swap atomico |
-| `network_meta` | versioni importate, linee viste in tempo reale (RF-35) | import, poller |
-| `live` | veicoli, stato delle corse, avvisi, stato dei feed, indice degli snapshot, lease | poller (ruolo `poller`) |
-| `config` | soglie dei segnali, versione minima dell'app, URL delle tile (modificabili senza rilascio) | a mano |
-| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()` | — |
+**Quality bar.** `dart format`, `flutter analyze` (zero issues: very_good_analysis plus riverpod_lint) and
+`flutter test` must pass before every push. Use `dart analyze` for the same view CI has: it loads the riverpod_lint
+plugin. Generated files (`*.g.dart`, `lib/l10n/gen`) are committed and CI checks they are up to date.
 
-**Dove si calcolano i segnali**: ciò che richiede storia lo calcola il poller (S1 cancellata, S2 corsa sparita →
-soppressa, S3 mezzo fermo, S5 al capolinea); ciò che dipende dall'istante di lettura lo calcola l'API (S4 GPS
-vecchio, S6 dati in ritardo, RF-60 feed fermo, orario approssimato). Se il poller muore l'API continua a dire la verità.
+## Backend setup
 
-**App** (`lib/`), secondo le convenzioni in [CLAUDE.md](CLAUDE.md):
-`features/{nearby,search,favorites,alerts,stop,line,settings,auth}`, dati in `repositories/transit`
-(interfaccia + `mock_` + `supabase_`), modelli in `models/transit`, posizione in `services/location_service.dart`.
-Un solo posto traduce stato, segnale e orario in parole: `features/stop/components/arrival_tile.dart`.
+Done once per project. You need a Supabase project, a Cloudflare R2 bucket and the
+[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
 
----
+**Supabase plan.** The imported network keeps only the timetables from yesterday to 7 days ahead: the database comes to
+about **420 MB** (measured on the 27 Sep GTFS: 3.4 M stop times instead of 4.9 M). During the nightly import the old and
+the new network coexist and it climbs to about 880 MB, so:
 
-## Setup del backend (una volta per progetto)
+- **Pro** (8 GB): normal import; the active network stays in service until the new one has passed the checks.
+- **Free** (500 MB): set the repository variable `IN_PLACE=1`. The import deletes the active network first and rebuilds
+  it (measured peak 476 MB). The API is down for about 3 minutes every night, and if the import fails the network is
+  missing until the next successful import. The margin is a few tens of MB: fine for development and testing, not for a beta.
 
-Serve un progetto Supabase, un bucket Cloudflare R2 e la
-[CLI Supabase](https://supabase.com/docs/guides/local-development/cli/getting-started).
-
-**Piano Supabase.** La rete importata tiene solo gli orari da ieri a 7 giorni avanti: il database arriva a circa
-**420 MB** (misurato sul GTFS del 27/09: 3,4 M orari invece di 4,9 M). Durante l'import notturno la rete vecchia e
-quella nuova convivono e si sale a circa 880 MB, quindi:
-- **Pro** (8 GB): import normale, la rete attiva resta in servizio finché la nuova non ha passato i controlli (RF-81).
-- **Gratuito** (500 MB): variabile di repository `IN_PLACE=1`. L'import cancella prima la rete attiva e ricostruisce
-  (picco misurato 476 MB). Ogni notte l'API è giù per circa 3 minuti, e se l'import fallisce la rete manca fino
-  all'import riuscito successivo. Il margine è di poche decine di MB: va bene per sviluppo e test, non per la beta.
-
-1. **Schema**: `supabase link --project-ref <ref>` e `supabase db push` (tabelle, ruolo `poller`, bucket
-   `network`, funzioni `api`, job pg_cron).
-2. **Esporre l'API**: dashboard → *Settings → API → Exposed schemas*, aggiungi `api` (in locale lo fa `supabase/config.toml`).
-3. **Ruolo del poller**: `alter role poller with login password '<password>';`
-4. **Import iniziale**: nei secret del repository GitHub metti `SUPABASE_DB_URL` (pooler in modalità *session*,
-   utente `postgres.<ref>`, non solo `postgres`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, poi lancia a mano il workflow *Static import*.
-   Da lì gira ogni notte alle 06:30.
-5. **Archivio su R2**: crea un bucket (es. `veribus-archive`), nelle sue impostazioni una regola *Object lifecycle*
-   che cancella gli oggetti dopo 30 giorni (la specifica RF-83 ne chiede 90), e un token API R2 con permesso *Object Read & Write* solo su quel
-   bucket. Costo: 0,65-1 GB al giorno (misurato il 01/10), a regime ~20-30 GB, 0,15-0,30 $ al mese oltre i 10 GB gratuiti (con 7 giorni è gratis); le scritture
-   (~180.000 al mese) stanno nel milione gratuito.
+1. **Schema**: `supabase link --project-ref <ref>` and `supabase db push` (tables, the `poller` role, the `network`
+   bucket, the `api` functions, the pg_cron job).
+2. **Expose the API**: dashboard → *Settings → API → Exposed schemas*, add `api` (locally `supabase/config.toml` does it).
+3. **Poller role**: `alter role poller with login password '<password>';`
+4. **First import**: put `SUPABASE_DB_URL` (pooler in *session* mode, user `postgres.<ref>`, not just `postgres`),
+   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the GitHub repository secrets, then run the *Static import*
+   workflow by hand. From then on it runs every night at 06:30.
+5. **R2 archive**: create a bucket (e.g. `veribus-archive`), an *Object lifecycle* rule in its settings that deletes
+   objects after 30 days, and an R2 API token with *Object Read & Write* on that bucket only. Cost: 0.65–1 GB a day
+   (measured on 1 Oct), about 20–30 GB at steady state, roughly $0.15–0.30 a month above the free 10 GB (with 7 days it
+   is free); the writes (~180,000 a month) fit in the free million.
 6. **Poller**:
    ```bash
-   supabase secrets set POLLER_SECRET=<stringa casuale> \
+   supabase secrets set POLLER_SECRET=<random string> \
      POLLER_DB_URL=postgres://poller.<ref>:<password>@<pooler-host>:5432/postgres \
      R2_ACCOUNT_ID=<account id> R2_ACCESS_KEY_ID=<key> R2_SECRET_ACCESS_KEY=<secret> R2_BUCKET=veribus-archive \
      HEALTHCHECKS_URL=https://hc-ping.com/<uuid>
    supabase functions deploy poller
    ```
-   e in SQL i due segreti che pg_cron usa per chiamarlo:
+   and, in SQL, the two secrets pg_cron uses to call it:
    ```sql
    select vault.create_secret('https://<ref>.supabase.co/functions/v1/poller', 'poller_url');
-   select vault.create_secret('<la stessa stringa di POLLER_SECRET>', 'poller_secret');
+   select vault.create_secret('<the same string as POLLER_SECRET>', 'poller_secret');
    ```
-7. **Monitoraggio**: su [Healthchecks.io](https://healthchecks.io) un check con periodo 1 minuto e tolleranza
-   5 minuti. L'import che fallisce fa fallire il workflow e GitHub manda l'email.
-8. **App**: in `env/staging.json` e `env/prod.json` imposta `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
+7. **Monitoring**: a check on [Healthchecks.io](https://healthchecks.io) with a 1-minute period and a 5-minute grace.
+   A failing import fails the workflow and GitHub sends the email.
+8. **App**: set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `env/staging.json` and `env/prod.json`.
 
-**Passare a Cloud Run** (quando il p95 della CPU del ciclo supera 1 s, o serve un processo sempre acceso):
-`backend/runtimes/container/main.ts` è lo stesso ciclo in un loop. Avvialo con `DB_URL` e le variabili `R2_*`
-(istanza minima 1, CPU sempre allocata), poi `select cron.unschedule('poller');`.
-Il lease in `live.lease` evita cicli doppi durante il passaggio.
+**Moving to Cloud Run** (when the p95 CPU of the cycle exceeds 1 s, or an always-on process is needed):
+`backend/runtimes/container/main.ts` is the same cycle in a loop. Start it with `DB_URL` and the `R2_*` variables
+(minimum 1 instance, CPU always allocated), then `select cron.unschedule('poller');`. The lease in `live.lease`
+prevents double cycles during the switch.
 
 ### Auth (Supabase)
 
-- **Authentication → URL Configuration**: *Site URL* = il tuo dominio; in *Redirect URLs* aggiungi `AUTH_REDIRECT_URL`
-  e, per il web in sviluppo, `http://localhost:*/**`.
-- **Email Templates → Reset password**: il link deve essere `{{ .SiteURL }}/reset-password?token={{ .TokenHash }}`.
-- **Google**: provider con il client id **web** (+ quello iOS in *Authorized Client IDs*), *Skip nonce check* attivo.
-  Android: SHA-1 su Google Cloud, `GOOGLE_SERVER_CLIENT_ID` = client id web. iOS: `GIDClientID` e URL scheme in `Info.plist`.
-- **Apple**: capability *Sign in with Apple* in Xcode; su Android e web redirect OAuth (Services ID e chiave nel provider).
-- **Deep link del reset**: sostituisci `example.com` nell'intent-filter di `AndroidManifest.xml` e pubblica
-  `/.well-known/assetlinks.json`; su iOS *Associated Domains* + `apple-app-site-association`.
+- **Authentication → URL Configuration**: *Site URL* = your domain; in *Redirect URLs* add `AUTH_REDIRECT_URL` and,
+  for the web in development, `http://localhost:*/**`.
+- **Email Templates → Reset password**: the link must be `{{ .SiteURL }}/reset-password?token={{ .TokenHash }}`.
+- **Google**: provider with the **web** client id (+ the iOS one in *Authorized Client IDs*), *Skip nonce check* on.
+  Android: SHA-1 on Google Cloud, `GOOGLE_SERVER_CLIENT_ID` = the web client id. iOS: `GIDClientID` and the URL scheme in `Info.plist`.
+- **Apple**: *Sign in with Apple* capability in Xcode; on Android and web an OAuth redirect (Services ID and key in the provider).
+- **Reset deep link**: replace `example.com` in the `AndroidManifest.xml` intent filter and publish
+  `/.well-known/assetlinks.json`; on iOS *Associated Domains* + `apple-app-site-association`.
 
----
+## CI/CD and releases
 
-## Dati veri in locale
-
-L'app sul tuo computer con gli autobus veri, senza progetto Supabase in cloud (serve Docker con almeno 4 GB di RAM):
-
-```bash
-supabase start                                   # stack completo: Postgres, Auth, API, Storage (migration incluse)
-bash backend/static-import/local.sh              # scarica il GTFS di oggi e lo importa (~3 minuti)
-cd backend && DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres deno task poller   # lascialo girare
-flutter run --dart-define-from-file=env/local.json                                              # in un altro terminale
-```
-
-Registrati con un'email qualsiasi: in locale non serve confermarla (le email finiscono in Mailpit,
-http://127.0.0.1:54324). Il poller scarica i feed veri ogni 10 secondi e archivia gli snapshot in `backend/archive`.
-Sull'emulatore Android usa `SUPABASE_URL: http://10.0.2.2:54321`; nel browser e sul desktop la posizione si può
-fissare con `--dart-define=MOCK_POSITION=41.9005,12.4960`. In locale non c'è l'import notturno: la rete
-copre da ieri a 7 giorni avanti, quindi rilancia `local.sh` almeno una volta a settimana.
-
-## Sviluppo in locale
-
-```bash
-# App
-flutter run --dart-define-from-file=env/dev.json    # mock
-dart run build_runner watch -d                      # codegen Riverpod/freezed
-flutter gen-l10n                                    # dopo aver modificato gli ARB (it + en)
-dart format lib test tool && flutter analyze && flutter test
-
-# Poller: formattazione, lint, tipi, test del motore (uno per segnale) e del ciclo su snapshot reali
-cd backend && deno task check
-
-# Database: migration + GTFS minimo generato al volo + test dell'API (serve Docker)
-docker run -d --name vb-test -e POSTGRES_PASSWORD=postgres -v "$PWD:/repo" supabase/postgres:17.6.1.177 \
-  -c config_file=/etc/postgresql/postgresql.conf
-docker exec vb-test bash /repo/supabase/tests/run.sh
-
-# Poller sui feed veri contro un Postgres locale (senza R2_* l'archivio va in backend/archive, stessa struttura)
-cd backend && DB_URL=postgres://postgres:postgres@localhost:54322/postgres deno task poller
-
-# Riesecuzione del motore su un archivio (RF-85): un CSV con i cambi di stato di ogni corsa
-# (un giorno di produzione: rclone copy r2:veribus-archive/vp/2026/09/27 backend/archive/vp/2026/09/27, idem per tu)
-cd backend && DB_URL=... deno run -A replay/main.ts archive > changes.csv
-```
-
-Per importare il GTFS vero in locale: `GTFS_DIR=<cartella dello zip scompattato> DB_URL=... bash backend/static-import/import.sh`
-(circa un minuto; senza `SUPABASE_URL` il file di rete resta in `network.json`).
-
----
-
-## CI/CD
-
-| Workflow | Quando | Cosa fa |
+| Workflow | When | What it does |
 |---|---|---|
-| `ci.yml` | ogni PR e push su main | app: codegen, format, analyze, test, build web; backend: `deno task check` e test SQL |
-| `static_import.yml` | ogni notte e a mano | import del GTFS se l'md5 è cambiato (`vars.IN_PLACE=1` sul piano gratuito) |
-| `release.yml` | ogni push su main | bump semver dai commit (Conventional Commits; `[skip release]` per saltarlo), tag + GitHub Release con l'APK release arm64 allegato (`veribus-vX.Y.Z+N-arm64.apk`); da "Run workflow" con un tag ricostruisce solo l'APK di una release esistente |
-| `deploy_android.yml` / `deploy_ios.yml` | dopo release, se `vars.DEPLOY_ANDROID` / `vars.DEPLOY_IOS` | Play Store (internal) / TestFlight |
+| `ci.yml` | every PR and push to `main` | app: codegen is up to date, format, analyze, test, web compile check · backend: `deno task check` and the SQL API tests |
+| `release.yml` | every push to `main` | bumps the semver from the commits, tags it, creates the GitHub Release and attaches the release APK. Run by hand with a tag to rebuild only the APK of an existing release |
+| `static_import.yml` | every night and by hand | imports the GTFS when its md5 changed (`vars.IN_PLACE=1` on the free plan) |
+| `deploy_android.yml` · `deploy_ios.yml` · `deploy_web.yml` | after a release, if `vars.DEPLOY_ANDROID` / `DEPLOY_IOS` / `DEPLOY_WEB` is `true` | Play Store (internal track) · TestFlight · Firebase Hosting |
+| `revert_release.yml` | a merged PR titled `Revert …` | reverts the last version bump and deletes its release |
 
-Secret e variabili richiesti sono elencati in testa a ogni workflow.
+The secrets and variables each workflow needs are listed at the top of its file.
 
-**Firma dell'APK.** Perché un APK scaricato dalle release si installi *sopra* quello precedente, tutte le build devono
-essere firmate con la stessa chiave. Una volta sola: `bash tool/android_signing.sh` (serve `gh` autenticato) crea il
-keystore e imposta i secret `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` del repo; conserva `veribus-release.jks`. Senza
-quei secret `release.yml` firma con una chiave di debug diversa a ogni build (si installa, ma non si aggiorna).
+**Versioning.** Versions come from [Conventional Commits](https://www.conventionalcommits.org): `feat:` bumps the
+minor, `fix:` (or anything else) the patch, `feat!:` or a `BREAKING CHANGE` in a commit body the major, and `chore:`
+alone only the build number. The highest bump among the pushed commits wins. Put `[skip release]` in the head commit
+message to publish nothing.
 
----
+**The release APK** is built in release mode for arm64 only, with R8 code and resource shrinking and the debug
+symbols moved out of the binary (kept as a workflow artifact for 90 days).
 
-## Da decidere prima del rilascio
+**Signing.** For an APK downloaded from the releases to install *over* the previous one, every build must be signed
+with the same key. Once: `bash tool/android_signing.sh` (needs an authenticated `gh` and `keytool`) creates the
+keystore and sets the `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` repository secrets. Keep `veribus-release.jks` and its
+password somewhere safe: if you lose them, users must uninstall to update. Without those secrets `release.yml` signs
+with a throwaway debug key that changes on every build (it installs, but it cannot be updated).
 
-- Nome dell'app (senza richiami ad Atac) e icona (`assets/images/logo.png`, poi `dart run flutter_launcher_icons`).
-- Fornitore delle tile della mappa: l'app disegna lo stile minimal da tile vettoriali OpenFreeMap (nessuna chiave,
-  `lib/styles/minimal_map_style.dart`); `config.setting.tile_url` del server non è più usato. Verifica i termini d'uso
-  di OpenFreeMap prima del lancio pubblico e valuta di ospitare le tile.
-- Licenza dei dati RSM e testo di attribuzione; privacy policy (`PRIVACY_URL`), obbligatoria per gli store.
-- Limite di richieste per client sull'API (RNF-09).
+## Before the public launch
 
-## Licenza
+- App name (without references to Atac) and icon (`assets/images/logo.png`, then `dart run flutter_launcher_icons`).
+- Map tiles: the app draws OpenFreeMap vector tiles with its own style (no key needed, see
+  `lib/styles/minimal_map_style.dart`). Check OpenFreeMap's terms of use for your expected traffic and consider hosting
+  the tiles. `vector_map_tiles` is on its 9.x beta line, the one compatible with flutter_map 8.
+- Terms for the RSM data and the attribution text; a privacy policy (`PRIVACY_URL`), required by the stores.
+- A per-client rate limit on the API.
+- The signing key for the release APK (see above) and the store credentials if you enable the deploy workflows.
 
-MIT, vedi [LICENSE](LICENSE).
+## Contributing
+
+Contributions are welcome. The short version:
+
+1. **Open an issue first** for anything bigger than a fix (templates for bugs, features, improvements and
+   documentation are in `.github/ISSUE_TEMPLATE`).
+2. **Branch** from `main` and keep the change focused.
+3. **Follow the conventions** in [CLAUDE.md](CLAUDE.md): Riverpod with codegen only; strings only in the ARB files
+   (it + en); Material 3 defaults, colors from `context.colors` / `context.appColors` and spacing from `Spacing.*`,
+   never hard-coded; layers UI → providers → repositories/services; code, comments and SQL names in English.
+4. **Check locally** before pushing: `dart format lib test tool`, `dart analyze`, `flutter test`, and
+   `cd backend && deno task check` if you touched the backend. Database changes are new files in
+   `supabase/migrations`, with row level security on every table.
+5. **Use a Conventional Commit title** (`feat(stop): …`, `fix(map): …`): it decides the next version.
+6. **Open a pull request** with the repository template. CI must be green.
+
+Look at the screen, not only at the code, when you change the UI: the app runs in the browser with demo data
+(`flutter run -d chrome --dart-define-from-file=env/mock.json`).
+
+## Data and attribution
+
+- Static and real-time transit data: open data of **Roma Servizi per la Mobilità** (GTFS and GTFS-Realtime). Veribus is
+  an independent project, **not affiliated with Atac or RSM**. The data comes from automated instrumentation and is not
+  exhaustive: road variability and malfunctions can make it inaccurate, and the app says so.
+- Base map: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, © [OpenMapTiles](https://openmaptiles.org),
+  served by [OpenFreeMap](https://openfreemap.org). The attribution is shown on every map.
+
+## License
+
+[MIT](LICENSE) © Emiliano Cesare

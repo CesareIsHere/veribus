@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/line/components/vehicle_route_sheet.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
 import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
@@ -109,7 +112,10 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
       children: [
         if (network != null) _StopsLayer(network),
         // The vehicles heading to the nearby stops, moving: the arrivals refresh every 15 s while the map is open.
-        VehiclesLayer(vehiclesOfArrivals(arrivals?.byStop.values.expand((list) => list) ?? const [], network)),
+        VehiclesLayer(
+          vehiclesOfArrivals(arrivals?.byStop.values.expand((list) => list) ?? const [], network),
+          onTap: (v) => unawaited(showVehicleRouteSheet(context, vehicle: v)),
+        ),
       ],
     );
   }

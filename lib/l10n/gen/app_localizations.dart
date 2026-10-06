@@ -1021,6 +1021,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Served only by some trips'**
   String get variantStops;
+
+  /// No description provided for @routeTravelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Already travelled'**
+  String get routeTravelled;
+
+  /// No description provided for @routeAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Still to go'**
+  String get routeAhead;
+
+  /// No description provided for @nextStopName.
+  ///
+  /// In en, this message translates to:
+  /// **'Next stop: {stop}'**
+  String nextStopName(String stop);
+
+  /// No description provided for @vehicleNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle {label}'**
+  String vehicleNumber(String label);
+
+  /// No description provided for @closeRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeRoute;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

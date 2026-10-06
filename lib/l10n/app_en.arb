@@ -273,5 +273,24 @@
   "dataSource": "Data source",
   "dataSourceBody": "Open data by Roma Servizi per la Mobilità (GTFS and GTFS-Realtime). This app is not affiliated with Atac or RSM.",
   "dataDisclaimer": "Data come from automatic equipment and are not exhaustive: road conditions and malfunctions can make them inaccurate.",
-  "variantStops": "Served only by some trips"
+  "variantStops": "Served only by some trips",
+  "routeTravelled": "Already travelled",
+  "routeAhead": "Still to go",
+  "nextStopName": "Next stop: {stop}",
+  "@nextStopName": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "vehicleNumber": "Vehicle {label}",
+  "@vehicleNumber": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "closeRoute": "Close"
 }

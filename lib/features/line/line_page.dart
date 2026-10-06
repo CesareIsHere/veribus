@@ -13,8 +13,10 @@ import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
+import 'package:veribus/core/widgets/vehicle_route.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/line/components/timeline.dart';
 import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
@@ -40,6 +42,9 @@ class LinePage extends ConsumerStatefulWidget {
 class _LinePageState extends ConsumerState<LinePage> {
   int? _direction;
   bool _map = false;
+
+  /// The vehicle whose route the map shows (tapped on the map or in the list).
+  String? _selected;
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +105,10 @@ class _LinePageState extends ConsumerState<LinePage> {
                       ],
                       selected: {direction},
                       showSelectedIcon: false,
-                      onSelectionChanged: (s) => setState(() => _direction = s.first),
+                      onSelectionChanged: (s) => setState(() {
+                        _direction = s.first;
+                        _selected = null;
+                      }),
                     ),
                   SegmentedButton<bool>(
                     segments: [
@@ -116,7 +124,9 @@ class _LinePageState extends ConsumerState<LinePage> {
           Expanded(
             child: switch (detail) {
               AsyncValue(:final value, hasValue: true) when value != null && network != null =>
-                _map ? _mapView(value, network, direction) : _listView(context, value, network, withoutRealtime),
+                _map
+                    ? _mapView(value, network, direction)
+                    : _listView(context, value, network, withoutRealtime, direction),
               AsyncValue(hasValue: true) => MessageView(icon: Icons.directions_bus_outlined, title: l10n.lineNotServed),
               AsyncValue(:final error?) => MessageView.error(
                 context,
@@ -131,47 +141,46 @@ class _LinePageState extends ConsumerState<LinePage> {
     );
   }
 
-  Widget _listView(BuildContext context, LineDetail d, Network network, bool withoutRealtime) {
+  Widget _listView(BuildContext context, LineDetail d, Network network, bool withoutRealtime, int direction) {
     final l10n = context.l10n;
     final kind = network.lines[widget.lineId]?.kind;
     final byIndex = <int, List<VehicleInfo>>{};
     for (final v in d.vehicles) {
       if (v.index != null) byIndex.putIfAbsent(v.index!, () => []).add(v);
     }
+    final last = d.stopIds.length - 1;
     return ListView(
       padding: context.listPadding(),
       children: [
         StaleBanner(d.feed),
         if (d.alerts.isNotEmpty) AlertsTile(d.alerts),
-        if (withoutRealtime)
-          ListTile(leading: const Icon(Icons.schedule), title: Text(l10n.lineWithoutRealtime))
-        else if (d.vehicles.isEmpty)
-          ListTile(
-            leading: const Icon(Icons.bedtime_outlined),
-            title: Text(l10n.noTripsInService),
-            subtitle: d.nextDeparture == null
-                ? null
-                : Text(l10n.nextDeparture(DateFormat.Hm().format(d.nextDeparture!.toLocal()))),
-          )
-        else
-          ListTile(leading: Icon(vehicleIcon(kind)), title: Text(l10n.vehiclesInService(d.vehicles.length))),
+        _Summary(d, kind: kind, withoutRealtime: withoutRealtime),
+        // The route in the order of the trip, with the vehicles where they are.
+        const SizedBox(height: Spacing.s),
         for (final (i, id) in d.stopIds.indexed) ...[
-          // Vehicles heading to stop i are drawn just above it.
+          // Vehicles heading to stop i sit just above it, on the rail.
           for (final v in byIndex[i] ?? const <VehicleInfo>[])
-            ListTile(
-              dense: true,
-              leading: SizedBox(width: Spacing.xl, child: Icon(vehicleIcon(kind), size: 20)),
-              title: Text(l10n.vehicle(v.label ?? v.id)),
-              subtitle: v.signal == null ? null : Text(ArrivalText.signal(l10n, v.signal!)),
+            TimelineRow(
+              first: i == 0,
+              node: TimelineVehicle.node(context, kind),
+              child: TimelineVehicle(
+                vehicle: v,
+                nextStop: network.stopById[id]?.name,
+                onTap: () => setState(() {
+                  _map = true;
+                  _selected = v.id;
+                }),
+              ),
             ),
-          ListTile(
-            leading: SizedBox(
-              width: Spacing.xl,
-              child: Icon(i == 0 || i == d.stopIds.length - 1 ? Icons.trip_origin : Icons.circle_outlined, size: 16),
+          TimelineRow(
+            first: i == 0,
+            last: i == last,
+            node: TimelineStop.node(context, terminus: i == 0 || i == last),
+            child: TimelineStop(
+              name: network.stopById[id]?.name ?? id,
+              terminus: i == 0 || i == last,
+              onTap: () => context.push(StopPage.route(id)),
             ),
-            title: Text(network.stopById[id]?.name ?? id),
-            trailing: i == 0 || i == d.stopIds.length - 1 ? Text(l10n.terminus) : null,
-            onTap: () => context.push(StopPage.route(id)),
           ),
         ],
         if (d.variantStopIds.isNotEmpty) ...[
@@ -194,24 +203,115 @@ class _LinePageState extends ConsumerState<LinePage> {
     final user = ref.watch(positionProvider).value;
     final nearRoute = user != null && stops.any((s) => const Distance()(user, s.position) < _nearRouteMeters);
     final corners = route.isEmpty ? null : LatLngBounds.fromPoints([...route, ?(nearRoute ? user : null)]);
-    return TransitMap(
-      // One camera per direction: switching it frames the other route.
-      key: ValueKey('${widget.lineId}-$direction'),
-      center: route.isEmpty ? rome : route[route.length ~/ 2],
-      zoom: 13,
-      fit: corners == null ? null : [corners.southWest, corners.northEast],
+    final selected = d.vehicles.where((v) => v.id == _selected).firstOrNull;
+    final nextStop = switch (selected?.index) {
+      final i? when i < d.stopIds.length => network.stopById[d.stopIds[i]],
+      _ => null,
+    };
+    return Column(
       children: [
-        PolylineLayer(
-          polylines: [Polyline(points: d.shape, strokeWidth: 4, color: context.colors.primary)],
+        Expanded(
+          child: TransitMap(
+            // One camera per direction: switching it frames the other route.
+            key: ValueKey('${widget.lineId}-$direction'),
+            center: route.isEmpty ? rome : route[route.length ~/ 2],
+            zoom: 13,
+            fit: corners == null ? null : [corners.southWest, corners.northEast],
+            children: [
+              // A selected vehicle splits the route into what it has travelled and what it still has to go.
+              if (selected != null)
+                VehicleRouteLayer(shape: d.shape, at: selected.position)
+              else
+                PolylineLayer(
+                  polylines: [Polyline(points: d.shape, strokeWidth: 4, color: context.colors.primary)],
+                ),
+              MarkerLayer(
+                markers: [
+                  for (final s in stops)
+                    StopMarker(
+                      point: s.position,
+                      label: s.name,
+                      selected: s.id == nextStop?.id,
+                      onTap: () => context.push(StopPage.route(s.id)),
+                    ),
+                ],
+              ),
+              VehiclesLayer(
+                [
+                  for (final v in d.vehicles)
+                    mapVehicle(v, lineId: widget.lineId, directionId: direction, network: network),
+                ],
+                selectedId: selected?.id,
+                onTap: (v) => setState(() => _selected = v.id == _selected ? null : v.id),
+              ),
+            ],
+          ),
         ),
-        MarkerLayer(
-          markers: [
-            for (final s in stops)
-              StopMarker(point: s.position, label: s.name, onTap: () => context.push(StopPage.route(s.id))),
-          ],
-        ),
-        VehiclesLayer([for (final v in d.vehicles) mapVehicle(v, network.lines[widget.lineId]?.kind)]),
+        if (selected != null)
+          SafeArea(
+            top: false,
+            child: Card.filled(
+              margin: const EdgeInsets.fromLTRB(Spacing.l, Spacing.s, Spacing.l, Spacing.s),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      leading: Icon(vehicleIcon(network.lines[widget.lineId]?.kind)),
+                      title: Text(context.l10n.vehicleNumber(selected.label ?? selected.id)),
+                      subtitle: nextStop == null ? null : Text(context.l10n.nextStopName(nextStop.name)),
+                      trailing: IconButton(
+                        tooltip: context.l10n.closeRoute,
+                        icon: const Icon(Icons.close),
+                        onPressed: () => setState(() => _selected = null),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Spacing.l),
+                      child: RouteLegend(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       ],
+    );
+  }
+}
+
+/// What the line is doing right now, at a glance: how many vehicles are running, or why none is.
+class _Summary extends StatelessWidget {
+  const _Summary(this.detail, {required this.kind, required this.withoutRealtime});
+
+  final LineDetail detail;
+  final LineKind? kind;
+  final bool withoutRealtime;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.colors;
+    final (icon, title, subtitle) = switch (detail) {
+      _ when withoutRealtime => (Icons.schedule, l10n.lineWithoutRealtime, null),
+      LineDetail(vehicles: Iterable(isEmpty: true)) => (
+        Icons.bedtime_outlined,
+        l10n.noTripsInService,
+        detail.nextDeparture == null
+            ? null
+            : l10n.nextDeparture(DateFormat.Hm().format(detail.nextDeparture!.toLocal())),
+      ),
+      _ => (vehicleIcon(kind), l10n.vehiclesInService(detail.vehicles.length), null),
+    };
+    return Card.filled(
+      margin: const EdgeInsets.symmetric(horizontal: Spacing.l, vertical: Spacing.s),
+      color: colors.secondaryContainer,
+      child: ListTile(
+        leading: Icon(icon, color: colors.onSecondaryContainer),
+        title: Text(title, style: context.textTheme.titleMedium?.copyWith(color: colors.onSecondaryContainer)),
+        subtitle: subtitle == null ? null : Text(subtitle, style: TextStyle(color: colors.onSecondaryContainer)),
+      ),
     );
   }
 }
