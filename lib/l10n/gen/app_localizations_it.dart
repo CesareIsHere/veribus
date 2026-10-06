@@ -527,4 +527,23 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get variantStops => 'Servite solo da alcune corse';
+
+  @override
+  String get routeTravelled => 'Già percorso';
+
+  @override
+  String get routeAhead => 'Ancora da percorrere';
+
+  @override
+  String nextStopName(String stop) {
+    return 'Prossima fermata: $stop';
+  }
+
+  @override
+  String vehicleNumber(String label) {
+    return 'Vettura $label';
+  }
+
+  @override
+  String get closeRoute => 'Chiudi';
 }

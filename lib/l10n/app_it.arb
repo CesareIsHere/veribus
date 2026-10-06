@@ -154,5 +154,10 @@
   "dataSource": "Fonte dei dati",
   "dataSourceBody": "Open data di Roma Servizi per la Mobilità (GTFS e GTFS-Realtime). Questa app non è affiliata ad Atac né a RSM.",
   "dataDisclaimer": "I dati provengono da strumentazione automatica e non vanno considerati esaustivi: la variabilità della strada e possibili malfunzionamenti possono renderli imprecisi.",
-  "variantStops": "Servite solo da alcune corse"
+  "variantStops": "Servite solo da alcune corse",
+  "routeTravelled": "Già percorso",
+  "routeAhead": "Ancora da percorrere",
+  "nextStopName": "Prossima fermata: {stop}",
+  "vehicleNumber": "Vettura {label}",
+  "closeRoute": "Chiudi"
 }

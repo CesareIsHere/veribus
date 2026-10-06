@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
+import 'package:veribus/core/widgets/vehicle_route.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/providers/line_providers.dart';
@@ -51,7 +52,7 @@ class _VehicleSheetState extends ConsumerState<VehicleSheet> {
     final a = _arrival;
     final v = a.vehicle!;
     final old = DateTime.now().difference(v.gpsAt) > const Duration(minutes: 2);
-    final kind = ref.watch(networkProvider).value?.lines[a.lineId]?.kind;
+    final network = ref.watch(networkProvider).value;
     final user = ref.watch(positionProvider).value;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -65,27 +66,19 @@ class _VehicleSheetState extends ConsumerState<VehicleSheet> {
               Consumer(
                 builder: (context, ref, _) {
                   final shape = ref.watch(lineDetailProvider(a.lineId, a.directionId)).value?.shape ?? const [];
-                  return PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: pathBetween(shape, v.position, stop.position),
-                        strokeWidth: 4,
-                        color: context.colors.primary,
-                      ),
-                    ],
-                  );
+                  return VehicleRouteLayer(shape: shape, at: v.position);
                 },
               ),
               MarkerLayer(
                 markers: [StopMarker(point: stop.position, label: stop.name, selected: true, onTap: () {})],
               ),
-              VehiclesLayer([mapVehicle(v, kind)]),
+              VehiclesLayer([mapVehicle(v, lineId: a.lineId, directionId: a.directionId, network: network)]),
             ],
           ),
         ),
         ListTile(
           leading: StatusTag(a.status),
-          title: Text(v.label == null ? a.headsign : l10n.vehicle(v.label!)),
+          title: Text(v.label == null ? a.headsign : l10n.vehicleNumber(v.label!)),
           subtitle: Text(
             [
               if (a.stopsAway case final n?) l10n.stopsAway(n),
@@ -94,7 +87,10 @@ class _VehicleSheetState extends ConsumerState<VehicleSheet> {
             ].join(' · '),
           ),
         ),
-        const SizedBox(height: Spacing.l),
+        Padding(
+          padding: EdgeInsets.fromLTRB(context.pageMargin, 0, context.pageMargin, Spacing.l),
+          child: const Align(alignment: Alignment.centerLeft, child: RouteLegend()),
+        ),
       ],
     );
   }

@@ -210,43 +210,61 @@ class StopMarker extends Marker {
 
 IconData vehicleIcon(LineKind? kind) => kind == LineKind.tram ? Icons.tram : Icons.directions_bus;
 
-/// A vehicle on the map: bus or tram icon and fleet number.
+/// A vehicle on the map: bus or tram icon and the line's code. Tappable (44 dp) when `onTap` is given.
 class VehicleMarker extends Marker {
-  VehicleMarker({required super.point, required String label, LineKind? kind})
-    : super(
-        width: 84,
-        height: 28,
-        child: Builder(
-          builder: (context) => Container(
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: context.colors.inverseSurface, borderRadius: BorderRadius.circular(14)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: Spacing.xs,
-              children: [
-                Icon(vehicleIcon(kind), size: 16, color: context.colors.onInverseSurface),
-                Text(label, style: context.textTheme.labelMedium?.copyWith(color: context.colors.onInverseSurface)),
-              ],
-            ),
-          ),
-        ),
-      );
-}
-
-/// The part of [shape] from the point nearest to [from] to the one nearest to [to]. The whole shape when [to] comes
-/// first: the trip is a variant that leaves the main path.
-// ponytail: nearest point, wrong on loop lines where the stop is near both ends; per-trip shapes if it matters.
-List<LatLng> pathBetween(List<LatLng> shape, LatLng from, LatLng to) {
-  if (shape.isEmpty) return const [];
-  int nearest(LatLng p) {
-    var best = 0;
-    for (var i = 1; i < shape.length; i++) {
-      if (const Distance().distance(p, shape[i]) < const Distance().distance(p, shape[best])) best = i;
-    }
-    return best;
-  }
-
-  final a = nearest(from);
-  final b = nearest(to);
-  return a <= b ? [from, ...shape.sublist(a, b + 1), to] : shape;
+  VehicleMarker({
+    required super.point,
+    required String label,
+    LineKind? kind,
+    bool selected = false,
+    VoidCallback? onTap,
+  }) : super(
+         width: 84,
+         height: 44,
+         child: Builder(
+           builder: (context) {
+             final colors = context.colors;
+             // The selected one is the accent color, not just bigger: it is told apart in a crowd of dark pills.
+             final background = selected ? colors.primary : colors.inverseSurface;
+             final foreground = selected ? colors.onPrimary : colors.onInverseSurface;
+             return Semantics(
+               button: onTap != null,
+               label: label,
+               child: GestureDetector(
+                 behavior: HitTestBehavior.opaque,
+                 onTap: onTap,
+                 child: Center(
+                   child: Container(
+                     height: 28,
+                     constraints: const BoxConstraints(minWidth: 56),
+                     padding: const EdgeInsets.symmetric(horizontal: Spacing.s),
+                     alignment: Alignment.center,
+                     decoration: BoxDecoration(
+                       color: background,
+                       borderRadius: BorderRadius.circular(14),
+                       border: selected ? Border.all(color: colors.surface, width: 2) : null,
+                       boxShadow: [BoxShadow(color: colors.shadow.withValues(alpha: 0.3), blurRadius: 3)],
+                     ),
+                     child: Row(
+                       mainAxisSize: MainAxisSize.min,
+                       spacing: Spacing.xs,
+                       children: [
+                         Icon(vehicleIcon(kind), size: 16, color: foreground),
+                         Flexible(
+                           child: Text(
+                             label,
+                             maxLines: 1,
+                             overflow: TextOverflow.ellipsis,
+                             style: context.textTheme.labelMedium?.copyWith(color: foreground),
+                           ),
+                         ),
+                       ],
+                     ),
+                   ),
+                 ),
+               ),
+             );
+           },
+         ),
+       );
 }

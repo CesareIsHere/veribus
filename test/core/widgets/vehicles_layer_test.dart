@@ -3,99 +3,56 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/models/transit/live.dart';
+import 'package:veribus/models/transit/network.dart';
 
 const _a = LatLng(41.9000, 12.5000);
 const _b = LatLng(41.9010, 12.5010);
-const _far = LatLng(42.2000, 12.5000);
 
-MapVehicle _bus(LatLng at, {String id = '8001'}) => (id: id, label: id, position: at, kind: null);
-
-Widget _map(ValueNotifier<List<MapVehicle>> vehicles, ValueNotifier<int> rebuilds) => MaterialApp(
-  home: ValueListenableBuilder<int>(
-    valueListenable: rebuilds,
-    builder: (context, _, _) => ValueListenableBuilder<List<MapVehicle>>(
-      valueListenable: vehicles,
-      builder: (context, list, _) => FlutterMap(
-        options: const MapOptions(initialCenter: _a, initialZoom: 15),
-        children: [VehiclesLayer(list)],
-      ),
-    ),
+Widget _map(List<MapVehicle> vehicles, {ValueChanged<MapVehicle>? onTap, String? selectedId}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  home: FlutterMap(
+    options: const MapOptions(initialCenter: _a, initialZoom: 15),
+    children: [VehiclesLayer(vehicles, onTap: onTap, selectedId: selectedId)],
   ),
 );
 
-LatLng _drawn(WidgetTester tester) => tester.widget<MarkerLayer>(find.byType(MarkerLayer)).markers.single.point;
-
-const _glide = Duration(seconds: 14);
+MapVehicle _bus(LatLng at, {String id = 'v1', String line = '64'}) =>
+    (id: id, label: line, fleet: '3001', lineId: line, directionId: 0, position: at, kind: LineKind.bus);
 
 void main() {
-  late ValueNotifier<List<MapVehicle>> vehicles;
-  late ValueNotifier<int> rebuilds;
-
-  setUp(() {
-    vehicles = ValueNotifier([_bus(_a)]);
-    rebuilds = ValueNotifier(0);
+  testWidgets('the pill says the line, not the fleet number', (tester) async {
+    await tester.pumpWidget(_map([_bus(_a)]));
+    expect(find.text('64'), findsOneWidget);
+    expect(find.text('3001'), findsNothing);
   });
 
-  testWidgets('draws the vehicle where the data puts it', (tester) async {
-    await tester.pumpWidget(_map(vehicles, rebuilds));
-    expect(_drawn(tester), _a);
+  testWidgets('a vehicle is drawn where the new data puts it, without gliding there', (tester) async {
+    await tester.pumpWidget(_map([_bus(_a)]));
+    LatLng drawn() => tester.widget<MarkerLayer>(find.byType(MarkerLayer)).markers.single.point;
+    expect(drawn(), _a);
+
+    await tester.pumpWidget(_map([_bus(_b)]));
+    expect(drawn(), _b); // at once: no frame in between
   });
 
-  testWidgets('new data: the vehicle glides to the new position instead of jumping', (tester) async {
-    await tester.pumpWidget(_map(vehicles, rebuilds));
-    vehicles.value = [_bus(_b)];
-    await tester.pump();
-    expect(_drawn(tester), _a);
-
-    await tester.pump(_glide * 0.5);
-    final half = _drawn(tester);
-    expect(half.latitude, closeTo((_a.latitude + _b.latitude) / 2, 1e-6));
-    expect(half.longitude, closeTo((_a.longitude + _b.longitude) / 2, 1e-6));
-
-    await tester.pump(_glide * 0.5);
-    expect(_drawn(tester), _b);
+  testWidgets('tapping a vehicle reports it', (tester) async {
+    final tapped = <String>[];
+    await tester.pumpWidget(_map([_bus(_a), _bus(_b, id: 'v2', line: '170')], onTap: (v) => tapped.add(v.id)));
+    await tester.tap(find.text('170'));
+    expect(tapped, ['v2']);
   });
 
-  testWidgets('a rebuild with the same data does not restart the glide', (tester) async {
-    await tester.pumpWidget(_map(vehicles, rebuilds));
-    vehicles.value = [_bus(_b)];
-    await tester.pump();
-    await tester.pump(_glide * 0.5);
-
-    // The page rebuilds (a GPS fix, say) with the same vehicles: the glide keeps its pace.
-    vehicles.value = [_bus(_b)];
-    rebuilds.value++;
-    await tester.pump();
-    await tester.pump(_glide * 0.5);
-    expect(_drawn(tester), _b);
-  });
-
-  testWidgets('a jump of kilometers is a different trip or bad data: no glide across the city', (tester) async {
-    await tester.pumpWidget(_map(vehicles, rebuilds));
-    vehicles.value = [_bus(_far)];
-    await tester.pump();
-    expect(_drawn(tester), _far);
-  });
-
-  testWidgets('new data while gliding starts from where the vehicle is drawn, not from the old target', (tester) async {
-    await tester.pumpWidget(_map(vehicles, rebuilds));
-    vehicles.value = [_bus(_b)];
-    await tester.pump();
-    await tester.pump(_glide * 0.5);
-    final shown = _drawn(tester);
-
-    vehicles.value = [_bus(_a)];
-    await tester.pump();
-    expect(_drawn(tester).latitude, closeTo(shown.latitude, 1e-9));
-    await tester.pump(_glide);
-    expect(_drawn(tester), _a);
-  });
-
-  testWidgets('a vehicle that shows up for the first time appears in place', (tester) async {
-    await tester.pumpWidget(_map(vehicles, rebuilds));
-    vehicles.value = [_bus(_a), _bus(_b, id: '8002')];
-    await tester.pump();
-    final points = tester.widget<MarkerLayer>(find.byType(MarkerLayer)).markers.map((m) => m.point).toList();
-    expect(points, [_a, _b]);
+  test('mapVehicle labels the vehicle with its line and keeps the fleet number apart', () {
+    final v = VehicleInfo.fromJson({
+      'id': 'v1',
+      'label': '3001',
+      'lat': 41.9,
+      'lon': 12.5,
+      'gps_at': '2026-10-06T10:00:00Z',
+    });
+    final m = mapVehicle(v, lineId: '64', directionId: 1, network: null);
+    expect((m.label, m.fleet, m.directionId), ('64', '3001', 1));
   });
 }
