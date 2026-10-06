@@ -518,6 +518,18 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
+  /// No description provided for @appUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'App updates'**
+  String get appUpdates;
+
+  /// No description provided for @appUpdatesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the latest version from the GitHub releases'**
+  String get appUpdatesBody;
+
   /// No description provided for @nearby.
   ///
   /// In en, this message translates to:
@@ -949,6 +961,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Arrival states'**
   String get arrivalStates;
+
+  /// No description provided for @arrivalStatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What Confirmed, To be checked, Scheduled… mean'**
+  String get arrivalStatesHint;
 
   /// No description provided for @stateConfirmedMeaning.
   ///

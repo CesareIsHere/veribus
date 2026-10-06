@@ -4,16 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
+import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
+import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
-import 'package:veribus/services/location_service.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Nearby stops on a map or in a list (RF-01..07).
@@ -34,17 +36,21 @@ class NearbyPage extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.s),
-              child: SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
-                    ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
-                  ],
-                  selected: {map},
-                  onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
-                ),
+              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, Spacing.xs, Spacing.s),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
+                        ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
+                      ],
+                      selected: {map},
+                      onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
+                    ),
+                  ),
+                  const SettingsButton(),
+                ],
               ),
             ),
             if (position case AsyncData(value: null))
@@ -52,10 +58,8 @@ class NearbyPage extends ConsumerWidget {
                 leading: const Icon(Icons.location_disabled),
                 title: Text(l10n.locationDenied),
                 trailing: TextButton(
-                  onPressed: () async {
-                    await ref.read(locationServiceProvider).openSettings();
-                    ref.invalidate(positionProvider);
-                  },
+                  // Asks again or opens the right settings page; the position comes back by itself afterwards.
+                  onPressed: () => ref.read(locationTrackerProvider).enable(),
                   child: Text(l10n.enableLocation),
                 ),
               ),
@@ -94,38 +98,18 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
   @override
   Widget build(BuildContext context) {
     final network = ref.watch(networkProvider).value;
-    return Stack(
+    final arrivals = ref.watch(nearbyArrivalsProvider).value;
+    // The GPS was off or denied when the map opened and is on now: go to the user once, then leave the camera alone.
+    ref.listen(positionProvider.select((p) => p.value), (previous, next) {
+      if (previous == null && next != null) _controller.move(next, 16);
+    });
+    return TransitMap(
+      controller: _controller,
+      center: widget.position ?? rome,
       children: [
-        TransitMap(
-          controller: _controller,
-          center: widget.position ?? rome,
-          children: [
-            if (network != null) _StopsLayer(network),
-            if (widget.position case final p?)
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: p,
-                    // Builder: the map's light theme, not the page's.
-                    child: Builder(
-                      builder: (context) =>
-                          Icon(Icons.my_location, color: context.colors.primary, semanticLabel: context.l10n.you),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-        if (widget.position case final p?)
-          Positioned(
-            right: Spacing.l,
-            bottom: Spacing.xxxl + Spacing.l, // above the map attribution button
-            child: FloatingActionButton.small(
-              tooltip: context.l10n.backToMyPosition,
-              onPressed: () => _controller.move(p, 16),
-              child: const Icon(Icons.my_location),
-            ),
-          ),
+        if (network != null) _StopsLayer(network),
+        // The vehicles heading to the nearby stops, moving: the arrivals refresh every 15 s while the map is open.
+        VehiclesLayer(vehiclesOfArrivals(arrivals?.byStop.values.expand((list) => list) ?? const [], network)),
       ],
     );
   }

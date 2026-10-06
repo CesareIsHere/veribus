@@ -181,17 +181,24 @@ Per importare il GTFS vero in locale: `GTFS_DIR=<cartella dello zip scompattato>
 |---|---|---|
 | `ci.yml` | ogni PR e push su main | app: codegen, format, analyze, test, build web; backend: `deno task check` e test SQL |
 | `static_import.yml` | ogni notte e a mano | import del GTFS se l'md5 è cambiato (`vars.IN_PLACE=1` sul piano gratuito) |
-| `release.yml` | merge PR su main | bump semver dal titolo PR (Conventional Commits), tag + GitHub Release |
+| `release.yml` | ogni push su main | bump semver dai commit (Conventional Commits; `[skip release]` per saltarlo), tag + GitHub Release con l'APK release arm64 allegato (`veribus-vX.Y.Z+N-arm64.apk`) |
 | `deploy_android.yml` / `deploy_ios.yml` | dopo release, se `vars.DEPLOY_ANDROID` / `vars.DEPLOY_IOS` | Play Store (internal) / TestFlight |
 
 Secret e variabili richiesti sono elencati in testa a ogni workflow.
+
+**Firma dell'APK.** Perché un APK scaricato dalle release si installi *sopra* quello precedente, tutte le build devono
+essere firmate con la stessa chiave. Una volta sola: `bash tool/android_signing.sh` (serve `gh` autenticato) crea il
+keystore e imposta i secret `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` del repo; conserva `veribus-release.jks`. Senza
+quei secret `release.yml` firma con una chiave di debug diversa a ogni build (si installa, ma non si aggiorna).
 
 ---
 
 ## Da decidere prima del rilascio
 
 - Nome dell'app (senza richiami ad Atac) e icona (`assets/images/logo.png`, poi `dart run flutter_launcher_icons`).
-- Fornitore delle tile della mappa: oggi `config.setting.tile_url` punta a OpenStreetMap, che non va usato in produzione.
+- Fornitore delle tile della mappa: l'app disegna lo stile minimal da tile vettoriali OpenFreeMap (nessuna chiave,
+  `lib/styles/minimal_map_style.dart`); `config.setting.tile_url` del server non è più usato. Verifica i termini d'uso
+  di OpenFreeMap prima del lancio pubblico e valuta di ospitare le tile.
 - Licenza dei dati RSM e testo di attribuzione; privacy policy (`PRIVACY_URL`), obbligatoria per gli store.
 - Limite di richieste per client sull'API (RNF-09).
 

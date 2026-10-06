@@ -71,6 +71,8 @@
   "validationPasswordsMatch": "Passwords don't match",
   "validationRequired": "Required",
   "version": "Version",
+  "appUpdates": "App updates",
+  "appUpdatesBody": "Download the latest version from the GitHub releases",
   "nearby": "Nearby",
   "search": "Search",
   "favorites": "Favorites",
@@ -262,6 +264,7 @@
     }
   },
   "arrivalStates": "Arrival states",
+  "arrivalStatesHint": "What Confirmed, To be checked, Scheduled… mean",
   "stateConfirmedMeaning": "A vehicle located a moment ago and moving is on this trip.",
   "stateUncertainMeaning": "There is a prediction, but something makes it doubtful: the reason is always written.",
   "stateScheduledMeaning": "No realtime data for this trip: only the scheduled time, never minutes.",

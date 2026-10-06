@@ -6,6 +6,7 @@ import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/styles/app_spacing.dart';
@@ -38,6 +39,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               child: SearchBar(
                 hintText: l10n.searchHint,
                 leading: const Icon(Icons.search),
+                trailing: const [SettingsButton()],
                 onChanged: (q) => setState(() => _query = q),
               ),
             ),

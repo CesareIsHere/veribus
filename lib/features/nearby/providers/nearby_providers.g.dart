@@ -8,41 +8,44 @@ part of 'nearby_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Device position, null when the permission is denied (the app stays usable: RF-02).
+/// Where "nearby" is measured from: the live position, but a new value only after it moved [_refetchMeters] (or
+/// appeared / disappeared, so the page shows the right state at once).
 
-@ProviderFor(position)
-final positionProvider = PositionProvider._();
+@ProviderFor(nearbyOrigin)
+final nearbyOriginProvider = NearbyOriginProvider._();
 
-/// Device position, null when the permission is denied (the app stays usable: RF-02).
+/// Where "nearby" is measured from: the live position, but a new value only after it moved [_refetchMeters] (or
+/// appeared / disappeared, so the page shows the right state at once).
 
-final class PositionProvider extends $FunctionalProvider<AsyncValue<LatLng?>, LatLng?, FutureOr<LatLng?>>
-    with $FutureModifier<LatLng?>, $FutureProvider<LatLng?> {
-  /// Device position, null when the permission is denied (the app stays usable: RF-02).
-  PositionProvider._()
+final class NearbyOriginProvider extends $FunctionalProvider<AsyncValue<LatLng?>, LatLng?, Stream<LatLng?>>
+    with $FutureModifier<LatLng?>, $StreamProvider<LatLng?> {
+  /// Where "nearby" is measured from: the live position, but a new value only after it moved [_refetchMeters] (or
+  /// appeared / disappeared, so the page shows the right state at once).
+  NearbyOriginProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'positionProvider',
-        isAutoDispose: false,
+        name: r'nearbyOriginProvider',
+        isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$positionHash();
+  String debugGetCreateSourceHash() => _$nearbyOriginHash();
 
   @$internal
   @override
-  $FutureProviderElement<LatLng?> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
+  $StreamProviderElement<LatLng?> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<LatLng?> create(Ref ref) {
-    return position(ref);
+  Stream<LatLng?> create(Ref ref) {
+    return nearbyOrigin(ref);
   }
 }
 
-String _$positionHash() => r'bc08fbc10f56f2554678ed6d61697c87b233aa01';
+String _$nearbyOriginHash() => r'cdaf2a7e3f91e1b27507fba53f271b6a78a7edf8';
 
 @ProviderFor(nearbyStops)
 final nearbyStopsProvider = NearbyStopsProvider._();
@@ -80,7 +83,7 @@ final class NearbyStopsProvider
   }
 }
 
-String _$nearbyStopsHash() => r'397bb25d7600f54cbbdda2b2e6bef8cb8b753b5d';
+String _$nearbyStopsHash() => r'e8c5b51307d7659b86801109804f538b381e7b4e';
 
 /// One call for the arrivals of the ten nearest stops (RF-03), refreshed while the list is open.
 

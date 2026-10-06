@@ -224,6 +224,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get appUpdates => 'App updates';
+
+  @override
+  String get appUpdatesBody => 'Download the latest version from the GitHub releases';
+
+  @override
   String get nearby => 'Nearby';
 
   @override
@@ -487,6 +493,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get arrivalStates => 'Arrival states';
+
+  @override
+  String get arrivalStatesHint => 'What Confirmed, To be checked, Scheduled… mean';
 
   @override
   String get stateConfirmedMeaning => 'A vehicle located a moment ago and moving is on this trip.';

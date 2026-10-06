@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -5,26 +6,81 @@ import 'package:veribus/core/config.dart';
 
 part 'location_service.g.dart';
 
-/// Device position (the position never leaves the phone: RNF-04).
+/// Whether the app can read the position right now, and if not why.
+enum LocationAccess { granted, serviceOff, denied, deniedForever }
+
+/// The platform location APIs, nothing more (the position never leaves the phone: RNF-04). The logic that keeps a
+/// live position through GPS toggles and permission changes is in `LocationTracker`.
 class LocationService {
-  /// Asks for the permission once (RF-04, no intro screens); null when denied or off.
-  Future<LatLng?> current() async {
-    if (AppConfig.mockPosition case final p when p.isNotEmpty) {
-      final [lat, lon] = p.split(',').map(double.parse).toList();
-      return LatLng(lat, lon);
-    }
-    if (!await Geolocator.isLocationServiceEnabled()) return null;
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return null;
-    final p = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)),
-    );
-    return LatLng(p.latitude, p.longitude);
+  /// Fixed position of `MOCK_POSITION` ("lat,lon"), for runs without a GPS: emulator, web, demos.
+  LatLng? get mock {
+    if (AppConfig.mockPosition.isEmpty) return null;
+    final [lat, lon] = AppConfig.mockPosition.split(',').map(double.parse).toList();
+    return LatLng(lat, lon);
   }
 
-  /// Opens the system settings to grant the permission again (RF-04).
-  Future<void> openSettings() => Geolocator.openAppSettings();
+  Future<LocationAccess> access() async {
+    if (!await Geolocator.isLocationServiceEnabled()) return LocationAccess.serviceOff;
+    return switch (await Geolocator.checkPermission()) {
+      LocationPermission.denied || LocationPermission.unableToDetermine => LocationAccess.denied,
+      LocationPermission.deniedForever => LocationAccess.deniedForever,
+      LocationPermission.whileInUse || LocationPermission.always => LocationAccess.granted,
+    };
+  }
+
+  /// Shows the system permission dialog; true when the user granted it.
+  Future<bool> requestPermission() async {
+    final permission = await Geolocator.requestPermission();
+    return permission == LocationPermission.whileInUse || permission == LocationPermission.always;
+  }
+
+  /// The last fix the OS already has: instant, no GPS start-up (null when it has none, or on web).
+  Future<LatLng?> lastKnown() async {
+    if (kIsWeb) return null;
+    final p = await Geolocator.getLastKnownPosition();
+    return p == null ? null : LatLng(p.latitude, p.longitude);
+  }
+
+  /// Live fixes while someone listens. Errors (service switched off, GPS failure) end the stream: the caller looks again.
+  Stream<LatLng> fixes() =>
+      Geolocator.getPositionStream(locationSettings: _settings).map((p) => LatLng(p.latitude, p.longitude));
+
+  /// True / false each time the user turns the location service on / off. Never fires where the platform has no such
+  /// event (web): the tracker also looks again by itself.
+  Stream<bool> serviceEnabled() {
+    if (kIsWeb) return const Stream.empty();
+    return Geolocator.getServiceStatusStream().map((s) => s == ServiceStatus.enabled);
+  }
+
+  /// What the "turn on" button does: asks again when the system still lets it, otherwise opens the settings page
+  /// that fixes the actual problem (location service, or the app's permission).
+  Future<void> enable() async {
+    // Web has no settings page to open: the browser asks for the permission by itself.
+    if (kIsWeb) {
+      await Geolocator.requestPermission();
+      return;
+    }
+    switch (await access()) {
+      case LocationAccess.serviceOff:
+        await Geolocator.openLocationSettings();
+      case LocationAccess.denied:
+        await Geolocator.requestPermission();
+      case LocationAccess.deniedForever:
+        await Geolocator.openAppSettings();
+      case LocationAccess.granted:
+        break;
+    }
+  }
+
+  /// Street-level accuracy: the dot has to sit on the right side of the road, not in the right district.
+  static LocationSettings get _settings => switch (defaultTargetPlatform) {
+    TargetPlatform.android => AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+      intervalDuration: const Duration(seconds: 3),
+    ),
+    _ => const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
+  };
 }
 
 @Riverpod(keepAlive: true)

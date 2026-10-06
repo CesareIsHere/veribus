@@ -1,64 +1,151 @@
-# Merging a PR into main bumps the version from the PR title
-# (Conventional Commits), tags it and creates a GitHub Release.
-#   feat: ...  -> minor      fix: ... -> patch      chore: ... -> build number only
-#   feat!: ... or "BREAKING CHANGE" in the title -> major
-# Add the `skip-release` label to a PR to skip it.
+# Every push to main bumps the version from the commit subjects (Conventional Commits), tags it, creates a GitHub
+# Release and attaches a release APK (arm64, shrunk, signed with the repo's key).
+#   feat: ...  -> minor      fix: ... (or anything else) -> patch      chore: ... only -> build number only
+#   feat!: ... or "BREAKING CHANGE" in a commit body -> major
+# The highest bump among the pushed commits wins. Put `[skip release]` in the head commit message to skip it.
+#
+# APK signing needs the secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and
+# ANDROID_KEY_PASSWORD (tool/android_signing.sh creates them). Without them the APK is signed with a throwaway debug
+# key: it installs, but Android refuses to update an install made from a differently signed build.
 name: Release
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 permissions:
   contents: write
 
+# One release at a time: each bumps pubspec.yaml and pushes to main.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
+    # The version bump and revert commits come from this repo's own workflows; Revert PRs are handled by revert_release.yml.
     if: >-
-      github.event.pull_request.merged == true &&
-      !startsWith(github.event.pull_request.title, 'Revert') &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-release')
+      !startsWith(github.event.head_commit.message, 'chore: bump version') &&
+      !startsWith(github.event.head_commit.message, 'Revert') &&
+      !contains(github.event.head_commit.message, '[skip release]')
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
       - name: Bump version
         id: bump
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
         run: |
+          # Commits of this push; a new or rewritten branch has no usable "before": use the head commit alone.
+          RANGE="$BEFORE..$SHA"
+          if [[ "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then RANGE="$SHA^!"; fi
+          SUBJECTS=$(git log --format=%s "$RANGE")
+          BODIES=$(git log --format=%B "$RANGE")
+
           CURRENT=$(grep -E '^version: ' pubspec.yaml | sed 's/version: //')
           VERSION=${CURRENT%+*}; BUILD=${CURRENT#*+}
           IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
-          if [[ "$PR_TITLE" =~ ^[a-z]+(\(.*\))?!: ]] || [[ "$PR_TITLE" == *"BREAKING CHANGE"* ]]; then
+          if grep -qE '^[a-z]+(\(.*\))?!:' <<< "$SUBJECTS" || grep -q 'BREAKING CHANGE' <<< "$BODIES"; then
             MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0; TYPE=major
-          elif [[ "$PR_TITLE" =~ ^(feat|feature)(\(.*\))?: ]]; then
+          elif grep -qE '^(feat|feature)(\(.*\))?:' <<< "$SUBJECTS"; then
             MINOR=$((MINOR + 1)); PATCH=0; TYPE=minor
-          elif [[ "$PR_TITLE" =~ ^chore(\(.*\))?: ]]; then
-            TYPE=build
-          else
+          elif grep -qvE '^chore(\(.*\))?:' <<< "$SUBJECTS"; then
             PATCH=$((PATCH + 1)); TYPE=patch
+          else
+            TYPE=build
           fi
           NEW="$MAJOR.$MINOR.$PATCH+$((BUILD + 1))"
           sed -i "s/^version: .*/version: $NEW/" pubspec.yaml
-          echo "version=$NEW" >> "$GITHUB_OUTPUT"
-          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$NEW"
+            echo "tag=v$NEW"
+            echo "type=$TYPE"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Commit, tag and release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           VERSION: ${{ steps.bump.outputs.version }}
+          TAG: ${{ steps.bump.outputs.tag }}
           TYPE: ${{ steps.bump.outputs.type }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "chore: bump version to $VERSION [skip ci]"
-          git tag "v$VERSION"
+          git tag "$TAG"
           git push origin main --tags
-          gh release create "v$VERSION" --title "Release $VERSION" \
-            --notes "**$TYPE** from #$PR_NUMBER: $PR_TITLE" --generate-notes
+          gh release create "$TAG" --title "Release $VERSION" --latest \
+            --notes "**$TYPE** release from ${GITHUB_SHA::7}" --generate-notes
+
+  apk:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      # The tag is the bumped commit: the APK carries the version of the release it is attached to.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+
+      - name: Signing config
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::No Android signing secrets: the APK is signed with a throwaway debug key and cannot update an install made from another build. Run tool/android_signing.sh."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
+
+      - run: flutter pub get
+
+      # Release mode with R8 code/resource shrinking (Flutter's default), a single arm64 build (every phone of the
+      # last decade) instead of the fat APK, and the debug symbols moved out of the binary.
+      - name: Build APK
+        run: |
+          flutter build apk --release --target-platform android-arm64 \
+            --obfuscate --split-debug-info=build/symbols \
+            --dart-define-from-file=env/prod.json
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          APK="veribus-$TAG-arm64.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "$APK"
+          gh release upload "$TAG" "$APK" --clobber
+          echo "### $APK — $(du -h "$APK" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+
+      # Needed to read stack traces of the obfuscated build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ needs.release.outputs.tag }}
+          path: build/symbols
+          retention-days: 90

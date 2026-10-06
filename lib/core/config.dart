@@ -13,6 +13,12 @@ abstract final class AppConfig {
   static const termsUrl = String.fromEnvironment('TERMS_URL');
   static const privacyUrl = String.fromEnvironment('PRIVACY_URL');
   static const appStoreId = String.fromEnvironment('APP_STORE_ID');
+
+  /// Where new builds are published: the GitHub Releases page, which `release.yml` fills with the APK.
+  static const releasesUrl = String.fromEnvironment(
+    'RELEASES_URL',
+    defaultValue: 'https://github.com/CesareIsHere/veribus/releases/latest',
+  );
   static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const supabasePublishableKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');

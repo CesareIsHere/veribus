@@ -109,13 +109,11 @@ class NetworkInfo {
     : version = json['version'] as String,
       path = json['path'] as String,
       minAppVersion = json['min_app_version'] as String,
-      tileUrl = json['tile_url'] as String,
       noRealtime = {...(json['no_realtime'] as List).cast<String>()};
 
   final String version;
   final String path;
   final String minAppVersion;
-  final String tileUrl;
 
   /// Lines that never transmit vehicle positions (e.g. 8BUS, 5BUS).
   final Set<String> noRealtime;
