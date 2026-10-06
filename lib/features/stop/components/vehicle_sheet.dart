@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
@@ -52,17 +52,15 @@ class _VehicleSheetState extends ConsumerState<VehicleSheet> {
     final v = a.vehicle!;
     final old = DateTime.now().difference(v.gpsAt) > const Duration(minutes: 2);
     final kind = ref.watch(networkProvider).value?.lines[a.lineId]?.kind;
+    final user = ref.watch(positionProvider).value;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
           height: 260,
           child: TransitMap(
-            center: LatLng(
-              (v.position.latitude + stop.position.latitude) / 2,
-              (v.position.longitude + stop.position.longitude) / 2,
-            ),
-            zoom: 15,
+            // The bus can be far from the stop: the zoom adapts so the bus, the stop and the user are all in view.
+            fit: [v.position, stop.position, ?user],
             children: [
               Consumer(
                 builder: (context, ref, _) {

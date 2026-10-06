@@ -3,8 +3,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/alert_card.dart';
 import 'package:veribus/core/widgets/section_header.dart';
@@ -19,6 +21,9 @@ import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
 import 'package:veribus/styles/app_spacing.dart';
+
+/// How close the user must be to a stop of the line for the map to include them in the view.
+const _nearRouteMeters = 1500.0;
 
 /// Line detail (RF-30..35): stops of a direction in order with the vehicles between them, or the map.
 class LinePage extends ConsumerStatefulWidget {
@@ -111,7 +116,7 @@ class _LinePageState extends ConsumerState<LinePage> {
           Expanded(
             child: switch (detail) {
               AsyncValue(:final value, hasValue: true) when value != null && network != null =>
-                _map ? _mapView(value, network) : _listView(context, value, network, withoutRealtime),
+                _map ? _mapView(value, network, direction) : _listView(context, value, network, withoutRealtime),
               AsyncValue(hasValue: true) => MessageView(icon: Icons.directions_bus_outlined, title: l10n.lineNotServed),
               AsyncValue(:final error?) => MessageView.error(
                 context,
@@ -182,12 +187,19 @@ class _LinePageState extends ConsumerState<LinePage> {
     );
   }
 
-  Widget _mapView(LineDetail d, Network network) {
+  Widget _mapView(LineDetail d, Network network, int direction) {
     final stops = [for (final id in d.stopIds) ?network.stopById[id]];
-    final center = d.shape.isEmpty ? rome : d.shape[d.shape.length ~/ 2];
+    final route = d.shape.isEmpty ? [for (final s in stops) s.position] : d.shape;
+    // The whole route in view; and the user too when they are near it (a line is long: far away it would be a speck).
+    final user = ref.watch(positionProvider).value;
+    final nearRoute = user != null && stops.any((s) => const Distance()(user, s.position) < _nearRouteMeters);
+    final corners = route.isEmpty ? null : LatLngBounds.fromPoints([...route, ?(nearRoute ? user : null)]);
     return TransitMap(
-      center: center,
+      // One camera per direction: switching it frames the other route.
+      key: ValueKey('${widget.lineId}-$direction'),
+      center: route.isEmpty ? rome : route[route.length ~/ 2],
       zoom: 13,
+      fit: corners == null ? null : [corners.southWest, corners.northEast],
       children: [
         PolylineLayer(
           polylines: [Polyline(points: d.shape, strokeWidth: 4, color: context.colors.primary)],

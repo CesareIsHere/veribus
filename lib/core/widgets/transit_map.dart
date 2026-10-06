@@ -22,12 +22,17 @@ const rome = LatLng(41.8986, 12.4768);
 /// OpenFreeMap vector tiles, in the light or dark variant of the app theme. Every map shows the device position as a
 /// blue dot above everything else, with a button to come back to it.
 class TransitMap extends ConsumerStatefulWidget {
-  const TransitMap({required this.children, this.center = rome, this.zoom = 16, this.controller, super.key});
+  const TransitMap({required this.children, this.center = rome, this.zoom = 16, this.controller, this.fit, super.key});
 
   final List<Widget> children;
   final LatLng center;
   final double zoom;
   final MapController? controller;
+
+  /// Points that must all be in view (a bus, a stop and the user, say): the camera frames them when the map opens,
+  /// and again if one leaves the view, so the zoom adapts to the distance. [center] and [zoom] are then ignored.
+  /// Once the user moves the map by hand it is left alone.
+  final List<LatLng>? fit;
 
   @override
   ConsumerState<TransitMap> createState() => _TransitMapState();
@@ -35,8 +40,37 @@ class TransitMap extends ConsumerStatefulWidget {
 
 class _TransitMapState extends ConsumerState<TransitMap> {
   MapController? _own;
+  var _ready = false;
+
+  /// The user moved the map by hand (or came back to their position): the camera is theirs now.
+  var _moved = false;
 
   MapController get _controller => widget.controller ?? (_own ??= MapController());
+
+  CameraFit? get _cameraFit {
+    final points = widget.fit;
+    if (points == null || points.length < 2) return null;
+    return CameraFit.coordinates(
+      coordinates: points,
+      padding: const EdgeInsets.all(Spacing.xxxl + Spacing.s),
+      maxZoom: 17,
+    );
+  }
+
+  @override
+  void didUpdateWidget(TransitMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final fit = _cameraFit;
+    if (fit == null || !_ready || _moved) return;
+    // A point left the view (the bus drove away, the user's position just arrived): frame them all again. Not on
+    // every update, or the map would keep shifting under the eyes.
+    final bounds = _controller.camera.visibleBounds;
+    if (widget.fit!.any((p) => !bounds.contains(p))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_moved) _controller.fitCamera(fit);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -59,6 +93,11 @@ class _TransitMapState extends ConsumerState<TransitMap> {
             options: MapOptions(
               initialCenter: widget.center,
               initialZoom: widget.zoom,
+              initialCameraFit: _cameraFit,
+              onMapReady: () => _ready = true,
+              onPositionChanged: (_, hasGesture) {
+                if (hasGesture) _moved = true;
+              },
               minZoom: 10,
               maxZoom: 19,
               backgroundColor: minimalMapLand(brightness),
@@ -90,7 +129,10 @@ class _TransitMapState extends ConsumerState<TransitMap> {
               child: Builder(
                 builder: (context) => FloatingActionButton.small(
                   tooltip: context.l10n.backToMyPosition,
-                  onPressed: () => _controller.move(position, math.max(_controller.camera.zoom, 16)),
+                  onPressed: () {
+                    _moved = true;
+                    _controller.move(position, math.max(_controller.camera.zoom, 16));
+                  },
                   child: const Icon(Icons.my_location),
                 ),
               ),
