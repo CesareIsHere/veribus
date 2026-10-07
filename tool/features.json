@@ -152,6 +152,9 @@
     "supabase": {
       "paths": [
         "lib/repositories/auth/supabase_auth_repository.dart",
+        "lib/repositories/follow/supabase_follow_repository.dart",
+        "lib/repositories/supabase_call.dart",
+        "lib/repositories/transit/supabase_transit_repository.dart",
         "lib/repositories/transactions/supabase_transactions_repository.dart",
         "supabase",
         "test/repositories/supabase_auth_repository_test.dart",

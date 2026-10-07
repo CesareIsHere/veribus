@@ -15,6 +15,7 @@ class FollowTimeChip extends ConsumerWidget {
     required this.lineId,
     required this.directionId,
     required this.seconds,
+    required this.weekday,
     required this.label,
     this.emphasized = false,
     super.key,
@@ -24,6 +25,7 @@ class FollowTimeChip extends ConsumerWidget {
   final String lineId;
   final int directionId;
   final int seconds;
+  final int weekday;
   final String label;
   final bool emphasized;
 
@@ -40,7 +42,13 @@ class FollowTimeChip extends ConsumerWidget {
       tooltip: followed ? context.l10n.followedMarker : context.l10n.followTrip,
       onSelected: (_) => unawaited(
         context.push(
-          FollowPage.routeFor(stopId: stopId, lineId: lineId, directionId: directionId, departureSeconds: seconds),
+          FollowPage.routeFor(
+            stopId: stopId,
+            lineId: lineId,
+            directionId: directionId,
+            departureSeconds: seconds,
+            weekday: weekday,
+          ),
         ),
       ),
     );

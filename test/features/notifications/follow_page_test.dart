@@ -56,7 +56,13 @@ Future<void> _open(WidgetTester tester, _Follows repo, {required String location
       GoRoute(path: TripsPage.route, builder: (_, _) => const TripsPage()),
       GoRoute(
         path: FollowPage.route,
-        builder: (_, _) => const FollowPage(stopId: '70001', lineId: '64', directionId: 1, departureSeconds: 62100),
+        builder: (_, state) => FollowPage(
+          stopId: '70001',
+          lineId: '64',
+          directionId: 1,
+          departureSeconds: 62100,
+          weekday: int.tryParse(state.uri.queryParameters['wd'] ?? ''),
+        ),
       ),
     ],
   );
@@ -111,6 +117,16 @@ void main() {
     expect(repo.saved.single.key, '70001/64/1/62100');
     expect(repo.saved.single.days, {1, 2, 3, 4, 5});
     expect(repo.saved.single.leadMinutes, [10, 5]);
+  });
+
+  testWidgets('a time picked on a weekend timetable is followed on that day only', (tester) async {
+    await _open(tester, _Follows(), location: '${FollowPage.route}?wd=6');
+    expect(
+      [
+        for (final d in ['Mon', 'Fri', 'Sat', 'Sun']) _selected(tester, d),
+      ],
+      [false, false, true, false],
+    );
   });
 
   testWidgets('at most three notices: with three chosen the others cannot be picked', (tester) async {

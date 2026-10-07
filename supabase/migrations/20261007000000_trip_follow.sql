@@ -70,11 +70,6 @@ revoke all on public.trip_follow_sent from anon, authenticated;
 alter table public.push_tokens add column locale text not null default 'it';
 alter table public.push_tokens add column updated_at timestamptz not null default now();
 
-create policy "Users update their push tokens' language" on public.push_tokens
-  for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-
 -- A token is one device: when it registers for a user it stops belonging to anyone else (someone signed out, or the
 -- session expired, and another user signed in on the same phone).
 create function api.register_push_token(token text, locale text) returns void
@@ -259,8 +254,10 @@ begin
   )
   select j.fid, j.uid, j.sdate, j.tid, j.rid, j.did, j.sid, j.hs, j.leads, j.sched, j.pred,
     x.status,
-    case when j.rt_status in ('canceled', 'suppressed') then j.rt_signal
-         when j.vid is not null then api._signal(j.rt_signal, j.gps_at, feed, at) end,
+    -- The reason, as the stop panel gives it (api.arrivals).
+    case x.status when 'canceled' then '{"code": "S1"}'::jsonb
+                  when 'suppressed' then j.rt_signal
+                  when 'uncertain' then api._signal(j.rt_signal, j.gps_at, feed, at) end,
     j.vid,
     -- Past the stop: by the vehicle's position, or by the last one seen of a trip whose vehicle vanished.
     coalesce(greatest(j.v_seq, j.t_seq) > j.seq, false),  -- greatest ignores nulls

@@ -135,6 +135,7 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
         lineId: _line,
         directionId: d.directionId,
         seconds: s,
+        weekday: _day.weekday,
         label: _label(context, d, s, minute),
         emphasized: emphasized,
       );

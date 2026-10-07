@@ -25,6 +25,7 @@ class FollowPage extends ConsumerStatefulWidget {
     required this.lineId,
     required this.directionId,
     required this.departureSeconds,
+    this.weekday,
     super.key,
   });
 
@@ -35,15 +36,25 @@ class FollowPage extends ConsumerStatefulWidget {
     required String lineId,
     required int directionId,
     required int departureSeconds,
+    int? weekday,
   }) => Uri(
     path: route,
-    queryParameters: {'stop': stopId, 'line': lineId, 'dir': '$directionId', 'dep': '$departureSeconds'},
+    queryParameters: {
+      'stop': stopId,
+      'line': lineId,
+      'dir': '$directionId',
+      'dep': '$departureSeconds',
+      'wd': ?weekday?.toString(),
+    },
   ).toString();
 
   final String stopId;
   final String lineId;
   final int directionId;
   final int departureSeconds;
+
+  /// The weekday (1 Monday .. 7 Sunday) of the timetable the time was tapped on: the trip surely runs that day.
+  final int? weekday;
 
   @override
   ConsumerState<FollowPage> createState() => _FollowPageState();
@@ -53,6 +64,12 @@ class _FollowPageState extends ConsumerState<FollowPage> {
   /// What most people want: the commute, ten and five minutes before.
   static const _weekdays = {1, 2, 3, 4, 5};
   static const _defaultLeads = [10, 5];
+
+  /// The commute (Mon–Fri), unless the time was picked on a weekend timetable: weekend service differs.
+  Set<int> get _defaultDays => switch (widget.weekday) {
+    final d? when d > 5 => {d},
+    _ => _weekdays,
+  };
 
   late final String _key = TripFollow.keyOf(widget.stopId, widget.lineId, widget.directionId, widget.departureSeconds);
   Set<int>? _days;
@@ -67,7 +84,7 @@ class _FollowPageState extends ConsumerState<FollowPage> {
     final existing = ref.watch(followOfProvider(_key));
     final follows = ref.watch(followsProvider());
     // Existing follows arrive with the first read: the form starts from them, then from what the user changed.
-    final days = _days ?? existing?.days ?? _weekdays;
+    final days = _days ?? existing?.days ?? _defaultDays;
     final leads = _leads ?? existing?.leadMinutes ?? _defaultLeads;
     final enabled = _enabled ?? existing?.enabled ?? true;
     final line = network?.lines[widget.lineId];

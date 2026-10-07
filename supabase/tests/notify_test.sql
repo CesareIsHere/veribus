@@ -183,7 +183,7 @@ do $$
 declare f jsonb := api.my_follows();
 begin
   perform pg_temp.check(jsonb_array_length(f) = 5, 'my follows: ' || f::text);
-  perform pg_temp.check(f @> '[{"id": "f0000000-0000-0000-0000-000000000003", "today": {"status": "canceled"}}]', 'today: canceled');
+  perform pg_temp.check(f @> '[{"id": "f0000000-0000-0000-0000-000000000003", "today": {"status": "canceled", "signal": {"code": "S1"}}}]', 'today: canceled with its reason');
   perform pg_temp.check(f @> '[{"id": "f0000000-0000-0000-0000-000000000002", "lead_min": [15, 10, 5], "days": [1, 2, 3, 4, 5, 6, 7]}]',
     'configuration');
   perform pg_temp.check((select x->'today' from jsonb_array_elements(f) x where x->>'id' = 'f0000000-0000-0000-0000-000000000002')

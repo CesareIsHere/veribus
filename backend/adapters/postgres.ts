@@ -178,7 +178,7 @@ export function postgresStore(url: string): StateStore & { notify: NotifyStore; 
 
       async release(claims) {
         const keys = claims.map((c) => ({ follow_id: c.followId, service_date: c.serviceDate, kinds: c.kinds }));
-        await sql`select notify.release(${sql.json(keys)})`;
+        await sql`select notify.release(${sql.json(keys)}::jsonb)`;
       },
 
       async dropTokens(tokens) {

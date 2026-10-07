@@ -96,7 +96,8 @@ export function fcmPush(json: string, opts: { now?: () => number } = {}): PushSe
         // A dead or malformed token: forget it. Only when FCM says so: a 404 for a wrong project id must not wipe every
         // token, and a 400 for anything else is our message, which retrying will not fix.
         if (/UNREGISTERED|registration token|not a valid FCM/i.test(text)) return "invalid";
-        if (res.status === 429 || res.status >= 500) return "retry";
+        // Quota, FCM down, or credentials the operator has yet to fix: the notice is worth another try.
+        if (res.status === 429 || res.status === 401 || res.status === 403 || res.status >= 500) return "retry";
         return "failed";
       } catch (e) {
         console.error(`FCM: ${e}`);

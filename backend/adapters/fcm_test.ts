@@ -93,7 +93,7 @@ Deno.test("FCM errors are told apart: dead token, try again, give up", async () 
       [400, '{"error":{"message":"Invalid JSON payload"}}', "failed"],
       // A wrong project id is a 404 too: not a reason to forget every token.
       [404, '{"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}', "failed"],
-      [403, "{}", "failed"],
+      [403, "{}", "retry"],
       [429, "{}", "retry"],
       [503, "{}", "retry"],
     ] as const

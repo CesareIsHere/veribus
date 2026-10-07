@@ -169,6 +169,7 @@ GoRouter router(Ref ref) {
               lineId: q['line'] ?? '',
               directionId: int.tryParse(q['dir'] ?? '') ?? 0,
               departureSeconds: int.tryParse(q['dep'] ?? '') ?? 0,
+              weekday: int.tryParse(q['wd'] ?? ''),
             ),
           );
         },
