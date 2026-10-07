@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { fcmPush } from "./fcm.ts";
+import { fcmPush, fcmPushFromEnv } from "./fcm.ts";
 
 async function serviceAccount() {
   const { privateKey } = await crypto.subtle.generateKey(
@@ -91,6 +91,8 @@ Deno.test("FCM errors are told apart: dead token, try again, give up", async () 
       [404, '{"error":{"status":"NOT_FOUND","details":[{"errorCode":"UNREGISTERED"}]}}', "invalid"],
       [400, '{"error":{"message":"The registration token is not a valid FCM registration token"}}', "invalid"],
       [400, '{"error":{"message":"Invalid JSON payload"}}', "failed"],
+      // A wrong project id is a 404 too: not a reason to forget every token.
+      [404, '{"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}', "failed"],
       [403, "{}", "failed"],
       [429, "{}", "retry"],
       [503, "{}", "retry"],
@@ -118,5 +120,35 @@ Deno.test("a network failure is a retry", async () => {
   } finally {
     console.error = quiet;
     globalThis.fetch = original;
+  }
+});
+
+Deno.test("a missing or malformed service account means no sender, not a crash", () => {
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    assertEquals(fcmPushFromEnv(undefined), null);
+    assertEquals(fcmPushFromEnv(""), null);
+    assertEquals(fcmPushFromEnv("not json"), null);
+    assert(fcmPushFromEnv('{"project_id":"p","client_email":"e","private_key":"k"}') !== null); // checked at the first send
+  } finally {
+    console.error = quiet;
+  }
+});
+
+Deno.test("a bad private key fails the send as a retry, with no unhandled rejection", async () => {
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    const push = fcmPush(
+      JSON.stringify({
+        project_id: "p",
+        client_email: "e",
+        private_key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----",
+      }),
+    );
+    assertEquals(await push.send("tok", notice), "retry");
+  } finally {
+    console.error = quiet;
   }
 });

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -106,5 +107,10 @@ class PushNotifier extends _$PushNotifier {
     if (link.startsWith('/') && !link.startsWith('//')) unawaited(ref.read(routerProvider).push(link));
   }
 
-  AppLocalizations _l10n() => lookupAppLocalizations(ref.read(localeProvider) ?? PlatformDispatcher.instance.locale);
+  /// The app's texts in the language in use; English when the phone speaks one the app has not got.
+  AppLocalizations _l10n() {
+    final wanted = ref.read(localeProvider) ?? PlatformDispatcher.instance.locale;
+    final supported = AppLocalizations.supportedLocales.any((l) => l.languageCode == wanted.languageCode);
+    return lookupAppLocalizations(supported ? wanted : const Locale('en'));
+  }
 }

@@ -166,7 +166,7 @@ flowchart LR
 | `live` | vehicles, trip state, alerts, feed status, snapshot index, lease | the poller (role `poller`) |
 | `config` | signal thresholds, minimum app version | by hand |
 | `notify` | what to notify now (`claim`), taking it back when sending failed (`release`), forgetting dead tokens | the poller (role `poller`) |
-| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()`, `my_follows()` | nothing: read-only functions |
+| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()`, `my_follows()`, `register_push_token(token, locale)` | nothing: read-only functions, except the token (one device, one user) |
 
 Two small tables live in `public` (row level security, owner only): `push_tokens` (FCM token and app language per device)
 and `trip_follow` (the trips each user follows).

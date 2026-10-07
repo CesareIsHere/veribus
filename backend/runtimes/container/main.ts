@@ -10,7 +10,7 @@ import { type Archive, runCycle } from "../../core/cycle.ts";
 import type { CycleState } from "../../core/types.ts";
 import { archivePath, healthchecks, r2Archive, rsmFeeds } from "../../adapters/http.ts";
 import { postgresStore } from "../../adapters/postgres.ts";
-import { fcmPush } from "../../adapters/fcm.ts";
+import { fcmPushFromEnv } from "../../adapters/fcm.ts";
 import { runNotifier } from "../../core/notify.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
@@ -37,7 +37,7 @@ const ports = {
   clock: { now: () => Math.floor(Date.now() / 1000) },
 };
 const heartbeat = healthchecks(Deno.env.get("HEALTHCHECKS_URL"));
-const push = env("FCM_SERVICE_ACCOUNT") ? fcmPush(env("FCM_SERVICE_ACCOUNT")) : null;
+const push = fcmPushFromEnv(env("FCM_SERVICE_ACCOUNT"));
 const owner = crypto.randomUUID();
 let state: CycleState | null = null;
 

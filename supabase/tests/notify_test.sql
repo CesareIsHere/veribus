@@ -129,6 +129,13 @@ begin
   perform pg_temp.check(pg_temp.events() = '[]', 'once');
 end $$;
 
+-- A vehicle that vanished after passing the stop: nothing to warn about.
+update live.trip_state set last_seq = 3 where trip_id = 'T3';
+delete from public.trip_follow_sent where follow_id = 'f0000000-0000-0000-0000-000000000004';
+do $$ begin
+  perform pg_temp.check(pg_temp.events('lost') = '[]', 'no "lost" for a trip already past the stop');
+end $$;
+
 -- Standing still: reported once; reported again only after it moved.
 select pg_temp.live('T1', 'V1', 12, 'confirmed', '{"code": "S3", "min": 6}');
 do $$
@@ -203,7 +210,7 @@ begin
   exception when check_violation then null;
   end;
 end $$;
--- At most 30 follows per user.
+-- At most 30 follows per user, and saving one that exists is not a new one.
 do $$
 begin
   for i in 1..30 loop
@@ -213,8 +220,28 @@ begin
     exception when others then
       perform pg_temp.check(sqlerrm = 'Too many followed trips', 'limit message');
       perform pg_temp.check(i > 20, 'the limit comes after 30 rows in total');
+      insert into public.trip_follow (stop_id, route_id, direction_id, departure_s, days, lead_min)
+      values ('B', 'R1', 0, 1001, '{2}', '{10}')
+      on conflict (user_id, stop_id, route_id, direction_id, departure_s) do update set days = excluded.days;
+      perform pg_temp.check((select days from public.trip_follow where departure_s = 1001) = '{2}', 'edit at the limit');
       return;
     end;
   end loop;
   raise exception 'FAILED: no limit on follows';
+end $$;
+
+-- A device token belongs to one user at a time.
+select api.register_push_token('tok-shared', 'it');
+do $$ begin
+  perform pg_temp.check((select user_id from public.push_tokens where token = 'tok-shared') = '00000000-0000-0000-0000-0000000000a1', 'token of a1');
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select api.register_push_token('tok-shared', 'en');
+do $$ begin
+  perform pg_temp.check((select count(*) from public.push_tokens where token = 'tok-shared') = 1, 'a2 sees its own row now');
+end $$;
+reset role;
+do $$ begin
+  perform pg_temp.check((select array_agg(user_id::text || locale) from public.push_tokens where token = 'tok-shared')
+    = array['00000000-0000-0000-0000-0000000000a2en'], 'the token moved to the user who signed in on the device');
 end $$;

@@ -125,16 +125,11 @@ class SupabaseAuthRepository implements IAuthRepository {
     await _auth.updateUser(UserAttributes(data: {'display_name': ?displayName, 'avatar_url': ?photoUrl}));
   });
 
+  /// One device, one user: the RPC takes the token away from whoever else was registered with it.
   @override
   Future<void> registerPushToken(String token, {required String locale}) async {
-    final uid = _auth.currentUser?.id;
-    if (uid == null) return;
-    await _client.from('push_tokens').upsert({
-      'user_id': uid,
-      'token': token,
-      'locale': locale,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    });
+    if (_auth.currentUser == null) return;
+    await _client.schema('api').rpc<void>('register_push_token', params: {'token': token, 'locale': locale});
   }
 
   @override

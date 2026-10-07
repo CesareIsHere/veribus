@@ -32,7 +32,8 @@ async function signingKey(pem: string): Promise<CryptoKey> {
 export function fcmPush(json: string, opts: { now?: () => number } = {}): PushSender {
   const account = JSON.parse(json) as ServiceAccount;
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000));
-  const key = signingKey(account.private_key);
+  // Imported at the first send, inside its try: a bad key must not become an unhandled rejection at start-up.
+  let key: Promise<CryptoKey> | null = null;
   let cached: { token: string; expires: number } | null = null;
 
   async function accessToken(): Promise<string> {
@@ -40,7 +41,11 @@ export function fcmPush(json: string, opts: { now?: () => number } = {}): PushSe
     if (cached && cached.expires - 60 > t) return cached.token;
     const claims = { iss: account.client_email, scope: SCOPE, aud: TOKEN_URL, iat: t, exp: t + 3600 };
     const unsigned = `${b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${b64url(JSON.stringify(claims))}`;
-    const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", await key, new TextEncoder().encode(unsigned));
+    const sig = await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      await (key ??= signingKey(account.private_key)),
+      new TextEncoder().encode(unsigned),
+    );
     const res = await fetch(TOKEN_URL, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -82,8 +87,9 @@ export function fcmPush(json: string, opts: { now?: () => number } = {}): PushSe
         }
         const text = await res.text();
         console.error(`FCM ${res.status}: ${text.slice(0, 300)}`);
-        // A dead or malformed token: forget it. (A 400 for anything else is our message: retrying will not fix it.)
-        if (res.status === 404 || /UNREGISTERED|registration token|not a valid FCM/i.test(text)) return "invalid";
+        // A dead or malformed token: forget it. Only when FCM says so: a 404 for a wrong project id must not wipe every
+        // token, and a 400 for anything else is our message, which retrying will not fix.
+        if (/UNREGISTERED|registration token|not a valid FCM/i.test(text)) return "invalid";
         if (res.status === 429 || res.status >= 500) return "retry";
         return "failed";
       } catch (e) {
@@ -92,4 +98,15 @@ export function fcmPush(json: string, opts: { now?: () => number } = {}): PushSe
       }
     },
   };
+}
+
+/** The sender for the FCM_SERVICE_ACCOUNT secret, or null (logged) when it is missing or not a service account. */
+export function fcmPushFromEnv(json: string | undefined): PushSender | null {
+  if (!json) return null;
+  try {
+    return fcmPush(json);
+  } catch (e) {
+    console.error(`FCM_SERVICE_ACCOUNT is not a service account JSON, no notices will be sent: ${e}`);
+    return null;
+  }
 }

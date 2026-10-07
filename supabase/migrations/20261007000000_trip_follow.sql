@@ -39,6 +39,12 @@ grant select, insert, update, delete on public.trip_follow to authenticated;
 create function public.trip_follow_limit() returns trigger
 language plpgsql set search_path = '' as $$
 begin
+  -- Saving a follow that exists (an upsert) is an edit, whatever the count.
+  if exists (select from public.trip_follow f
+             where f.user_id = new.user_id and f.stop_id = new.stop_id and f.route_id = new.route_id
+               and f.direction_id = new.direction_id and f.departure_s = new.departure_s) then
+    return new;
+  end if;
   if (select count(*) from public.trip_follow where user_id = new.user_id) >= 30 then
     raise exception 'Too many followed trips' using errcode = 'P0001';
   end if;
@@ -68,6 +74,22 @@ create policy "Users update their push tokens' language" on public.push_tokens
   for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+-- A token is one device: when it registers for a user it stops belonging to anyone else (someone signed out, or the
+-- session expired, and another user signed in on the same phone).
+create function api.register_push_token(token text, locale text) returns void
+language plpgsql security definer set search_path = '' as $$
+#variable_conflict use_column
+begin
+  if (select auth.uid()) is null then raise exception 'Not signed in' using errcode = '28000'; end if;
+  delete from public.push_tokens p where p.token = register_push_token.token and p.user_id <> (select auth.uid());
+  insert into public.push_tokens (user_id, token, locale, updated_at)
+  values ((select auth.uid()), register_push_token.token, register_push_token.locale, now())
+  on conflict (user_id, token) do update set locale = excluded.locale, updated_at = now();
+end $$;
+
+revoke all on function api.register_push_token(text, text) from public, anon;
+grant execute on function api.register_push_token(text, text) to authenticated;
 
 -- Today's state of each followed trip -------------------------------------------------------------
 
@@ -114,7 +136,7 @@ begin
     select c.*, ts.trip_id is not null as has_rt, ts.status as rt_status, ts.signal as rt_signal,
            case when (feed->>'predictions')::boolean
              then to_timestamp(ts.pred_ts[array_position(ts.pred_seq, c.seq)]) end as pred,
-           v.vehicle_id as vid, v.gps_at, v.seq as v_seq
+           v.vehicle_id as vid, v.gps_at, v.seq as v_seq, ts.last_seq as t_seq
     from candidate c
     left join live.trip_state ts on ts.trip_id = c.tid
     left join live.vehicle v on v.vehicle_id = ts.vehicle_id and v.trip_id = ts.trip_id and v.gps_at > at - valid
@@ -130,7 +152,8 @@ begin
     case when j.rt_status in ('canceled', 'suppressed') then j.rt_signal
          when j.vid is not null then api._signal(j.rt_signal, j.gps_at, feed, at) end,
     j.vid,
-    j.v_seq is not null and j.v_seq > j.seq,
+    -- Past the stop: by the vehicle's position, or by the last one seen of a trip whose vehicle vanished.
+    coalesce(greatest(j.v_seq, j.t_seq) > j.seq, false),  -- greatest ignores nulls
     case when j.vid is not null and j.rt_signal->>'code' = 'S3' then (j.rt_signal->>'min')::int end
   from joined j;
 end $$;
@@ -149,6 +172,9 @@ language plpgsql security definer set search_path = '' as $$
 declare
   result jsonb;
 begin
+  -- One claim at a time: a cycle that outlives the poller's lease must not claim what the next one is claiming.
+  perform pg_advisory_xact_lock(hashtext('notify.claim'));
+
   -- A vehicle that moved again can be reported standing still again.
   delete from public.trip_follow_sent s
   using notify._state(at) st
@@ -182,7 +208,7 @@ begin
     select s.follow_id, s.service_date, 'still', 'still', array['still']
     from s where s.still_min is not null and not s.passed and s.status <> 'canceled'
     union all
-    select s.follow_id, s.service_date, 'lost', 'lost', array['lost'] from s where s.status = 'suppressed'
+    select s.follow_id, s.service_date, 'lost', 'lost', array['lost'] from s where s.status = 'suppressed' and not s.passed
   ), fresh as (
     select e.* from events e
     where not exists (select from public.trip_follow_sent x

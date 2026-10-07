@@ -45,6 +45,7 @@ const noticeChannelId = 'trips';
 class FirebasePushService implements IPushService {
   final _local = FlutterLocalNotificationsPlugin();
   final _opened = StreamController<String>.broadcast();
+  final _tokens = StreamController<String>.broadcast();
   var _ready = false;
 
   @override
@@ -80,6 +81,7 @@ class FirebasePushService implements IPushService {
     // With the app open FCM shows nothing by itself: the notice is drawn here.
     FirebaseMessaging.onMessage.listen((m) => unawaited(_show(m, channelName, channelDescription)));
     FirebaseMessaging.onMessageOpenedApp.listen((m) => _opened.add(_link(m)));
+    FirebaseMessaging.instance.onTokenRefresh.listen(_tokens.add);
     _ready = true;
     return true;
   }
@@ -127,7 +129,8 @@ class FirebasePushService implements IPushService {
   Future<String?> token() => FirebaseMessaging.instance.getToken();
 
   @override
-  Stream<String> get tokenRefreshes => FirebaseMessaging.instance.onTokenRefresh;
+  // Fed once Firebase is initialized: `FirebaseMessaging.instance` throws before, and the app subscribes at launch.
+  Stream<String> get tokenRefreshes => _tokens.stream;
 
   @override
   Stream<String> get opened => _opened.stream;
