@@ -56,4 +56,7 @@ abstract final class Features {
   static const socialLogin = bool.fromEnvironment('FEATURE_SOCIAL_LOGIN');
   static const connectivity = bool.fromEnvironment('FEATURE_CONNECTIVITY');
   static const feedback = bool.fromEnvironment('FEATURE_FEEDBACK');
+
+  /// Followed trips and the push notifications that tell when their bus is about to pass.
+  static const push = bool.fromEnvironment('FEATURE_PUSH');
 }

@@ -50,6 +50,11 @@ final class ServerFailure extends AppFailure {
   final String? serverMessage;
 }
 
+/// A limit of the service (too many followed trips, say): the user can fix it by removing something.
+final class LimitFailure extends AppFailure {
+  const LimitFailure();
+}
+
 final class NotSupportedFailure extends AppFailure {
   const NotSupportedFailure();
 }

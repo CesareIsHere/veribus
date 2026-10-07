@@ -40,4 +40,5 @@ echo "T9,08:00:00,08:00:00,A,1" >> "$G/stop_times.txt"
 GTFS_DIR=$G MD5=test bash backend/static-import/import.sh > /dev/null 2>&1
 
 psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f supabase/tests/api_test.sql
+psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f supabase/tests/notify_test.sql
 echo "API tests passed"

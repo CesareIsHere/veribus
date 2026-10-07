@@ -3,6 +3,8 @@
 import { runCycle } from "../../core/cycle.ts";
 import { healthchecks, r2Archive, rsmFeeds } from "../../adapters/http.ts";
 import { postgresStore } from "../../adapters/postgres.ts";
+import { fcmPushFromEnv } from "../../adapters/fcm.ts";
+import { runNotifier } from "../../core/notify.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const store = postgresStore(env("POLLER_DB_URL") || env("SUPABASE_DB_URL"));
@@ -18,6 +20,8 @@ const ports = {
   clock: { now: () => Math.floor(Date.now() / 1000) },
 };
 const heartbeat = healthchecks(Deno.env.get("HEALTHCHECKS_URL"));
+// Notices for followed trips; without the FCM service account nobody is notified and the poller is unchanged.
+const push = fcmPushFromEnv(env("FCM_SERVICE_ACCOUNT"));
 
 export async function handler(req: Request): Promise<Response> {
   const secret = env("POLLER_SECRET");
@@ -29,7 +33,9 @@ export async function handler(req: Request): Promise<Response> {
   try {
     const { summary } = await runCycle(ports, await store.loadState());
     await heartbeat.ok(summary);
-    return Response.json(summary);
+    // The state is committed: the notices read it. A failure here must not fail the cycle.
+    const notices = push ? await runNotifier({ store: store.notify, push }).catch((e) => console.error(e)) : null;
+    return Response.json({ ...summary, notices });
   } catch (e) {
     console.error(e);
     await heartbeat.fail(e);

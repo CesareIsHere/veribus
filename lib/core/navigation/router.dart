@@ -19,6 +19,8 @@ import 'package:veribus/features/auth/reset_password_page.dart';
 import 'package:veribus/features/favorites/favorites_page.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/nearby/nearby_page.dart';
+import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
+import 'package:veribus/features/notifications/trips_page.dart'; // feature:push
 import 'package:veribus/features/search/search_page.dart';
 import 'package:veribus/features/settings/profile_page.dart';
 import 'package:veribus/features/settings/settings_page.dart';
@@ -153,6 +155,26 @@ GoRouter router(Ref ref) {
         path: '/line/:id',
         builder: (_, state) => LinePage(lineId: state.pathParameters['id']!),
       ),
+      // feature:push:start
+      GoRoute(path: TripsPage.route, builder: (_, _) => const TripsPage()),
+      GoRoute(
+        path: FollowPage.route,
+        // A create/edit screen: full-screen dialog, close + Save.
+        pageBuilder: (_, state) {
+          final q = state.uri.queryParameters;
+          return MaterialPage(
+            fullscreenDialog: true,
+            child: FollowPage(
+              stopId: q['stop'] ?? '',
+              lineId: q['line'] ?? '',
+              directionId: int.tryParse(q['dir'] ?? '') ?? 0,
+              departureSeconds: int.tryParse(q['dep'] ?? '') ?? 0,
+              weekday: int.tryParse(q['wd'] ?? ''),
+            ),
+          );
+        },
+      ),
+      // feature:push:end
       GoRoute(
         path: SettingsPage.route,
         builder: (_, _) => const SettingsPage(),

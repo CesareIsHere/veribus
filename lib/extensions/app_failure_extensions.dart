@@ -7,6 +7,7 @@ extension AppFailureMessage on AppFailure {
     NetworkFailure() => l10n.errorNetwork,
     UnauthorizedFailure() => l10n.errorUnauthorized,
     ServerFailure(:final serverMessage) => serverMessage ?? l10n.errorServer,
+    LimitFailure() => l10n.errorFollowLimit,
     NotSupportedFailure() => l10n.errorNotSupported,
     AuthFailure(:final code) => switch (code) {
       AuthErrorCode.invalidCredentials => l10n.errorInvalidCredentials,

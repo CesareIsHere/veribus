@@ -292,5 +292,136 @@
       }
     }
   },
-  "closeRoute": "Close"
+  "close": "Close",
+  "followedTrips": "Followed trips",
+  "followTrip": "Follow this trip",
+  "followTripHint": "Tap a time to be notified when that bus is about to pass.",
+  "followDays": "Days",
+  "followLeads": "Notify me before",
+  "followLeadsHint": "Up to {n} notices",
+  "@followLeadsHint": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "followLeadsSummary": "{minutes} min before",
+  "@followLeadsSummary": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "followEnabled": "Notices on",
+  "followRemove": "Stop following",
+  "followRemoveTitle": "Stop following this trip?",
+  "followRemoveBody": "You will no longer be notified about it.",
+  "followSaved": "Trip followed",
+  "followedMarker": "Followed trip",
+  "everyDay": "Every day",
+  "weekdays": "Mon–Fri",
+  "weekend": "Sat, Sun",
+  "noFollows": "No followed trips",
+  "noFollowsHint": "Open the timetable of a stop and tap the time of the trip you want: you will be notified before it passes.",
+  "notificationsOff": "Notifications are off",
+  "notificationsOffBody": "Without notifications you cannot be warned when the bus is about to pass.",
+  "notificationsBlocked": "Turn notifications on for this app in the phone settings.",
+  "notificationsUnavailable": "This device cannot receive notifications.",
+  "enableNotifications": "Turn on",
+  "noticeChannelName": "Followed trips",
+  "noticeChannelDescription": "Your bus is about to pass, or something happened to it",
+  "errorFollowLimit": "You can follow at most 30 trips. Remove one first.",
+  "pushLead": "Line {route}: in {minutes} min",
+  "@pushLead": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "pushArriving": "Line {route}: is arriving",
+  "@pushArriving": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "pushScheduled": "scheduled time",
+  "pushStopTo": "{stop} to {headsign}",
+  "@pushStopTo": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      },
+      "headsign": {
+        "type": "String"
+      }
+    }
+  },
+  "pushCanceledTitle": "Line {route}: trip canceled",
+  "@pushCanceledTitle": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "pushCanceledBody": "The {time} at {place} was canceled",
+  "@pushCanceledBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "pushStillTitle": "Line {route}: bus standing still for {minutes} min",
+  "@pushStillTitle": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "pushStillBody": "The {time} at {place}",
+  "@pushStillBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "pushLostTitle": "Line {route}: signal lost",
+  "@pushLostTitle": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "pushLostBody": "The vehicle of the {time} at {place} stopped transmitting: it may not arrive",
+  "@pushLostBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  }
 }

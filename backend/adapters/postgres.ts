@@ -2,6 +2,7 @@
 // poller's output and the handover between runtimes (edge function today, container tomorrow).
 import postgres from "npm:postgres@3.4.7";
 import type { Commit, StateStore } from "../core/cycle.ts";
+import type { Claim, NotifyStore } from "../core/notify.ts";
 import type { CycleState, Feed, FeedMarker, Thresholds, TripInfo, TripState, Vehicle } from "../core/types.ts";
 
 const iso = (s: number | null) => (s == null ? null : new Date(s * 1000).toISOString());
@@ -10,7 +11,7 @@ const epoch = (d: Date | null) => (d == null ? null : Math.floor(d.getTime() / 1
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
 
-export function postgresStore(url: string): StateStore & { close(): Promise<void> } {
+export function postgresStore(url: string): StateStore & { notify: NotifyStore; close(): Promise<void> } {
   // Session pooler (5432), not the transaction one (6543): postgres.js pipelines concurrent queries on one connection,
   // and the transaction pooler can route the pieces to different backends ("bind message supplies 3 parameters").
   const sql = postgres(url, { prepare: false, max: 2, idle_timeout: 20 });
@@ -154,6 +155,35 @@ export function postgresStore(url: string): StateStore & { close(): Promise<void
           await replace("live.alert", alerts);
         }
       });
+    },
+
+    notify: {
+      async claim() {
+        const [{ claims }] = await sql`select notify.claim() as claims`;
+        return (claims as Row[]).map((c): Claim => ({
+          followId: c.follow_id,
+          serviceDate: c.service_date,
+          event: c.event,
+          kinds: c.kinds,
+          minutes: c.minutes,
+          eta: Number(c.eta),
+          scheduled: Number(c.scheduled),
+          realtime: c.realtime,
+          route: c.route ?? "",
+          stop: c.stop ?? "",
+          headsign: c.headsign ?? "",
+          devices: c.tokens ?? [],
+        }));
+      },
+
+      async release(claims) {
+        const keys = claims.map((c) => ({ follow_id: c.followId, service_date: c.serviceDate, kinds: c.kinds }));
+        await sql`select notify.release(${sql.json(keys)}::jsonb)`;
+      },
+
+      async dropTokens(tokens) {
+        await sql`select notify.drop_tokens(${tokens}::text[])`;
+      },
     },
 
     close: () => sql.end(),

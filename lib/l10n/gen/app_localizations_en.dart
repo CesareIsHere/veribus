@@ -545,5 +545,136 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get closeRoute => 'Close';
+  String get close => 'Close';
+
+  @override
+  String get followedTrips => 'Followed trips';
+
+  @override
+  String get followTrip => 'Follow this trip';
+
+  @override
+  String get followTripHint => 'Tap a time to be notified when that bus is about to pass.';
+
+  @override
+  String get followDays => 'Days';
+
+  @override
+  String get followLeads => 'Notify me before';
+
+  @override
+  String followLeadsHint(int n) {
+    return 'Up to $n notices';
+  }
+
+  @override
+  String followLeadsSummary(String minutes) {
+    return '$minutes min before';
+  }
+
+  @override
+  String get followEnabled => 'Notices on';
+
+  @override
+  String get followRemove => 'Stop following';
+
+  @override
+  String get followRemoveTitle => 'Stop following this trip?';
+
+  @override
+  String get followRemoveBody => 'You will no longer be notified about it.';
+
+  @override
+  String get followSaved => 'Trip followed';
+
+  @override
+  String get followedMarker => 'Followed trip';
+
+  @override
+  String get everyDay => 'Every day';
+
+  @override
+  String get weekdays => 'Mon–Fri';
+
+  @override
+  String get weekend => 'Sat, Sun';
+
+  @override
+  String get noFollows => 'No followed trips';
+
+  @override
+  String get noFollowsHint =>
+      'Open the timetable of a stop and tap the time of the trip you want: you will be notified before it passes.';
+
+  @override
+  String get notificationsOff => 'Notifications are off';
+
+  @override
+  String get notificationsOffBody => 'Without notifications you cannot be warned when the bus is about to pass.';
+
+  @override
+  String get notificationsBlocked => 'Turn notifications on for this app in the phone settings.';
+
+  @override
+  String get notificationsUnavailable => 'This device cannot receive notifications.';
+
+  @override
+  String get enableNotifications => 'Turn on';
+
+  @override
+  String get noticeChannelName => 'Followed trips';
+
+  @override
+  String get noticeChannelDescription => 'Your bus is about to pass, or something happened to it';
+
+  @override
+  String get errorFollowLimit => 'You can follow at most 30 trips. Remove one first.';
+
+  @override
+  String pushLead(String route, int minutes) {
+    return 'Line $route: in $minutes min';
+  }
+
+  @override
+  String pushArriving(String route) {
+    return 'Line $route: is arriving';
+  }
+
+  @override
+  String get pushScheduled => 'scheduled time';
+
+  @override
+  String pushStopTo(String stop, String headsign) {
+    return '$stop to $headsign';
+  }
+
+  @override
+  String pushCanceledTitle(String route) {
+    return 'Line $route: trip canceled';
+  }
+
+  @override
+  String pushCanceledBody(String time, String place) {
+    return 'The $time at $place was canceled';
+  }
+
+  @override
+  String pushStillTitle(String route, int minutes) {
+    return 'Line $route: bus standing still for $minutes min';
+  }
+
+  @override
+  String pushStillBody(String time, String place) {
+    return 'The $time at $place';
+  }
+
+  @override
+  String pushLostTitle(String route) {
+    return 'Line $route: signal lost';
+  }
+
+  @override
+  String pushLostBody(String time, String place) {
+    return 'The vehicle of the $time at $place stopped transmitting: it may not arrive';
+  }
 }

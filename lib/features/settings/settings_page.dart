@@ -15,6 +15,7 @@ import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/dialogs/confirm_dialog.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/notifications/trips_page.dart'; // feature:push
 import 'package:veribus/features/settings/components/user_avatar.dart';
 import 'package:veribus/features/settings/profile_page.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
@@ -60,6 +61,15 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => context.push(ProfilePage.route),
           ),
           ListTile(leading: const Icon(Icons.logout), title: Text(l10n.signOut), onTap: () => _signOut(context, ref)),
+          // feature:push:start
+          if (Features.push)
+            ListTile(
+              leading: const Icon(Icons.notifications_active_outlined),
+              title: Text(l10n.followedTrips),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push(TripsPage.route),
+            ),
+          // feature:push:end
           SectionHeader(l10n.appearance),
           ListTile(
             leading: const Icon(Icons.palette_outlined),

@@ -14,8 +14,11 @@ abstract final class ArrivalText {
     if (a.status case ArrivalStatus.scheduled || ArrivalStatus.canceled || ArrivalStatus.suppressed) return clock;
     if (a.time == null) return a.stopsAway == null ? l10n.arriving : l10n.stopsAway(a.stopsAway!); // RF-26
     if (a.approximate) return l10n.around(clock); // RF-29b
-    return a.minutes == 0 ? l10n.arriving : l10n.minutes(a.minutes!);
+    return inMinutes(l10n, a.minutes!);
   }
+
+  /// "4 min", or "arriving" at zero.
+  static String inMinutes(AppLocalizations l10n, int minutes) => minutes == 0 ? l10n.arriving : l10n.minutes(minutes);
 
   /// The one-line reason under the time (RF-22).
   static String reason(AppLocalizations l10n, Arrival a, {required bool lineWithoutRealtime}) => switch (a.status) {

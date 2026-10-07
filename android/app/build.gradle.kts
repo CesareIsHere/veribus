@@ -13,6 +13,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Push notifications (Firebase): google-services.json comes from your Firebase project and is not in the repo (see
+// README, "Push notifications"). Without it the app still builds and runs, with no push.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.emilianocesare.veribus"
     compileSdk = flutter.compileSdkVersion
