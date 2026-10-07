@@ -159,7 +159,6 @@
   "routeAhead": "Ancora da percorrere",
   "nextStopName": "Prossima fermata: {stop}",
   "vehicleNumber": "Vettura {label}",
-  "closeRoute": "Chiudi",
   "close": "Chiudi",
   "followedTrips": "Corse seguite",
   "followTrip": "Segui questa corsa",
@@ -186,5 +185,15 @@
   "enableNotifications": "Attiva",
   "noticeChannelName": "Corse seguite",
   "noticeChannelDescription": "Il tuo autobus sta per passare, o gli è successo qualcosa",
-  "errorFollowLimit": "Puoi seguire al massimo 30 corse. Eliminane una prima."
+  "errorFollowLimit": "Puoi seguire al massimo 30 corse. Eliminane una prima.",
+  "pushLead": "Linea {route}: tra {minutes} min",
+  "pushArriving": "Linea {route}: sta arrivando",
+  "pushScheduled": "orario programmato",
+  "pushStopTo": "{stop} verso {headsign}",
+  "pushCanceledTitle": "Linea {route}: corsa cancellata",
+  "pushCanceledBody": "La corsa delle {time} a {place} è stata cancellata",
+  "pushStillTitle": "Linea {route}: bus fermo da {minutes} min",
+  "pushStillBody": "Corsa delle {time} a {place}",
+  "pushLostTitle": "Linea {route}: segnale perso",
+  "pushLostBody": "Il mezzo della corsa delle {time} a {place} ha smesso di trasmettere: potrebbe non arrivare"
 }

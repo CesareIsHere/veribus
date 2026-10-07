@@ -152,3 +152,15 @@ Deno.test("a bad private key fails the send as a retry, with no unhandled reject
     console.error = quiet;
   }
 });
+
+Deno.test("sends in parallel ask Google for the access token once", async () => {
+  const f = fakeFetch(200);
+  try {
+    const push = fcmPush(await serviceAccount(), { now: () => 1000 });
+    const results = await Promise.all([push.send("a", notice), push.send("b", notice), push.send("c", notice)]);
+    assertEquals(results, ["ok", "ok", "ok"]);
+    assertEquals(f.calls.filter((c) => c.url.startsWith("https://oauth2")).length, 1);
+  } finally {
+    f.restore();
+  }
+});

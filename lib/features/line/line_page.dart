@@ -262,7 +262,7 @@ class _LinePageState extends ConsumerState<LinePage> {
                       title: Text(context.l10n.vehicleNumber(selected.label ?? selected.id)),
                       subtitle: nextStop == null ? null : Text(context.l10n.nextStopName(nextStop.name)),
                       trailing: IconButton(
-                        tooltip: context.l10n.closeRoute,
+                        tooltip: context.l10n.close,
                         icon: const Icon(Icons.close),
                         onPressed: () => setState(() => _selected = null),
                       ),

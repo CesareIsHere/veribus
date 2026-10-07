@@ -545,9 +545,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get closeRoute => 'Close';
-
-  @override
   String get close => 'Close';
 
   @override
@@ -632,4 +629,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorFollowLimit => 'You can follow at most 30 trips. Remove one first.';
+
+  @override
+  String pushLead(String route, int minutes) {
+    return 'Line $route: in $minutes min';
+  }
+
+  @override
+  String pushArriving(String route) {
+    return 'Line $route: is arriving';
+  }
+
+  @override
+  String get pushScheduled => 'scheduled time';
+
+  @override
+  String pushStopTo(String stop, String headsign) {
+    return '$stop to $headsign';
+  }
+
+  @override
+  String pushCanceledTitle(String route) {
+    return 'Line $route: trip canceled';
+  }
+
+  @override
+  String pushCanceledBody(String time, String place) {
+    return 'The $time at $place was canceled';
+  }
+
+  @override
+  String pushStillTitle(String route, int minutes) {
+    return 'Line $route: bus standing still for $minutes min';
+  }
+
+  @override
+  String pushStillBody(String time, String place) {
+    return 'The $time at $place';
+  }
+
+  @override
+  String pushLostTitle(String route) {
+    return 'Line $route: signal lost';
+  }
+
+  @override
+  String pushLostBody(String time, String place) {
+    return 'The vehicle of the $time at $place stopped transmitting: it may not arrive';
+  }
 }

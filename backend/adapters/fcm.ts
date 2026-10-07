@@ -2,7 +2,7 @@
 // authorizes `messages:send`. No SDK: the edge runtime has none to spare.
 import type { Notice, PushSender, SendResult } from "../core/notify.ts";
 
-export interface ServiceAccount {
+interface ServiceAccount {
   project_id: string;
   client_email: string;
   private_key: string;
@@ -11,7 +11,7 @@ export interface ServiceAccount {
 const SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 /** Android channel the app creates at start (lib/services/push_notifications_service.dart). */
-export const ANDROID_CHANNEL = "trips";
+const ANDROID_CHANNEL = "trips";
 
 const b64url = (data: ArrayBuffer | string) => {
   const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
@@ -35,10 +35,16 @@ export function fcmPush(json: string, opts: { now?: () => number } = {}): PushSe
   // Imported at the first send, inside its try: a bad key must not become an unhandled rejection at start-up.
   let key: Promise<CryptoKey> | null = null;
   let cached: { token: string; expires: number } | null = null;
+  let renewing: Promise<string> | null = null;
 
   async function accessToken(): Promise<string> {
+    if (cached && cached.expires - 60 > now()) return cached.token;
+    // Sends run in parallel: the first one asks Google for the token, the others wait for it.
+    return await (renewing ??= renew().finally(() => (renewing = null)));
+  }
+
+  async function renew(): Promise<string> {
     const t = now();
-    if (cached && cached.expires - 60 > t) return cached.token;
     const claims = { iss: account.client_email, scope: SCOPE, aud: TOKEN_URL, iat: t, exp: t + 3600 };
     const unsigned = `${b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${b64url(JSON.stringify(claims))}`;
     const sig = await crypto.subtle.sign(

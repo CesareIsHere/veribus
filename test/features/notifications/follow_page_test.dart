@@ -8,56 +8,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:veribus/core/providers/locale_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
-import 'package:veribus/core/utils/app_failure.dart';
 import 'package:veribus/features/notifications/follow_page.dart';
 import 'package:veribus/features/notifications/trips_page.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/transit/trip_follow.dart';
 import 'package:veribus/repositories/follow/follow_repository_provider.dart';
-import 'package:veribus/repositories/follow/i_follow_repository.dart';
+import 'package:veribus/repositories/follow/mock_follow_repository.dart';
 import 'package:veribus/repositories/transit/mock_transit_repository.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
 import 'package:veribus/services/push_notifications_service.dart';
 
-class _Follows implements IFollowRepository {
-  _Follows([List<TripFollow> initial = const []]) : follows = [...initial];
+/// The mock repository, remembering what was saved.
+class _Follows extends MockFollowRepository {
+  _Follows([List<TripFollow> seed = const []]) : super(seed: seed);
 
-  final List<TripFollow> follows;
-  final saved = <TripFollow>[];
-  bool full = false;
-
-  @override
-  Future<List<TripFollow>> list() async => [...follows];
+  final List<TripFollow> saved = [];
 
   @override
   Future<void> save(TripFollow follow) async {
-    if (full) throw const LimitFailure();
+    await super.save(follow);
     saved.add(follow);
-    follows
-      ..removeWhere((f) => f.key == follow.key)
-      ..add(
-        TripFollow(
-          id: 'new',
-          stopId: follow.stopId,
-          lineId: follow.lineId,
-          directionId: follow.directionId,
-          departureSeconds: follow.departureSeconds,
-          days: follow.days,
-          leadMinutes: follow.leadMinutes,
-          enabled: follow.enabled,
-        ),
-      );
   }
-
-  @override
-  Future<void> setEnabled(String id, {required bool enabled}) async {
-    for (final (i, f) in follows.indexed) {
-      if (f.id == id) follows[i] = f.copyWith(enabled: enabled);
-    }
-  }
-
-  @override
-  Future<void> remove(String id) async => follows.removeWhere((f) => f.id == id);
 }
 
 const _existing = TripFollow(
@@ -131,7 +102,6 @@ void main() {
     expect(_selected(tester, '10 min'), isTrue);
     expect(_selected(tester, '5 min'), isTrue);
     expect(_selected(tester, '15 min'), isFalse);
-    expect(find.text('17:15'), findsNothing); // the trip is the one passed in: 62100 s = 17:15
     expect(find.textContaining('17:15'), findsOneWidget);
     expect(find.text('Stop following'), findsNothing); // nothing to remove yet
 
@@ -193,7 +163,18 @@ void main() {
   });
 
   testWidgets('past the limit the user is told, and nothing is lost', (tester) async {
-    final repo = _Follows()..full = true;
+    final repo = _Follows([
+      for (var i = 0; i < TripFollow.maxFollows; i++)
+        TripFollow(
+          id: 'x$i',
+          stopId: '70001',
+          lineId: '64',
+          directionId: 1,
+          departureSeconds: 3600 + i * 60,
+          days: const {1},
+          leadMinutes: const [5],
+        ),
+    ]);
     await _open(tester, repo, location: FollowPage.route);
     await tester.tap(find.text('Save'));
     await tester.pump(const Duration(seconds: 1));

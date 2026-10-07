@@ -2,12 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' show ClientException;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veribus/core/utils/app_failure.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/repositories/supabase_call.dart';
 import 'package:veribus/repositories/transit/i_transit_repository.dart';
 
 /// `api` schema RPCs (called with the user's JWT) and the public `network` Storage bucket.
@@ -17,7 +16,7 @@ class SupabaseTransitRepository implements ITransitRepository {
   final SupabaseClient _client;
 
   Future<dynamic> _rpc(String fn, [Map<String, dynamic>? params]) =>
-      _call(() => _client.schema('api').rpc<dynamic>(fn, params: params));
+      supabaseCall(() => _client.schema('api').rpc<dynamic>(fn, params: params));
 
   @override
   Future<NetworkInfo> networkInfo() async => NetworkInfo.fromJson(await _rpc('network') as Map<String, dynamic>);
@@ -28,7 +27,7 @@ class SupabaseTransitRepository implements ITransitRepository {
     final file = kIsWeb ? null : File('${(await getApplicationSupportDirectory()).path}/network_${info.version}.json');
     if (file != null && file.existsSync()) return await compute(_parse, await file.readAsString());
 
-    final bytes = await _call(() => _client.storage.from('network').download(info.path));
+    final bytes = await supabaseCall(() => _client.storage.from('network').download(info.path));
     final text = utf8.decode(bytes);
     final network = await compute(_parse, text);
     if (file != null) {
@@ -63,19 +62,4 @@ class SupabaseTransitRepository implements ITransitRepository {
   Future<List<ServiceAlert>> alerts() async => [
     for (final a in await _rpc('alerts') as List) ServiceAlert.fromJson(a as Map<String, dynamic>),
   ];
-
-  /// SDK errors become [AppFailure]s here, so the rest of the app never sees Supabase types.
-  static Future<T> _call<T>(Future<T> Function() request) async {
-    try {
-      return await request();
-    } on PostgrestException catch (e) {
-      throw ServerFailure(statusCode: int.tryParse(e.code ?? '') ?? 500);
-    } on StorageException catch (e) {
-      throw ServerFailure(statusCode: int.tryParse(e.statusCode ?? '') ?? 500);
-    } on SocketException {
-      throw const NetworkFailure();
-    } on ClientException {
-      throw const NetworkFailure();
-    }
-  }
 }

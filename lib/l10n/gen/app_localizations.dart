@@ -1046,12 +1046,6 @@ abstract class AppLocalizations {
   /// **'Vehicle {label}'**
   String vehicleNumber(String label);
 
-  /// No description provided for @closeRoute.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get closeRoute;
-
   /// No description provided for @close.
   ///
   /// In en, this message translates to:
@@ -1213,6 +1207,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can follow at most 30 trips. Remove one first.'**
   String get errorFollowLimit;
+
+  /// No description provided for @pushLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {route}: in {minutes} min'**
+  String pushLead(String route, int minutes);
+
+  /// No description provided for @pushArriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {route}: is arriving'**
+  String pushArriving(String route);
+
+  /// No description provided for @pushScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'scheduled time'**
+  String get pushScheduled;
+
+  /// No description provided for @pushStopTo.
+  ///
+  /// In en, this message translates to:
+  /// **'{stop} to {headsign}'**
+  String pushStopTo(String stop, String headsign);
+
+  /// No description provided for @pushCanceledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {route}: trip canceled'**
+  String pushCanceledTitle(String route);
+
+  /// No description provided for @pushCanceledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The {time} at {place} was canceled'**
+  String pushCanceledBody(String time, String place);
+
+  /// No description provided for @pushStillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {route}: bus standing still for {minutes} min'**
+  String pushStillTitle(String route, int minutes);
+
+  /// No description provided for @pushStillBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The {time} at {place}'**
+  String pushStillBody(String time, String place);
+
+  /// No description provided for @pushLostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {route}: signal lost'**
+  String pushLostTitle(String route);
+
+  /// No description provided for @pushLostBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The vehicle of the {time} at {place} stopped transmitting: it may not arrive'**
+  String pushLostBody(String time, String place);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

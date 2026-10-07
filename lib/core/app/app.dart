@@ -32,7 +32,7 @@ class App extends ConsumerWidget {
       );
     });
 
-    if (Features.push) ref.watch(pushProvider); // feature:push
+    if (Features.push) ref.listen(pushProvider, (_, _) {}); // feature:push
 
     return MaterialApp.router(
       onGenerateTitle: (_) => AppConfig.appName,

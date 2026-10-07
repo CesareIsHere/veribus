@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/notifications/follow_page.dart';
 import 'package:veribus/features/notifications/providers/follow_providers.dart';
+import 'package:veribus/models/transit/trip_follow.dart';
 
 /// A time of the timetable you can tap to follow that trip (or edit its follow): a bell marks the ones followed.
 class FollowTimeChip extends ConsumerWidget {
@@ -28,7 +29,8 @@ class FollowTimeChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final followed = ref.watch(followOfProvider('$stopId/$lineId/$directionId/$seconds')) != null;
+    final key = TripFollow.keyOf(stopId, lineId, directionId, seconds);
+    final followed = ref.watch(followKeysProvider.select((keys) => keys.contains(key)));
     return FilterChip(
       label: Text(label),
       labelStyle: emphasized ? context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700) : null,

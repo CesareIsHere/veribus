@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/utils/exception_handler.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
@@ -26,7 +27,7 @@ class TripsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final network = ref.watch(networkProvider).value;
-    final follows = ref.watch(followsProvider);
+    final follows = ref.watch(followsProvider(live: true));
     return Scaffold(
       appBar: AppBar(
         // Opened from a notice there is nothing to pop: go back to the tabs.
@@ -42,7 +43,7 @@ class TripsPage extends ConsumerWidget {
           ],
         ),
         AsyncValue(:final value?) => RefreshIndicator(
-          onRefresh: () => ref.refresh(followsProvider.future),
+          onRefresh: () => ref.refresh(followsProvider(live: true).future),
           child: ListView(
             padding: context.listPadding(),
             children: [
@@ -72,7 +73,7 @@ class _FollowTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final line = network?.lines[follow.lineId];
-    final headsign = line?.directions.where((d) => d.id == follow.directionId).firstOrNull?.headsign ?? '';
+    final headsign = line?.headsignOf(follow.directionId) ?? '';
     final today = follow.today;
     final muted = follow.enabled ? null : context.colors.onSurfaceVariant;
     return InkWell(
@@ -121,7 +122,9 @@ class _FollowTile extends ConsumerWidget {
                           StatusTag(today.status),
                           if (today.status != ArrivalStatus.canceled && today.status != ArrivalStatus.suppressed)
                             Text(
-                              today.minutes == null ? clockOf(_seconds(today.time)) : l10n.minutes(today.minutes!),
+                              today.minutes == null
+                                  ? DateFormat.Hm().format(today.time.toLocal())
+                                  : ArrivalText.inMinutes(l10n, today.minutes!),
                               style: context.textTheme.titleSmall,
                             ),
                           if (today.signal case final s?)
@@ -137,7 +140,7 @@ class _FollowTile extends ConsumerWidget {
               onChanged: (v) => unawaited(
                 ExceptionHandler.handle(
                   context,
-                  () => ref.read(followsProvider.notifier).setEnabled(follow.id!, enabled: v),
+                  () => ref.read(followsProvider(live: true).notifier).setEnabled(follow.id!, enabled: v),
                 ),
               ),
             ),
@@ -146,6 +149,4 @@ class _FollowTile extends ConsumerWidget {
       ),
     );
   }
-
-  static int _seconds(DateTime t) => t.toLocal().hour * 3600 + t.toLocal().minute * 60;
 }

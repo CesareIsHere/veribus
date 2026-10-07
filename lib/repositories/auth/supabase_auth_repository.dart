@@ -14,6 +14,9 @@ class SupabaseAuthRepository implements IAuthRepository {
 
   final SupabaseClient _client;
 
+  /// The push token registered in this session, taken back at sign-out.
+  String? _pushToken;
+
   GoTrueClient get _auth => _client.auth;
 
   /// OAuth return address: the current site on web, an App Link on mobile.
@@ -130,13 +133,7 @@ class SupabaseAuthRepository implements IAuthRepository {
   Future<void> registerPushToken(String token, {required String locale}) async {
     if (_auth.currentUser == null) return;
     await _client.schema('api').rpc<void>('register_push_token', params: {'token': token, 'locale': locale});
-  }
-
-  @override
-  Future<void> unregisterPushToken(String token) async {
-    final uid = _auth.currentUser?.id;
-    if (uid == null) return;
-    await _client.from('push_tokens').delete().eq('user_id', uid).eq('token', token);
+    _pushToken = token;
   }
 
   /// Rows cascade from `auth.users`; the avatar is removed first (Storage
@@ -151,7 +148,23 @@ class SupabaseAuthRepository implements IAuthRepository {
   });
 
   @override
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    await _forgetPushToken();
+    await _auth.signOut();
+  }
+
+  /// This device stops getting the notices of the user who leaves. Best effort: signing out must not fail for this.
+  Future<void> _forgetPushToken() async {
+    final token = _pushToken;
+    final uid = _auth.currentUser?.id;
+    _pushToken = null;
+    if (token == null || uid == null) return;
+    try {
+      await _client.from('push_tokens').delete().eq('user_id', uid).eq('token', token);
+    } on Exception catch (e, s) {
+      talker.handle(e, s, 'Supabase push token');
+    }
+  }
 
   static UserModel? _toModel(User? user) {
     if (user == null) return null;

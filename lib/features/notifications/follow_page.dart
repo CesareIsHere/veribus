@@ -54,7 +54,7 @@ class _FollowPageState extends ConsumerState<FollowPage> {
   static const _weekdays = {1, 2, 3, 4, 5};
   static const _defaultLeads = [10, 5];
 
-  late final String _key = '${widget.stopId}/${widget.lineId}/${widget.directionId}/${widget.departureSeconds}';
+  late final String _key = TripFollow.keyOf(widget.stopId, widget.lineId, widget.directionId, widget.departureSeconds);
   Set<int>? _days;
   List<int>? _leads;
   bool? _enabled;
@@ -65,13 +65,12 @@ class _FollowPageState extends ConsumerState<FollowPage> {
     final l10n = context.l10n;
     final network = ref.watch(networkProvider).value;
     final existing = ref.watch(followOfProvider(_key));
-    final follows = ref.watch(followsProvider);
+    final follows = ref.watch(followsProvider());
     // Existing follows arrive with the first read: the form starts from them, then from what the user changed.
     final days = _days ?? existing?.days ?? _weekdays;
     final leads = _leads ?? existing?.leadMinutes ?? _defaultLeads;
     final enabled = _enabled ?? existing?.enabled ?? true;
     final line = network?.lines[widget.lineId];
-    final direction = line?.directions.where((d) => d.id == widget.directionId).firstOrNull;
     final valid = days.isNotEmpty && leads.isNotEmpty;
 
     return Scaffold(
@@ -80,9 +79,7 @@ class _FollowPageState extends ConsumerState<FollowPage> {
         title: Text(existing == null ? l10n.followTrip : l10n.followedMarker),
         actions: [
           TextButton(
-            onPressed: valid && !_saving && follows.hasValue
-                ? () => unawaited(_save(existing, days, leads, enabled))
-                : null,
+            onPressed: valid && !_saving && follows.hasValue ? () => unawaited(_save(days, leads, enabled)) : null,
             child: Text(l10n.save),
           ),
         ],
@@ -94,7 +91,7 @@ class _FollowPageState extends ConsumerState<FollowPage> {
             margin: EdgeInsets.zero,
             child: ListTile(
               leading: LineBadge(line?.name ?? widget.lineId),
-              title: Text('→ ${direction?.headsign ?? ''}'),
+              title: Text('→ ${line?.headsignOf(widget.directionId) ?? ''}'),
               subtitle: Text(
                 '${network?.stopById[widget.stopId]?.name ?? widget.stopId} · ${clockOf(widget.departureSeconds)}',
               ),
@@ -134,9 +131,8 @@ class _FollowPageState extends ConsumerState<FollowPage> {
                   // The fourth is not offered: three are chosen already.
                   onSelected: !leads.contains(m) && leads.length >= TripFollow.maxLeads
                       ? null
-                      : (on) => setState(
-                          () => _leads = [...leads.where((x) => x != m), if (on) m]..sort((a, b) => b.compareTo(a)),
-                        ),
+                      : (on) =>
+                            setState(() => _leads = TripFollow.sortedLeads([...leads.where((x) => x != m), if (on) m])),
                 ),
             ],
           ),
@@ -164,11 +160,11 @@ class _FollowPageState extends ConsumerState<FollowPage> {
     );
   }
 
-  Future<void> _save(TripFollow? existing, Set<int> days, List<int> leads, bool enabled) async {
+  Future<void> _save(Set<int> days, List<int> leads, bool enabled) async {
     setState(() => _saving = true);
     final l10n = context.l10n;
     final push = ref.read(pushProvider.notifier);
-    final follows = ref.read(followsProvider.notifier);
+    final follows = ref.read(followsProvider().notifier);
     final saved = await ExceptionHandler.handle(context, () async {
       // The first follow is the moment to ask for the permission: the reason is clear.
       if (!ref.read(pushProvider).ready) await push.enable();
@@ -204,7 +200,7 @@ class _FollowPageState extends ConsumerState<FollowPage> {
     if (!confirmed || !mounted) return;
     final removed = await ExceptionHandler.handle(
       context,
-      () => ref.read(followsProvider.notifier).remove(existing.id!),
+      () => ref.read(followsProvider().notifier).remove(existing.id!),
     );
     if (removed && mounted) context.pop();
   }

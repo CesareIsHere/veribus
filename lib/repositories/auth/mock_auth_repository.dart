@@ -72,9 +72,6 @@ class MockAuthRepository implements IAuthRepository {
   Future<void> registerPushToken(String token, {required String locale}) async {}
 
   @override
-  Future<void> unregisterPushToken(String token) async {}
-
-  @override
   Future<void> deleteAccount() => signOut();
 
   @override

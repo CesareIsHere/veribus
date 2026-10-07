@@ -15,7 +15,6 @@ import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/dialogs/confirm_dialog.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
-import 'package:veribus/features/notifications/providers/push_notifier.dart'; // feature:push
 import 'package:veribus/features/notifications/trips_page.dart'; // feature:push
 import 'package:veribus/features/settings/components/user_avatar.dart';
 import 'package:veribus/features/settings/profile_page.dart';
@@ -213,12 +212,6 @@ class SettingsPage extends ConsumerWidget {
       message: l10n.signOutConfirm,
       confirmLabel: l10n.signOut,
     );
-    if (confirmed && context.mounted) {
-      await ExceptionHandler.handle(context, () async {
-        // This device must not keep notifying the user who leaves. // feature:push
-        if (Features.push) await ref.read(pushProvider.notifier).unregister(); // feature:push
-        await ref.read(authProvider.notifier).signOut();
-      });
-    }
+    if (confirmed && context.mounted) await ExceptionHandler.handle(context, ref.read(authProvider.notifier).signOut);
   }
 }

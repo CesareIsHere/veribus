@@ -31,9 +31,6 @@ class PushState {
 class PushNotifier extends _$PushNotifier {
   IPushService get _service => ref.read(pushServiceProvider);
 
-  /// The token registered for the current user, to take it back at sign-out.
-  String? _registered;
-
   @override
   PushState build() {
     final service = ref.watch(pushServiceProvider);
@@ -78,25 +75,12 @@ class PushNotifier extends _$PushNotifier {
     return state.ready;
   }
 
-  /// At sign-out: this device stops getting the user's notices.
-  Future<void> unregister() async {
-    try {
-      final token = _registered ?? (state.ready ? await _service.token() : null);
-      _registered = null;
-      if (token == null) return;
-      await ref.read(authRepositoryProvider).unregisterPushToken(token);
-    } on Object catch (e, s) {
-      talker.handle(e, s); // signing out must not fail for this
-    }
-  }
-
   Future<void> _register({String? token}) async {
     if (!state.ready || ref.read(authProvider).value == null) return;
     try {
       final t = token ?? await _service.token();
       if (t == null) return;
       await ref.read(authRepositoryProvider).registerPushToken(t, locale: _l10n().localeName);
-      _registered = t;
     } on Object catch (e, s) {
       talker.handle(e, s); // a failed link is retried at the next launch or token refresh
     }

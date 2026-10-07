@@ -33,11 +33,8 @@ abstract interface class IAuthRepository {
   Future<void> updateProfile({String? displayName, Uint8List? avatar});
 
   /// Links a push token (FCM) to the signed-in user, with the language the notices are written in. Again with a new
-  /// [locale], it only updates that.
+  /// [locale], it only updates that. The token is taken back by [signOut], and a token has one user at a time.
   Future<void> registerPushToken(String token, {required String locale});
-
-  /// Stops notices for the signed-in user on the device with [token] (before signing out).
-  Future<void> unregisterPushToken(String token);
 
   Future<void> deleteAccount();
 

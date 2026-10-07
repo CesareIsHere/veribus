@@ -545,9 +545,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get closeRoute => 'Chiudi';
-
-  @override
   String get close => 'Chiudi';
 
   @override
@@ -632,4 +629,52 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorFollowLimit => 'Puoi seguire al massimo 30 corse. Eliminane una prima.';
+
+  @override
+  String pushLead(String route, int minutes) {
+    return 'Linea $route: tra $minutes min';
+  }
+
+  @override
+  String pushArriving(String route) {
+    return 'Linea $route: sta arrivando';
+  }
+
+  @override
+  String get pushScheduled => 'orario programmato';
+
+  @override
+  String pushStopTo(String stop, String headsign) {
+    return '$stop verso $headsign';
+  }
+
+  @override
+  String pushCanceledTitle(String route) {
+    return 'Linea $route: corsa cancellata';
+  }
+
+  @override
+  String pushCanceledBody(String time, String place) {
+    return 'La corsa delle $time a $place è stata cancellata';
+  }
+
+  @override
+  String pushStillTitle(String route, int minutes) {
+    return 'Linea $route: bus fermo da $minutes min';
+  }
+
+  @override
+  String pushStillBody(String time, String place) {
+    return 'Corsa delle $time a $place';
+  }
+
+  @override
+  String pushLostTitle(String route) {
+    return 'Linea $route: segnale perso';
+  }
+
+  @override
+  String pushLostBody(String time, String place) {
+    return 'Il mezzo della corsa delle $time a $place ha smesso di trasmettere: potrebbe non arrivare';
+  }
 }

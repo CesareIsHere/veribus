@@ -218,7 +218,7 @@ begin
       insert into public.trip_follow (stop_id, route_id, direction_id, departure_s, days, lead_min)
       values ('B', 'R1', 0, 1000 + i, '{1}', '{5}');
     exception when others then
-      perform pg_temp.check(sqlerrm = 'Too many followed trips', 'limit message');
+      perform pg_temp.check(sqlstate = '54000' and sqlerrm = 'Too many followed trips', 'limit error');
       perform pg_temp.check(i > 20, 'the limit comes after 30 rows in total');
       insert into public.trip_follow (stop_id, route_id, direction_id, departure_s, days, lead_min)
       values ('B', 'R1', 0, 1001, '{2}', '{10}')

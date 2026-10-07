@@ -7,16 +7,17 @@ import 'package:veribus/repositories/follow/follow_repository_provider.dart';
 
 part 'follow_providers.g.dart';
 
-/// The trips the user follows, with today's state, refreshed while a page that shows them is open.
+/// The trips the user follows, with today's state. [live] keeps it fresh while the page that shows today's state is open;
+/// the timetable and the form need only what is followed, not a poll of the server every 15 seconds.
 @riverpod
 class FollowsNotifier extends _$FollowsNotifier {
   @override
-  Future<List<TripFollow>> build() {
-    ref.refreshEvery();
+  Future<List<TripFollow>> build({bool live = false}) {
+    if (live) ref.refreshEvery();
     return ref.watch(followRepositoryProvider).list();
   }
 
-  /// Creates or updates; the list is read again so the page shows what the server holds.
+  /// Creates or updates; every list is read again so the pages show what the server holds.
   Future<void> save(TripFollow follow) => _then(() => ref.read(followRepositoryProvider).save(follow));
 
   Future<void> setEnabled(String id, {required bool enabled}) =>
@@ -26,17 +27,20 @@ class FollowsNotifier extends _$FollowsNotifier {
 
   Future<void> _then(Future<void> Function() change) async {
     await change();
-    ref.invalidateSelf();
+    ref.invalidate(followsProvider);
     await future;
   }
 }
 
-/// The follow of a trip, if the user follows it (the timetable marks these).
+/// The keys of the followed trips (`TripFollow.key`): what the timetable marks. Watch it with `select` to rebuild only
+/// when one trip flips.
+@riverpod
+Set<String> followKeys(Ref ref) => {for (final f in ref.watch(followsProvider()).value ?? const <TripFollow>[]) f.key};
+
+/// The follow of a trip, if the user follows it (the form starts from it).
 @riverpod
 TripFollow? followOf(Ref ref, String key) {
-  final follows = ref.watch(followsProvider).value;
-  if (follows == null) return null;
-  for (final f in follows) {
+  for (final f in ref.watch(followsProvider()).value ?? const <TripFollow>[]) {
     if (f.key == key) return f;
   }
   return null;

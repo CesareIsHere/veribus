@@ -99,6 +99,9 @@ class Line {
   final bool night;
   final List<({int id, String headsign})> directions;
 
+  /// The destination of a direction, empty when the line has no such direction.
+  String headsignOf(int directionId) => directions.where((d) => d.id == directionId).firstOrNull?.headsign ?? '';
+
   /// "Stazione Trastevere – Termini", or the single headsign of a circular line. An en dash, not ⇄: every font has it.
   String get ends => directions.map((d) => d.headsign).toSet().join(' – ');
 }

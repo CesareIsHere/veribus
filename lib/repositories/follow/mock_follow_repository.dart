@@ -3,14 +3,16 @@ import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/trip_follow.dart';
 import 'package:veribus/repositories/follow/i_follow_repository.dart';
 
-/// In memory, with two follows to start from.
+/// In memory. By default it starts with two follows (the mock timetable has a trip every 15 minutes); `seed` starts it
+/// with others, or with none.
 class MockFollowRepository implements IFollowRepository {
-  MockFollowRepository() {
+  MockFollowRepository({List<TripFollow>? seed}) : _follows = [...seed ?? _demo()];
+
+  static List<TripFollow> _demo() {
     final now = DateTime.now();
     final seconds = now.hour * 3600 + now.minute * 60;
-    // The next quarter of an hour, like the mock timetable (every 15 minutes).
-    final next = (seconds ~/ 900 + 1) * 900;
-    _follows = [
+    final next = (seconds ~/ 900 + 1) * 900; // the next quarter of an hour
+    return [
       TripFollow(
         id: 'f1',
         stopId: '70001',
@@ -33,8 +35,11 @@ class MockFollowRepository implements IFollowRepository {
     ];
   }
 
-  late List<TripFollow> _follows;
+  final List<TripFollow> _follows;
   var _ids = 2;
+
+  /// What is stored, without today's state.
+  List<TripFollow> get follows => List.unmodifiable(_follows);
 
   @override
   Future<List<TripFollow>> list() async {
@@ -43,25 +48,18 @@ class MockFollowRepository implements IFollowRepository {
     final midnight = DateTime(now.year, now.month, now.day);
     return [
       for (final f in _follows)
-        TripFollow(
-          id: f.id,
-          stopId: f.stopId,
-          lineId: f.lineId,
-          directionId: f.directionId,
-          departureSeconds: f.departureSeconds,
-          days: f.days,
-          leadMinutes: f.leadMinutes,
-          enabled: f.enabled,
-          // Within two hours of its time the trip is "today's": confirmed, a few minutes late.
-          today: switch (midnight.add(Duration(seconds: f.departureSeconds)).add(const Duration(minutes: 2))) {
-            final t when f.enabled && t.difference(now).inMinutes < 120 && f.days.contains(now.weekday) => FollowToday(
+        // Within two hours of its time the trip is "today's": confirmed, a few minutes late.
+        if (midnight.add(Duration(seconds: f.departureSeconds, minutes: 2)) case final t
+            when f.enabled && f.days.contains(now.weekday) && t.difference(now).inMinutes < 120)
+          f.copyWith(
+            today: FollowToday(
               status: ArrivalStatus.confirmed,
               time: t,
               minutes: t.difference(now).inMinutes.clamp(0, 999),
             ),
-            _ => null,
-          },
-        ),
+          )
+        else
+          f,
     ];
   }
 
@@ -69,44 +67,20 @@ class MockFollowRepository implements IFollowRepository {
   Future<void> save(TripFollow follow) async {
     final i = _follows.indexWhere((f) => f.key == follow.key);
     if (i >= 0) {
-      _follows[i] = TripFollow(
-        id: _follows[i].id,
-        stopId: follow.stopId,
-        lineId: follow.lineId,
-        directionId: follow.directionId,
-        departureSeconds: follow.departureSeconds,
-        days: follow.days,
-        leadMinutes: follow.leadMinutes,
-        enabled: follow.enabled,
-      );
-      return;
+      _follows[i] = follow.copyWith(id: _follows[i].id);
+    } else if (_follows.length >= TripFollow.maxFollows) {
+      throw const LimitFailure();
+    } else {
+      _follows.add(follow.copyWith(id: 'f${++_ids}'));
     }
-    if (_follows.length >= TripFollow.maxFollows) throw const LimitFailure();
-    _follows.add(
-      TripFollow(
-        id: 'f${++_ids}',
-        stopId: follow.stopId,
-        lineId: follow.lineId,
-        directionId: follow.directionId,
-        departureSeconds: follow.departureSeconds,
-        days: follow.days,
-        leadMinutes: follow.leadMinutes,
-        enabled: follow.enabled,
-      ),
-    );
   }
 
   @override
   Future<void> setEnabled(String id, {required bool enabled}) async {
-    _follows = [
-      for (final f in _follows)
-        if (f.id == id) f.copyWith(enabled: enabled) else f,
-    ];
+    final i = _follows.indexWhere((f) => f.id == id);
+    if (i >= 0) _follows[i] = _follows[i].copyWith(enabled: enabled);
   }
 
   @override
-  Future<void> remove(String id) async => _follows = [
-    for (final f in _follows)
-      if (f.id != id) f,
-  ];
+  Future<void> remove(String id) async => _follows.removeWhere((f) => f.id == id);
 }

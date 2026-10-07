@@ -47,6 +47,8 @@ class FirebasePushService implements IPushService {
   final _opened = StreamController<String>.broadcast();
   final _tokens = StreamController<String>.broadcast();
   var _ready = false;
+  var _channelName = '';
+  var _channelDescription = '';
 
   @override
   Future<bool> init({required String channelName, required String channelDescription}) async {
@@ -79,14 +81,16 @@ class FirebasePushService implements IPushService {
           ),
         );
     // With the app open FCM shows nothing by itself: the notice is drawn here.
-    FirebaseMessaging.onMessage.listen((m) => unawaited(_show(m, channelName, channelDescription)));
+    _channelName = channelName;
+    _channelDescription = channelDescription;
+    FirebaseMessaging.onMessage.listen((m) => unawaited(_show(m)));
     FirebaseMessaging.onMessageOpenedApp.listen((m) => _opened.add(_link(m)));
     FirebaseMessaging.instance.onTokenRefresh.listen(_tokens.add);
     _ready = true;
     return true;
   }
 
-  Future<void> _show(RemoteMessage m, String channelName, String channelDescription) async {
+  Future<void> _show(RemoteMessage m) async {
     final notification = m.notification;
     if (notification == null) return;
     await _local.show(
@@ -97,10 +101,11 @@ class FirebasePushService implements IPushService {
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           noticeChannelId,
-          channelName,
-          channelDescription: channelDescription,
+          _channelName,
+          channelDescription: _channelDescription,
           importance: Importance.high,
           priority: Priority.high,
+          // Same tag, same notice: "in 10 min" replaces "in 15 min".
           tag: m.data['follow_id'] as String?,
         ),
         iOS: const DarwinNotificationDetails(),

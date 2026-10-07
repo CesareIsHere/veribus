@@ -43,7 +43,7 @@ final class PushNotifierProvider extends $NotifierProvider<PushNotifier, PushSta
   }
 }
 
-String _$pushNotifierHash() => r'78afc6ac65e26b07703db9561420d15c95c2c392';
+String _$pushNotifierHash() => r'd0695c827def6df1ce150f121f834760be55d988';
 
 /// Starts push at launch, keeps this device's token linked to the signed-in user (with the language of the app),
 /// and opens the page of a notice the user taps.

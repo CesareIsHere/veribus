@@ -292,7 +292,6 @@
       }
     }
   },
-  "closeRoute": "Close",
   "close": "Close",
   "followedTrips": "Followed trips",
   "followTrip": "Follow this trip",
@@ -333,5 +332,96 @@
   "enableNotifications": "Turn on",
   "noticeChannelName": "Followed trips",
   "noticeChannelDescription": "Your bus is about to pass, or something happened to it",
-  "errorFollowLimit": "You can follow at most 30 trips. Remove one first."
+  "errorFollowLimit": "You can follow at most 30 trips. Remove one first.",
+  "pushLead": "Line {route}: in {minutes} min",
+  "@pushLead": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "pushArriving": "Line {route}: is arriving",
+  "@pushArriving": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "pushScheduled": "scheduled time",
+  "pushStopTo": "{stop} to {headsign}",
+  "@pushStopTo": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      },
+      "headsign": {
+        "type": "String"
+      }
+    }
+  },
+  "pushCanceledTitle": "Line {route}: trip canceled",
+  "@pushCanceledTitle": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "pushCanceledBody": "The {time} at {place} was canceled",
+  "@pushCanceledBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "pushStillTitle": "Line {route}: bus standing still for {minutes} min",
+  "@pushStillTitle": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "pushStillBody": "The {time} at {place}",
+  "@pushStillBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "pushLostTitle": "Line {route}: signal lost",
+  "@pushLostTitle": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "pushLostBody": "The vehicle of the {time} at {place} stopped transmitting: it may not arrive",
+  "@pushLostBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  }
 }

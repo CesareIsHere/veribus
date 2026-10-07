@@ -2,6 +2,8 @@
 // records it as sent (`notify.claim`); this module writes the notice in the user's language, hands it to a push sender
 // and gives back what failed. It knows nothing of FCM or Postgres: the runtimes plug the ports in.
 
+import { noticeStrings } from "./notice_strings.ts";
+
 export type NoticeEvent = "lead" | "canceled" | "still" | "lost";
 
 export interface Device {
@@ -76,15 +78,23 @@ export async function runNotifier(ports: { store: NotifyStore; push: PushSender 
   const retry: Claim[] = [];
   const dead = new Set<string>();
 
-  for (const claim of claims) {
+  // Every send at once: a few notices a cycle, and a slow FCM must not stretch the cycle by its timeout per device.
+  const outcomes = await Promise.all(claims.map(async (claim) => ({
+    claim,
+    results: await Promise.all(claim.devices.map(async (d) => ({
+      token: d.token,
+      result: await ports.push.send(d.token, render(claim, d.locale)),
+    }))),
+  })));
+
+  for (const { claim, results } of outcomes) {
     let delivered = false;
     let transient = false;
-    for (const device of claim.devices) {
-      const result = await ports.push.send(device.token, render(claim, device.locale));
+    for (const { token, result } of results) {
       if (result === "ok") {
         delivered = true;
         summary.sent++;
-      } else if (result === "invalid") dead.add(device.token);
+      } else if (result === "invalid") dead.add(token);
       else if (result === "retry") transient = true;
       else summary.failed++;
     }
@@ -116,46 +126,39 @@ function hhmm(epoch: number, locale: string): string {
   return f.format(new Date(epoch * 1000));
 }
 
-/** The notice in the device's language (Italian or English). */
+/** `{name}` placeholders of a template. */
+function fill(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+}
+
+/** The notice in the device's language (the texts come from the ARB files: notice_strings.ts), English by default. */
 export function render(c: Claim, locale: string): Notice {
-  const it = locale.toLowerCase().startsWith("it");
-  const lang = it ? "it-IT" : "en-GB";
-  const trip = hhmm(c.scheduled, lang);
-  const to = c.headsign ? (it ? ` verso ${c.headsign}` : ` to ${c.headsign}`) : "";
+  const lang = locale.slice(0, 2).toLowerCase();
+  const t = noticeStrings[lang] ?? noticeStrings.en;
+  const tpl = (key: string, values: Record<string, string | number> = {}) => fill(t[key], values);
+  const route = c.route;
+  const time = hhmm(c.scheduled, noticeStrings[lang] ? lang : "en-GB");
+  const place = c.headsign ? tpl("pushStopTo", { stop: c.stop, headsign: c.headsign }) : c.stop;
   const min = c.minutes ?? 0;
   const base = { tag: c.followId, data: { type: "trip", event: c.event, follow_id: c.followId, link: "/trips" } };
 
   switch (c.event) {
-    case "lead": {
-      const when = min <= 0 ? (it ? "sta arrivando" : "is arriving") : it ? `tra ${min} min` : `in ${min} min`;
-      const approx = c.realtime ? "" : it ? " · orario programmato" : " · scheduled time";
+    case "lead":
       return {
         ...base,
-        title: it ? `Linea ${c.route}: ${when}` : `Line ${c.route}: ${when}`,
-        body: `${c.stop}${to}${approx}`,
+        title: min <= 0 ? tpl("pushArriving", { route }) : tpl("pushLead", { route, minutes: min }),
+        // Without realtime the time is only the schedule, and the notice says so.
+        body: c.realtime ? place : `${place} · ${tpl("pushScheduled")}`,
       };
-    }
     case "canceled":
-      return {
-        ...base,
-        title: it ? `Linea ${c.route}: corsa cancellata` : `Line ${c.route}: trip canceled`,
-        body: it
-          ? `La corsa delle ${trip} a ${c.stop}${to} è stata cancellata`
-          : `The ${trip} at ${c.stop}${to} was canceled`,
-      };
+      return { ...base, title: tpl("pushCanceledTitle", { route }), body: tpl("pushCanceledBody", { time, place }) };
     case "still":
       return {
         ...base,
-        title: it ? `Linea ${c.route}: bus fermo da ${min} min` : `Line ${c.route}: bus standing still for ${min} min`,
-        body: it ? `Corsa delle ${trip} a ${c.stop}${to}` : `The ${trip} at ${c.stop}${to}`,
+        title: tpl("pushStillTitle", { route, minutes: min }),
+        body: tpl("pushStillBody", { time, place }),
       };
     case "lost":
-      return {
-        ...base,
-        title: it ? `Linea ${c.route}: segnale perso` : `Line ${c.route}: signal lost`,
-        body: it
-          ? `Il mezzo della corsa delle ${trip} a ${c.stop} ha smesso di trasmettere: potrebbe non arrivare`
-          : `The vehicle of the ${trip} at ${c.stop} stopped transmitting: it may not arrive`,
-      };
+      return { ...base, title: tpl("pushLostTitle", { route }), body: tpl("pushLostBody", { time, place: c.stop }) };
   }
 }
