@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:veribus/core/config.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/notifications/components/follow_time_chip.dart'; // feature:push
 import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/styles/app_spacing.dart';
@@ -68,6 +70,7 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
           ),
           const SizedBox(height: Spacing.s),
           Text(l10n.scheduledTimesNote, style: context.textTheme.bodySmall),
+          if (Features.push) Text(l10n.followTripHint, style: context.textTheme.bodySmall), // feature:push
           ...switch (timetable) {
             AsyncValue(:final value?) when value.isEmpty => [
               MessageView(icon: Icons.event_busy_outlined, title: l10n.noServiceThisDay),
@@ -113,17 +116,7 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
                 child: Wrap(
                   spacing: Spacing.m,
                   runSpacing: Spacing.xs,
-                  children: [
-                    for (final s in times)
-                      Text(
-                        s == d.departures.first
-                            ? '${minute(s)} (${context.l10n.firstTrip})'
-                            : s == d.departures.last
-                            ? '${minute(s)} (${context.l10n.lastTrip})'
-                            : minute(s),
-                        style: s == d.departures.first || s == d.departures.last ? bold : null,
-                      ),
-                  ],
+                  children: [for (final s in times) _time(context, d, s, minute, bold)],
                 ),
               ),
             ],
@@ -131,4 +124,29 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
         ),
     ];
   }
+
+  /// One time of the timetable; with followed trips it is a chip to tap.
+  Widget _time(BuildContext context, TimetableDirection d, int s, String Function(int) minute, TextStyle? bold) {
+    final emphasized = s == d.departures.first || s == d.departures.last;
+    // feature:push:start
+    if (Features.push) {
+      return FollowTimeChip(
+        stopId: widget.stopId,
+        lineId: _line,
+        directionId: d.directionId,
+        seconds: s,
+        label: _label(context, d, s, minute),
+        emphasized: emphasized,
+      );
+    }
+    // feature:push:end
+    return Text(_label(context, d, s, minute), style: emphasized ? bold : null);
+  }
+
+  String _label(BuildContext context, TimetableDirection d, int s, String Function(int) minute) =>
+      s == d.departures.first
+      ? '${minute(s)} (${context.l10n.firstTrip})'
+      : s == d.departures.last
+      ? '${minute(s)} (${context.l10n.lastTrip})'
+      : minute(s);
 }

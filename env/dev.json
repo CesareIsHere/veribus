@@ -14,5 +14,6 @@
   "AUTH_REDIRECT_URL": "https://example.com/",
   "FEATURE_SOCIAL_LOGIN": true,
   "FEATURE_CONNECTIVITY": true,
-  "FEATURE_FEEDBACK": true
+  "FEATURE_FEEDBACK": true,
+  "FEATURE_PUSH": true
 }

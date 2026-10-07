@@ -126,12 +126,22 @@ class SupabaseAuthRepository implements IAuthRepository {
   });
 
   @override
-  Future<void> registerPushToken(String token) async {
+  Future<void> registerPushToken(String token, {required String locale}) async {
     final uid = _auth.currentUser?.id;
     if (uid == null) return;
-    await _client
-        .from('push_tokens')
-        .upsert({'user_id': uid, 'token': token}, onConflict: 'user_id,token', ignoreDuplicates: true);
+    await _client.from('push_tokens').upsert({
+      'user_id': uid,
+      'token': token,
+      'locale': locale,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
+  @override
+  Future<void> unregisterPushToken(String token) async {
+    final uid = _auth.currentUser?.id;
+    if (uid == null) return;
+    await _client.from('push_tokens').delete().eq('user_id', uid).eq('token', token);
   }
 
   /// Rows cascade from `auth.users`; the avatar is removed first (Storage

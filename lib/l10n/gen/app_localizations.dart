@@ -1051,6 +1051,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get closeRoute;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @followedTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Followed trips'**
+  String get followedTrips;
+
+  /// No description provided for @followTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow this trip'**
+  String get followTrip;
+
+  /// No description provided for @followTripHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a time to be notified when that bus is about to pass.'**
+  String get followTripHint;
+
+  /// No description provided for @followDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get followDays;
+
+  /// No description provided for @followLeads.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me before'**
+  String get followLeads;
+
+  /// No description provided for @followLeadsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {n} notices'**
+  String followLeadsHint(int n);
+
+  /// No description provided for @followLeadsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min before'**
+  String followLeadsSummary(String minutes);
+
+  /// No description provided for @followEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Notices on'**
+  String get followEnabled;
+
+  /// No description provided for @followRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following'**
+  String get followRemove;
+
+  /// No description provided for @followRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following this trip?'**
+  String get followRemoveTitle;
+
+  /// No description provided for @followRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer be notified about it.'**
+  String get followRemoveBody;
+
+  /// No description provided for @followSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip followed'**
+  String get followSaved;
+
+  /// No description provided for @followedMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Followed trip'**
+  String get followedMarker;
+
+  /// No description provided for @everyDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get everyDay;
+
+  /// No description provided for @weekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon–Fri'**
+  String get weekdays;
+
+  /// No description provided for @weekend.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat, Sun'**
+  String get weekend;
+
+  /// No description provided for @noFollows.
+  ///
+  /// In en, this message translates to:
+  /// **'No followed trips'**
+  String get noFollows;
+
+  /// No description provided for @noFollowsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the timetable of a stop and tap the time of the trip you want: you will be notified before it passes.'**
+  String get noFollowsHint;
+
+  /// No description provided for @notificationsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off'**
+  String get notificationsOff;
+
+  /// No description provided for @notificationsOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Without notifications you cannot be warned when the bus is about to pass.'**
+  String get notificationsOffBody;
+
+  /// No description provided for @notificationsBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn notifications on for this app in the phone settings.'**
+  String get notificationsBlocked;
+
+  /// No description provided for @notificationsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This device cannot receive notifications.'**
+  String get notificationsUnavailable;
+
+  /// No description provided for @enableNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get enableNotifications;
+
+  /// No description provided for @noticeChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Followed trips'**
+  String get noticeChannelName;
+
+  /// No description provided for @noticeChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your bus is about to pass, or something happened to it'**
+  String get noticeChannelDescription;
+
+  /// No description provided for @errorFollowLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can follow at most 30 trips. Remove one first.'**
+  String get errorFollowLimit;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

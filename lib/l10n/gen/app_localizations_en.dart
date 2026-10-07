@@ -546,4 +546,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeRoute => 'Close';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get followedTrips => 'Followed trips';
+
+  @override
+  String get followTrip => 'Follow this trip';
+
+  @override
+  String get followTripHint => 'Tap a time to be notified when that bus is about to pass.';
+
+  @override
+  String get followDays => 'Days';
+
+  @override
+  String get followLeads => 'Notify me before';
+
+  @override
+  String followLeadsHint(int n) {
+    return 'Up to $n notices';
+  }
+
+  @override
+  String followLeadsSummary(String minutes) {
+    return '$minutes min before';
+  }
+
+  @override
+  String get followEnabled => 'Notices on';
+
+  @override
+  String get followRemove => 'Stop following';
+
+  @override
+  String get followRemoveTitle => 'Stop following this trip?';
+
+  @override
+  String get followRemoveBody => 'You will no longer be notified about it.';
+
+  @override
+  String get followSaved => 'Trip followed';
+
+  @override
+  String get followedMarker => 'Followed trip';
+
+  @override
+  String get everyDay => 'Every day';
+
+  @override
+  String get weekdays => 'Mon–Fri';
+
+  @override
+  String get weekend => 'Sat, Sun';
+
+  @override
+  String get noFollows => 'No followed trips';
+
+  @override
+  String get noFollowsHint =>
+      'Open the timetable of a stop and tap the time of the trip you want: you will be notified before it passes.';
+
+  @override
+  String get notificationsOff => 'Notifications are off';
+
+  @override
+  String get notificationsOffBody => 'Without notifications you cannot be warned when the bus is about to pass.';
+
+  @override
+  String get notificationsBlocked => 'Turn notifications on for this app in the phone settings.';
+
+  @override
+  String get notificationsUnavailable => 'This device cannot receive notifications.';
+
+  @override
+  String get enableNotifications => 'Turn on';
+
+  @override
+  String get noticeChannelName => 'Followed trips';
+
+  @override
+  String get noticeChannelDescription => 'Your bus is about to pass, or something happened to it';
+
+  @override
+  String get errorFollowLimit => 'You can follow at most 30 trips. Remove one first.';
 }

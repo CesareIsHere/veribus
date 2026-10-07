@@ -546,4 +546,90 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get closeRoute => 'Chiudi';
+
+  @override
+  String get close => 'Chiudi';
+
+  @override
+  String get followedTrips => 'Corse seguite';
+
+  @override
+  String get followTrip => 'Segui questa corsa';
+
+  @override
+  String get followTripHint => 'Tocca un orario per essere avvisato quando quell\'autobus sta per passare.';
+
+  @override
+  String get followDays => 'Giorni';
+
+  @override
+  String get followLeads => 'Avvisami prima';
+
+  @override
+  String followLeadsHint(int n) {
+    return 'Fino a $n avvisi';
+  }
+
+  @override
+  String followLeadsSummary(String minutes) {
+    return '$minutes min prima';
+  }
+
+  @override
+  String get followEnabled => 'Avvisi attivi';
+
+  @override
+  String get followRemove => 'Smetti di seguire';
+
+  @override
+  String get followRemoveTitle => 'Smettere di seguire questa corsa?';
+
+  @override
+  String get followRemoveBody => 'Non riceverai più avvisi su questa corsa.';
+
+  @override
+  String get followSaved => 'Corsa seguita';
+
+  @override
+  String get followedMarker => 'Corsa seguita';
+
+  @override
+  String get everyDay => 'Ogni giorno';
+
+  @override
+  String get weekdays => 'Lun–Ven';
+
+  @override
+  String get weekend => 'Sab, Dom';
+
+  @override
+  String get noFollows => 'Nessuna corsa seguita';
+
+  @override
+  String get noFollowsHint =>
+      'Apri gli orari di una fermata e tocca l\'orario della corsa che ti interessa: ti avviseremo prima che passi.';
+
+  @override
+  String get notificationsOff => 'Le notifiche sono disattivate';
+
+  @override
+  String get notificationsOffBody => 'Senza notifiche non puoi essere avvisato quando l\'autobus sta per passare.';
+
+  @override
+  String get notificationsBlocked => 'Attiva le notifiche per questa app dalle impostazioni del telefono.';
+
+  @override
+  String get notificationsUnavailable => 'Questo dispositivo non può ricevere notifiche.';
+
+  @override
+  String get enableNotifications => 'Attiva';
+
+  @override
+  String get noticeChannelName => 'Corse seguite';
+
+  @override
+  String get noticeChannelDescription => 'Il tuo autobus sta per passare, o gli è successo qualcosa';
+
+  @override
+  String get errorFollowLimit => 'Puoi seguire al massimo 30 corse. Eliminane una prima.';
 }

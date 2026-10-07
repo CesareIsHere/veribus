@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:veribus/core/config.dart';
 import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/widgets/section_header.dart';
@@ -9,6 +10,7 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/favorites/providers/favorites_arrivals_provider.dart';
 import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/notifications/trips_page.dart'; // feature:push
 import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
@@ -30,7 +32,20 @@ class FavoritesPage extends ConsumerWidget {
     final data = arrivals.value;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.favorites), actions: const [SettingsButton()]),
+      appBar: AppBar(
+        title: Text(l10n.favorites),
+        actions: [
+          // feature:push:start
+          if (Features.push)
+            IconButton(
+              tooltip: l10n.followedTrips,
+              icon: const Icon(Icons.notifications_active_outlined),
+              onPressed: () => context.push(TripsPage.route),
+            ),
+          // feature:push:end
+          const SettingsButton(),
+        ],
+      ),
       body: favorites.stops.isEmpty && favorites.lines.isEmpty
           ? MessageView(icon: Icons.star_outline, title: l10n.noFavorites, description: l10n.noFavoritesHint)
           : RefreshIndicator(

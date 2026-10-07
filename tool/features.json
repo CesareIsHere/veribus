@@ -70,6 +70,10 @@
       "paths": [
         "lib/features/notifications",
         "lib/services/push_notifications_service.dart",
+        "lib/models/transit/trip_follow.dart",
+        "lib/repositories/follow",
+        "test/features/notifications",
+        "test/models/trip_follow_test.dart",
         "web/firebase-messaging-sw.js"
       ],
       "packages": [

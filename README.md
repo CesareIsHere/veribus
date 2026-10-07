@@ -64,6 +64,9 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
 - **Nearby**: stops around you on a map or in a list, with the next arrival of each line.
 - **Follow a bus**: tap an arrival to see its vehicle on the map, framed together with the stop and your position,
   updating live. Tap any bus on a map to see its whole route: dashed where it has been, solid where it still goes.
+- **Followed trips**: pick the exact trips you care about (say the 17:10 and 17:25 of line 64 at your stop), the weekdays
+  they matter on, and up to three lead times (15, 10 and 5 minutes before). Veribus notifies you, even with the app closed,
+  when the bus is about to pass, and when something happens to it: canceled, standing still, signal lost.
 - **Line detail**: every stop in order with the vehicles between them, or the whole route on a map.
 - **Daily timetable** by line, direction and day.
 - **Search** for lines and stops, running entirely on the phone.
@@ -79,15 +82,17 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/stop.jpg" width="200" alt="Arrivals at a stop"><br><sub><b>Arrivals</b><br>status and reason for every trip</sub></td>
-    <td align="center"><img src="docs/screenshots/vehicle.jpg" width="200" alt="A bus followed live"><br><sub><b>Follow a bus</b><br>bus, stop and you in one view</sub></td>
-    <td align="center"><img src="docs/screenshots/line-list.jpg" width="200" alt="Line detail"><br><sub><b>Line detail</b><br>stops on a rail, buses where they are</sub></td>
-    <td align="center"><img src="docs/screenshots/line.jpg" width="200" alt="Line map"><br><sub><b>Line map</b><br>tap a bus: route travelled and still to go</sub></td>
+    <td align="center"><img src="docs/screenshots/stop.jpg" width="160" alt="Arrivals at a stop"><br><sub><b>Arrivals</b><br>status and reason for every trip</sub></td>
+    <td align="center"><img src="docs/screenshots/vehicle.jpg" width="160" alt="A bus followed live"><br><sub><b>Follow a bus</b><br>bus, stop and you in one view</sub></td>
+    <td align="center"><img src="docs/screenshots/line-list.jpg" width="160" alt="Line detail"><br><sub><b>Line detail</b><br>stops on a rail, buses where they are</sub></td>
+    <td align="center"><img src="docs/screenshots/line.jpg" width="160" alt="Line map"><br><sub><b>Line map</b><br>tap a bus: route travelled and still to go</sub></td>
+    <td align="center"><img src="docs/screenshots/nearby.jpg" width="160" alt="Nearby map"><br><sub><b>Nearby</b><br>minimal map, blue dot is you</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/nearby.jpg" width="200" alt="Nearby map"><br><sub><b>Nearby</b><br>minimal map, blue dot is you</sub></td>
-    <td align="center"><img src="docs/screenshots/nearby-dark.jpg" width="200" alt="Dark mode"><br><sub><b>Dark mode</b><br>the map follows the theme</sub></td>
-    <td align="center"><img src="docs/screenshots/alerts.jpg" width="200" alt="Service alerts"><br><sub><b>Alerts</b><br>one row, details on demand</sub></td>
+    <td align="center"><img src="docs/screenshots/nearby-dark.jpg" width="160" alt="Dark mode"><br><sub><b>Dark mode</b><br>the map follows the theme</sub></td>
+    <td align="center"><img src="docs/screenshots/alerts.jpg" width="160" alt="Service alerts"><br><sub><b>Alerts</b><br>one row, details on demand</sub></td>
+    <td align="center"><img src="docs/screenshots/trips.jpg" width="160" alt="Followed trips"><br><sub><b>Followed trips</b><br>when, which days, how long before</sub></td>
+    <td align="center"><img src="docs/screenshots/follow.jpg" width="160" alt="Follow a trip"><br><sub><b>Follow a trip</b><br>days and up to three notices</sub></td>
   </tr>
 </table>
 
@@ -126,9 +131,10 @@ flowchart LR
   subgraph SB["Supabase"]
     PG[("Postgres<br/>network · live · config · api")]
     ST["Storage<br/>network/vMD5.json"]
-    EF["Edge Function<br/>poller"]
+    EF["Edge Function<br/>poller + notices"]
     CR["pg_cron<br/>every 10 s"]
   end
+  FCM["Firebase Cloud<br/>Messaging"]
   GH["GitHub Actions<br/>nightly import"]
   R2[("Cloudflare R2<br/>raw snapshots")]
   APP["Flutter app"]
@@ -140,6 +146,8 @@ flowchart LR
   RSM -- "GTFS-RT feeds" --> EF
   EF --> PG
   EF --> R2
+  EF -- "notices for followed trips" --> FCM
+  FCM -- "push" --> APP
   APP -- "RPC api.* (user JWT)" --> PG
   APP -- "network file, once per version" --> ST
 ```
@@ -157,7 +165,19 @@ flowchart LR
 | `network_meta` | imported versions, lines seen in real time | import, poller |
 | `live` | vehicles, trip state, alerts, feed status, snapshot index, lease | the poller (role `poller`) |
 | `config` | signal thresholds, minimum app version | by hand |
-| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()` | nothing: read-only functions |
+| `notify` | what to notify now (`claim`), taking it back when sending failed (`release`), forgetting dead tokens | the poller (role `poller`) |
+| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()`, `my_follows()` | nothing: read-only functions |
+
+Two small tables live in `public` (row level security, owner only): `push_tokens` (FCM token and app language per device)
+and `trip_follow` (the trips each user follows).
+
+**Followed trips.** A follow is *stop + line + direction + scheduled time at the stop + weekdays + 1 to 3 lead times*:
+what stays true when the GTFS is reimported, resolved to that day's trip every time. After each cycle the poller calls
+`notify.claim`, a SQL function that works out which notices are due (it reuses the arrivals rules for status and
+signals), records each one as sent in the same statement, and returns it with the user's device tokens. The poller
+(`backend/core/notify.ts`) writes the text in the language of each device and sends it through FCM; if FCM is down the
+record is taken back and the next cycle retries. Each notice goes out once: with several lead times due at once (a new
+follow, a phone that was off) only the nearest is sent. Notices of the same trip replace each other on the phone.
 
 **Where the signals are computed.** What needs history is computed by the poller (S1 canceled, S2 trip vanished →
 suppressed, S3 vehicle stopped, S5 at the terminus). What depends on the moment of reading is computed by the API
@@ -174,15 +194,15 @@ signal and time into words: `features/stop/components/arrival_tile.dart`.
 .
 ├── lib/
 │   ├── core/            app shell, router, config, shared widgets (TransitMap, VehiclesLayer, …)
-│   ├── features/        nearby · search · favorites · alerts · stop · line · settings · auth
+│   ├── features/        nearby · search · favorites · alerts · stop · line · notifications · settings · auth
 │   ├── models/          transit (network, live data), user
 │   ├── repositories/    I<X>Repository + mock_ / supabase_ implementations + providers
-│   ├── services/        location, map tiles, sign-in wrappers
+│   ├── services/        location, map tiles, push, sign-in wrappers
 │   ├── styles/          Material 3 theme, spacing tokens, the minimal map style
 │   └── l10n/            ARB files (it, en) and generated localizations
 ├── backend/
 │   ├── core/            the engine: pure TypeScript, no I/O (signals, cycle)
-│   ├── adapters/        HTTP and Postgres adapters
+│   ├── adapters/        HTTP, Postgres and FCM adapters
 │   ├── runtimes/        Edge Function and container entry points
 │   ├── static-import/   nightly GTFS import (bash + psql)
 │   └── replay/          re-run the engine over an archive
@@ -325,11 +345,38 @@ the new network coexist and it climbs to about 880 MB, so:
 7. **Monitoring**: a check on [Healthchecks.io](https://healthchecks.io) with a 1-minute period and a 5-minute grace.
    A failing import fails the workflow and GitHub sends the email.
 8. **App**: set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `env/staging.json` and `env/prod.json`.
+9. **Push notifications** (followed trips): see the next section. Without it the app works as before and the follow
+   screens warn that notifications are off.
 
 **Moving to Cloud Run** (when the p95 CPU of the cycle exceeds 1 s, or an always-on process is needed):
 `backend/runtimes/container/main.ts` is the same cycle in a loop. Start it with `DB_URL` and the `R2_*` variables
 (minimum 1 instance, CPU always allocated), then `select cron.unschedule('poller');`. The lease in `live.lease`
 prevents double cycles during the switch.
+
+### Push notifications (followed trips)
+
+Notices travel through Firebase Cloud Messaging; the Spark (free) plan is enough. Once:
+
+1. **Firebase project**: create one at the [console](https://console.firebase.google.com), add an *Android app* with the
+   package `com.emilianocesare.veribus` and download `google-services.json`.
+2. **The app build**: the file is not in the repository. Locally copy it to `android/app/google-services.json` (git
+   ignores it); for the release APK store it in a repository secret:
+   ```bash
+   base64 -w0 google-services.json | gh secret set GOOGLE_SERVICES_JSON_BASE64
+   ```
+   Without it the APK builds and runs, but cannot receive notifications. The Gradle plugin is applied only if the file exists.
+3. **The server**: *Project settings → Service accounts → Generate new private key*, then
+   ```bash
+   supabase secrets set FCM_SERVICE_ACCOUNT="$(cat <the downloaded key>.json)"
+   supabase functions deploy poller
+   ```
+   (the container runtime reads `FCM_SERVICE_ACCOUNT` from its environment). Without the secret the poller does exactly
+   what it did before and nobody is notified.
+4. **Check**: follow a trip that passes in a few minutes (Stop → Timetable → tap the time), and watch the poller's log:
+   `notices` in the cycle summary says how many were claimed and sent.
+
+**iOS is not wired yet** (the app skips push there, because without `GoogleService-Info.plist` Firebase's iOS SDK aborts). It needs the Push Notifications capability and a `Runner.entitlements`, the APNs key uploaded in
+*Firebase → Cloud Messaging*, and `GoogleService-Info.plist` in `ios/Runner`; the Dart side is already there.
 
 ### Auth (Supabase)
 
@@ -361,6 +408,9 @@ message to publish nothing.
 
 **The release APK** is built in release mode for arm64 only, with R8 code and resource shrinking and the debug
 symbols moved out of the binary (kept as a workflow artifact for 90 days).
+
+**Push.** The release APK also needs the `GOOGLE_SERVICES_JSON_BASE64` secret to receive notifications (see *Push
+notifications* above); `release.yml` warns when it is missing.
 
 **Signing.** For an APK downloaded from the releases to install *over* the previous one, every build must be signed
 with the same key. Once: `bash tool/android_signing.sh` (needs an authenticated `gh` and `keytool`) creates the

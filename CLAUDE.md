@@ -49,6 +49,10 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
   a single line ending in `// feature:<name>`, or a block between `// feature:<name>:start` and
   `// feature:<name>:end`. Same for backends (`backend:rest`, `backend:firebase`, `backend:supabase`) and `firebase`.
 - A new optional feature needs an entry in `tool/features.json` (flag, paths, packages).
+- Push (`FEATURE_PUSH`) = followed trips + FCM notices. The app needs `android/app/google-services.json` (git-ignored; CI secret
+  `GOOGLE_SERVICES_JSON_BASE64`) and the poller `FCM_SERVICE_ACCOUNT`; without them everything else still works. iOS is
+  skipped in `FirebasePushService`. What to notify is decided in SQL (`notify.claim`), the text is written in
+  `backend/core/notify.ts` (it/en): a new notice type touches both.
 - Supabase: schema changes are new files in `supabase/migrations` (`supabase migration new <name>`), every table
   with RLS on and policies using `(select auth.uid())`. Demo-only SQL goes in files listed under `demo`.
 - Server-side logic: Cloud Functions following `docs/FIREBASE_FUNCTIONS.md` (Supabase: Edge Functions or SQL).

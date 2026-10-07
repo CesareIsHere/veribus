@@ -12,6 +12,7 @@ import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/package_info_provider.dart';
 import 'package:veribus/core/providers/theme_mode_notifier.dart';
 import 'package:veribus/core/widgets/update_required_page.dart';
+import 'package:veribus/features/notifications/providers/push_notifier.dart'; // feature:push
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/styles/app_theme.dart';
 
@@ -30,6 +31,8 @@ class App extends ConsumerWidget {
         ),
       );
     });
+
+    if (Features.push) ref.watch(pushProvider); // feature:push
 
     return MaterialApp.router(
       onGenerateTitle: (_) => AppConfig.appName,
