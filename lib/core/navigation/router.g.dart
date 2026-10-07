@@ -42,4 +42,4 @@ final class RouterProvider extends $FunctionalProvider<GoRouter, GoRouter, GoRou
   }
 }
 
-String _$routerHash() => r'52da95c434f79171fe78f05a6647ad4b3a7453f1';
+String _$routerHash() => r'b73493bae7f59c3d3531ee86a3a7f64648ff739d';
