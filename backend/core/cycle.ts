@@ -50,7 +50,33 @@ export interface CycleSummary {
   stale: Feed[];
 }
 
-export async function runCycle(ports: Ports, state: CycleState): Promise<{ state: CycleState; summary: CycleSummary }> {
+/**
+ * What the database says about the previous cycle without the vehicles and trips: the feed markers and how many rows
+ * there are. A few hundred bytes, against ~0.5 MB for the vehicles and trips themselves.
+ */
+export interface PendingState {
+  markers: Record<Feed, FeedMarker>;
+  counts: { vehicles: number; trips: number };
+  /** Reads the vehicles and trips: called only when a feed brings news. */
+  load(): Promise<CycleState>;
+}
+
+const isPending = (s: CycleState | PendingState): s is PendingState => "load" in s;
+
+/**
+ * A cycle that changes nothing (the feeds did not move: two out of three cycles at one every 10 s) needs only the
+ * markers, so a [PendingState] does not read the vehicles and trips until a feed brings news. The cycle returns a
+ * [PendingState] again when it did not need them.
+ */
+export function runCycle(ports: Ports, state: CycleState): Promise<{ state: CycleState; summary: CycleSummary }>;
+export function runCycle(
+  ports: Ports,
+  state: CycleState | PendingState,
+): Promise<{ state: CycleState | PendingState; summary: CycleSummary }>;
+export async function runCycle(
+  ports: Ports,
+  state: CycleState | PendingState,
+): Promise<{ state: CycleState | PendingState; summary: CycleSummary }> {
   const now = ports.clock.now();
   const markers = structuredClone(state.markers);
   const snapshots: Snapshot[] = [];
@@ -92,13 +118,14 @@ export async function runCycle(ports: Ports, state: CycleState): Promise<{ state
 
   let result: EngineResult | null = null;
   if (fresh.vp || fresh.tu) {
+    const prev = isPending(state) ? await state.load() : state;
     const ids = new Set([
-      ...[...(fresh.vp?.vehicles ?? state.vehicles.values())].map((v) => v.tripId),
+      ...[...(fresh.vp?.vehicles ?? prev.vehicles.values())].map((v) => v.tripId),
       ...(fresh.tu?.trips ?? []).map((t) => t.tripId),
-      ...state.trips.keys(),
+      ...prev.trips.keys(),
     ]);
     result = evaluate({
-      prev: state,
+      prev,
       vp: fresh.vp?.vehicles,
       tu: fresh.tu?.trips,
       tripInfo: await ports.store.loadTripInfo([...ids]),
@@ -109,19 +136,20 @@ export async function runCycle(ports: Ports, state: CycleState): Promise<{ state
 
   await ports.store.commit({ now, markers, snapshots, errors, result, alerts: fresh.sa?.alerts ?? null });
 
-  const next: CycleState = result
+  const next: CycleState | PendingState = result
     ? {
       markers,
       vehicles: new Map(result.vehicles.map((v) => [v.vehicleId, v])),
       trips: new Map(result.trips.map((t) => [t.tripId, t])),
     }
     : { ...state, markers };
+  const size = isPending(next) ? next.counts : { vehicles: next.vehicles.size, trips: next.trips.size };
   return {
     state: next,
     summary: {
       fetched: Object.keys(fresh) as Feed[],
-      vehicles: next.vehicles.size,
-      trips: next.trips.size,
+      vehicles: size.vehicles,
+      trips: size.trips,
       errors: errors.map((e) => `${e.feed}: ${e.error}`),
       stale: FEEDS.filter((f) => f !== "sa" && markers[f].feedTs != null && now - markers[f].feedTs! > 600),
     },
@@ -136,4 +164,43 @@ async function sha1(data: Uint8Array): Promise<string> {
 async function gzip(data: Uint8Array): Promise<Uint8Array> {
   const stream = new Blob([data as BlobPart]).stream().pipeThrough(new CompressionStream("gzip"));
   return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/** The same data in memory and in the database: same feed markers, same number of rows. */
+export function sameState(memory: CycleState, db: Pick<PendingState, "markers" | "counts">): boolean {
+  return FEEDS.every((f) => {
+    const a = memory.markers[f];
+    const b = db.markers[f];
+    return (a?.hash ?? null) === (b?.hash ?? null) && (a?.feedTs ?? null) === (b?.feedTs ?? null) &&
+      (a?.lastModified ?? null) === (b?.lastModified ?? null);
+  }) && memory.vehicles.size === db.counts.vehicles && memory.trips.size === db.counts.trips;
+}
+
+/**
+ * The state between cycles for a runtime that has no process of its own (the edge function): the vehicles and trips
+ * are kept in memory while the worker lives, and used only if the database still says the same (a few hundred bytes
+ * to ask). Another runtime, a restart or a manual change makes them differ: the state is then read again, and only
+ * if a feed brings news. Reading it every cycle was ~4.6 GB a day of egress through the pooler.
+ */
+export function keepState(
+  store: { peek(): Promise<Pick<PendingState, "markers" | "counts">>; loadState(): Promise<CycleState> },
+) {
+  let memory: CycleState | null = null;
+  return {
+    /** What the next cycle starts from. */
+    async start(): Promise<CycleState | PendingState> {
+      const db = await store.peek();
+      if (memory && sameState(memory, db)) return memory;
+      memory = null;
+      return { ...db, load: () => store.loadState() };
+    },
+    /** What the cycle ended with: kept only when the vehicles and trips are known. */
+    end(state: CycleState | PendingState): void {
+      memory = isPending(state) ? null : state;
+    },
+    /** After a failure the memory may not match what was committed. */
+    forget(): void {
+      memory = null;
+    },
+  };
 }

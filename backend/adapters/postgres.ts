@@ -1,7 +1,7 @@
 // StateStore on Postgres. The state between cycles always lives in the database: it is both the
 // poller's output and the handover between runtimes (edge function today, container tomorrow).
 import postgres from "npm:postgres@3.4.7";
-import type { Commit, StateStore } from "../core/cycle.ts";
+import type { Commit, PendingState, StateStore } from "../core/cycle.ts";
 import type { Claim, NotifyStore } from "../core/notify.ts";
 import type { CycleState, Feed, FeedMarker, Thresholds, TripInfo, TripState, Vehicle } from "../core/types.ts";
 
@@ -11,10 +11,25 @@ const epoch = (d: Date | null) => (d == null ? null : Math.floor(d.getTime() / 1
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
 
-export function postgresStore(url: string): StateStore & { notify: NotifyStore; close(): Promise<void> } {
+const markersOf = (feeds: Row[]) =>
+  Object.fromEntries(
+    feeds.map((f: Row) => [f.feed, { lastModified: f.last_modified, hash: f.hash, feedTs: epoch(f.feed_ts) }]),
+  ) as Record<Feed, FeedMarker>;
+
+export function postgresStore(
+  url: string,
+): StateStore & {
+  notify: NotifyStore;
+  peek(): Promise<Pick<PendingState, "markers" | "counts">>;
+  close(): Promise<void>;
+} {
   // Session pooler (5432), not the transaction one (6543): postgres.js pipelines concurrent queries on one connection,
   // and the transaction pooler can route the pieces to different backends ("bind message supplies 3 parameters").
   const sql = postgres(url, { prepare: false, max: 2, idle_timeout: 20 });
+  // Trips of the active network, by trip id: they do not change until the next import, and reading them for every
+  // trip of every cycle was a good part of what the poller read after the vehicles and trips.
+  const tripInfo = new Map<string, TripInfo>();
+  let tripInfoVersion: string | null = null;
 
   return {
     async tryAcquireLease(owner, seconds) {
@@ -28,6 +43,15 @@ export function postgresStore(url: string): StateStore & { notify: NotifyStore; 
       await sql`update live.lease set expires_at = '-infinity' where name = 'poller' and owner = ${owner}`;
     },
 
+    /** The markers and the row counts: all a cycle needs to know that nothing changed (see keepState). */
+    async peek() {
+      const [feeds, [counts]] = await Promise.all([
+        sql`select * from live.feed_status`,
+        sql`select (select count(*) from live.vehicle)::int as vehicles, (select count(*) from live.trip_state)::int as trips`,
+      ]);
+      return { markers: markersOf(feeds), counts: { vehicles: counts.vehicles, trips: counts.trips } };
+    },
+
     async loadState() {
       const [feeds, vehicles, trips] = await Promise.all([
         sql`select * from live.feed_status`,
@@ -35,9 +59,7 @@ export function postgresStore(url: string): StateStore & { notify: NotifyStore; 
         sql`select * from live.trip_state`,
       ]);
       return {
-        markers: Object.fromEntries(
-          feeds.map((f: Row) => [f.feed, { lastModified: f.last_modified, hash: f.hash, feedTs: epoch(f.feed_ts) }]),
-        ) as Record<Feed, FeedMarker>,
+        markers: markersOf(feeds),
         vehicles: new Map(vehicles.map((v: Row): [string, Vehicle] => [v.vehicle_id, {
           vehicleId: v.vehicle_id,
           label: v.label,
@@ -68,13 +90,21 @@ export function postgresStore(url: string): StateStore & { notify: NotifyStore; 
     },
 
     async loadTripInfo(tripIds) {
-      const rows = await sql`
-        select trip_id, route_id, first_seq, last_seq from network.trip where trip_id = any(${tripIds})`;
-      return new Map(rows.map((r: Row): [string, TripInfo] => [r.trip_id, {
-        routeId: r.route_id,
-        firstSeq: r.first_seq,
-        lastSeq: r.last_seq,
-      }]));
+      // A new import replaces every trip: what was remembered is no longer true.
+      const [version] = await sql`select md5 from network_meta.version order by imported_at desc limit 1`;
+      if ((version?.md5 ?? null) !== tripInfoVersion) {
+        tripInfo.clear();
+        tripInfoVersion = version?.md5 ?? null;
+      }
+      const missing = tripIds.filter((id) => !tripInfo.has(id));
+      if (missing.length > 0) {
+        const rows = await sql`
+          select trip_id, route_id, first_seq, last_seq from network.trip where trip_id = any(${missing})`;
+        for (const r of rows as Row[]) {
+          tripInfo.set(r.trip_id, { routeId: r.route_id, firstSeq: r.first_seq, lastSeq: r.last_seq });
+        }
+      }
+      return new Map(tripIds.flatMap((id): [string, TripInfo][] => tripInfo.has(id) ? [[id, tripInfo.get(id)!]] : []));
     },
 
     async loadThresholds() {

@@ -348,6 +348,14 @@ the new network coexist and it climbs to about 880 MB, so:
 9. **Push notifications** (followed trips): see the next section. Without it the app works as before and the follow
    screens warn that notifications are off.
 
+**Egress on the free plan (5 GB a month).** The Edge Function runs every 10 s and reaches the database through the
+pooler, whose traffic counts as egress. Reading the vehicles and trips of the previous cycle each time cost ~4.6 GB a
+day. Now a cycle asks the database only for the feed markers and the row counts (a few hundred bytes), keeps the
+vehicles and trips in memory while the worker lives (`keepState` in `backend/core/cycle.ts`), and reads them again only
+when memory and database disagree *and* a feed brings news; the trips of the network are remembered until the next
+import. If the worker is recycled on every call the cost falls back to the news cycles only (about a third of the
+old). Check it in *Settings → Usage → Egress*: **Shared Pooler** should stay well below 0.2 GB a day.
+
 **Moving to Cloud Run** (when the p95 CPU of the cycle exceeds 1 s, or an always-on process is needed):
 `backend/runtimes/container/main.ts` is the same cycle in a loop. Start it with `DB_URL` and the `R2_*` variables
 (minimum 1 instance, CPU always allocated), then `select cron.unschedule('poller');`. The lease in `live.lease`
