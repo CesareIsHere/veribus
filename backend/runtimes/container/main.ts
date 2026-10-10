@@ -6,7 +6,7 @@
 //
 // Without R2_ACCOUNT_ID snapshots are archived under ./archive, with the same layout.
 // With FCM_SERVICE_ACCOUNT (the service account JSON) it also sends the notices for followed trips after each cycle.
-import { type Archive, runCycle } from "../../core/cycle.ts";
+import { type Archive, type CycleSummary, runCycle } from "../../core/cycle.ts";
 import type { CycleState } from "../../core/types.ts";
 import { archivePath, healthchecks, r2Archive, rsmFeeds } from "../../adapters/http.ts";
 import { postgresStore } from "../../adapters/postgres.ts";
@@ -46,7 +46,7 @@ while (true) {
   try {
     if (await store.tryAcquireLease(owner, 25)) {
       state ??= await store.loadState();
-      const r = await runCycle(ports, state);
+      const r: { state: CycleState; summary: CycleSummary } = await runCycle(ports, state);
       state = r.state;
       console.log(new Date().toISOString(), JSON.stringify(r.summary));
       await heartbeat.ok(r.summary);
