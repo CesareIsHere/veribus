@@ -28,7 +28,7 @@ dependencies:
   intl: any
   skeletonizer: ^3.0.0
   package_info_plus: ^10.2.1
-  url_launcher: ^6.3.2
+  url_launcher: ^6.3.3
   talker_flutter: ^5.1.20
   talker_dio_logger: ^5.1.20
   talker_riverpod_logger: ^5.1.20
