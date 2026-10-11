@@ -1,7 +1,7 @@
 name: veribus
 description: "Flutter template by Emiliano Cesare"
 publish_to: "none"
-version: 0.5.1+8
+version: 0.5.2+9
 
 environment:
   sdk: ^3.13.0
