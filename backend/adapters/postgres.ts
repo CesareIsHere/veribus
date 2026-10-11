@@ -1,7 +1,7 @@
 // StateStore on Postgres. The state between cycles always lives in the database: it is both the
 // poller's output and the handover between runtimes (edge function today, container tomorrow).
 import postgres from "npm:postgres@3.4.7";
-import type { Commit, PendingState, StateStore } from "../core/cycle.ts";
+import type { Commit, PendingState, StateStore, TripInfoCache } from "../core/cycle.ts";
 import type { Claim, NotifyStore } from "../core/notify.ts";
 import type { CycleState, Feed, FeedMarker, Thresholds, TripInfo, TripState, Vehicle } from "../core/types.ts";
 
@@ -11,6 +11,10 @@ const epoch = (d: Date | null) => (d == null ? null : Math.floor(d.getTime() / 1
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
 
+/** `{1,2,3}`, how Postgres writes an integer array in text format, as numbers. */
+export const numberArray = (text: string | null): number[] =>
+  text == null || text === "{}" ? [] : text.slice(1, -1).split(",").map(Number);
+
 const markersOf = (feeds: Row[]) =>
   Object.fromEntries(
     feeds.map((f: Row) => [f.feed, { lastModified: f.last_modified, hash: f.hash, feedTs: epoch(f.feed_ts) }]),
@@ -18,6 +22,7 @@ const markersOf = (feeds: Row[]) =>
 
 export function postgresStore(
   url: string,
+  opts: { tripInfoCache?: TripInfoCache } = {},
 ): StateStore & {
   notify: NotifyStore;
   peek(): Promise<Pick<PendingState, "markers" | "counts">>;
@@ -25,11 +30,17 @@ export function postgresStore(
 } {
   // Session pooler (5432), not the transaction one (6543): postgres.js pipelines concurrent queries on one connection,
   // and the transaction pooler can route the pieces to different backends ("bind message supplies 3 parameters").
-  const sql = postgres(url, { prepare: false, max: 2, idle_timeout: 20 });
+  // fetch_types off: on every new connection postgres.js reads the catalog of array types (~9 KB here, more with
+  // extensions), and the edge function opens a connection per call, 8,640 a day: that alone was the whole egress
+  // budget of the free plan. Without it arrays are not converted, so the array columns are read as text
+  // (`textArray`) and arrays go in as JSON (`jsonb_array_elements_text`).
+  const sql = postgres(url, { prepare: false, max: 2, idle_timeout: 20, fetch_types: false });
   // Trips of the active network, by trip id: they do not change until the next import, and reading them for every
-  // trip of every cycle was a good part of what the poller read after the vehicles and trips.
+  // trip of every cycle was a good part of what the poller read after the vehicles and trips. With a cache (R2: the
+  // edge function's workers do not outlive a call) a worker starts with what the last one knew.
   const tripInfo = new Map<string, TripInfo>();
   let tripInfoVersion: string | null = null;
+  let tripInfoStored = 0;
 
   return {
     async tryAcquireLease(owner, seconds) {
@@ -80,8 +91,8 @@ export function postgresStore(
           vehicleId: t.vehicle_id,
           status: t.status,
           signal: t.signal,
-          predSeq: t.pred_seq,
-          predTs: t.pred_ts.map(Number),
+          predSeq: numberArray(t.pred_seq),
+          predTs: numberArray(t.pred_ts),
           lastSeq: t.last_seq,
           seenAt: epoch(t.seen_at),
           suppressedAt: epoch(t.suppressed_at),
@@ -92,16 +103,37 @@ export function postgresStore(
     async loadTripInfo(tripIds) {
       // A new import replaces every trip: what was remembered is no longer true.
       const [version] = await sql`select md5 from network_meta.version order by imported_at desc limit 1`;
-      if ((version?.md5 ?? null) !== tripInfoVersion) {
+      const current: string | null = version?.md5 ?? null;
+      if (current !== tripInfoVersion) {
         tripInfo.clear();
-        tripInfoVersion = version?.md5 ?? null;
+        tripInfoVersion = current;
+        tripInfoStored = 0;
+        if (current && opts.tripInfoCache) {
+          try {
+            for (const [id, info] of Object.entries(await opts.tripInfoCache.get(current) ?? {})) {
+              tripInfo.set(id, info);
+            }
+            tripInfoStored = tripInfo.size;
+          } catch (e) {
+            console.error(`trip info cache not read, using the database: ${e}`);
+          }
+        }
       }
       const missing = tripIds.filter((id) => !tripInfo.has(id));
       if (missing.length > 0) {
         const rows = await sql`
-          select trip_id, route_id, first_seq, last_seq from network.trip where trip_id = any(${missing})`;
+          select trip_id, route_id, first_seq, last_seq from network.trip
+          where trip_id = any(array(select jsonb_array_elements_text(${sql.json(missing)})))`;
         for (const r of rows as Row[]) {
           tripInfo.set(r.trip_id, { routeId: r.route_id, firstSeq: r.first_seq, lastSeq: r.last_seq });
+        }
+      }
+      if (current && opts.tripInfoCache && tripInfo.size > tripInfoStored) {
+        try {
+          await opts.tripInfoCache.put(current, Object.fromEntries(tripInfo));
+          tripInfoStored = tripInfo.size;
+        } catch (e) {
+          console.error(`trip info cache not written: ${e}`);
         }
       }
       return new Map(tripIds.flatMap((id): [string, TripInfo][] => tripInfo.has(id) ? [[id, tripInfo.get(id)!]] : []));
@@ -168,7 +200,9 @@ export function postgresStore(
           await replace("live.vehicle", vehicles);
           await replace("live.trip_state", trips);
           await tx`insert into network_meta.route_seen (route_id, date)
-                   select unnest(${c.result.seenRoutes}::text[]), (now() at time zone 'Europe/Rome')::date
+                   select jsonb_array_elements_text(${
+            tx.json(c.result.seenRoutes)
+          }), (now() at time zone 'Europe/Rome')::date
                    on conflict do nothing`;
         }
         if (c.alerts) {
@@ -212,7 +246,7 @@ export function postgresStore(
       },
 
       async dropTokens(tokens) {
-        await sql`select notify.drop_tokens(${tokens}::text[])`;
+        await sql`select notify.drop_tokens(array(select jsonb_array_elements_text(${sql.json(tokens)})))`;
       },
     },
 

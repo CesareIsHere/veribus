@@ -1,6 +1,7 @@
 // HTTP adapters: RSM feeds, R2 archive, Healthchecks.io heartbeat.
 import { AwsClient } from "npm:aws4fetch@1.0.20";
-import type { Archive, CycleSummary, FeedSource } from "../core/cycle.ts";
+import type { Archive, CycleSummary, FeedSource, StateSnapshot, TripInfoCache } from "../core/cycle.ts";
+import { decodeState, decodeTripInfo, encodeState, encodeTripInfo } from "../core/snapshot.ts";
 import type { Feed } from "../core/types.ts";
 
 const RSM = "https://romamobilita.it/wp-content/uploads/shared";
@@ -54,6 +55,76 @@ export function r2Archive(
       });
       if (!res.ok) throw new Error(`archive: HTTP ${res.status} ${await res.text()}`);
       return path;
+    },
+  };
+}
+
+type R2Env = { accountId: string; accessKeyId: string; secretAccessKey: string; bucket: string };
+
+/** One object of the bucket: read (null when it does not exist) and overwritten. */
+function r2Object(
+  env: R2Env,
+  key: string,
+  opts: { fetch?: (url: string, init: RequestInit) => Promise<Response> } = {},
+) {
+  const aws = new AwsClient({
+    accessKeyId: env.accessKeyId,
+    secretAccessKey: env.secretAccessKey,
+    service: "s3",
+    region: "auto",
+  });
+  const url = `https://${env.accountId}.r2.cloudflarestorage.com/${env.bucket}/${key}`;
+  const send = opts.fetch ?? ((u: string, init: RequestInit) => aws.fetch(u, init));
+  return {
+    async get(): Promise<Uint8Array | null> {
+      const res = await send(url, { signal: AbortSignal.timeout(8000) });
+      if (res.status === 404) {
+        await res.body?.cancel();
+        return null;
+      }
+      if (!res.ok) throw new Error(`R2 ${key}: HTTP ${res.status} ${await res.text()}`);
+      return new Uint8Array(await res.arrayBuffer());
+    },
+    async put(body: Uint8Array): Promise<void> {
+      const res = await send(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/gzip" },
+        body: body as BodyInit,
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) throw new Error(`R2 ${key}: HTTP ${res.status} ${await res.text()}`);
+      await res.body?.cancel();
+    },
+  };
+}
+
+/**
+ * The poller's state in R2 (`state/poller.json.gz`, overwritten after each cycle that changed it). The edge runtime
+ * has no memory between calls and reading the state back from Postgres counts as egress; this does not.
+ */
+export function r2StateSnapshot(env: R2Env, opts: Parameters<typeof r2Object>[2] = {}): StateSnapshot {
+  const object = r2Object(env, "state/poller.json.gz", opts);
+  return {
+    async get() {
+      const bytes = await object.get();
+      return bytes ? await decodeState(bytes) : null;
+    },
+    async put(state) {
+      await object.put(await encodeState(state));
+    },
+  };
+}
+
+/** The static data of the trips seen so far, per network version (`state/trip_info.json.gz`). */
+export function r2TripInfoCache(env: R2Env, opts: Parameters<typeof r2Object>[2] = {}): TripInfoCache {
+  const object = r2Object(env, "state/trip_info.json.gz", opts);
+  return {
+    async get(version) {
+      const bytes = await object.get();
+      return bytes ? await decodeTripInfo(bytes, version) : null;
+    },
+    async put(version, entries) {
+      await object.put(await encodeTripInfo(version, entries));
     },
   };
 }

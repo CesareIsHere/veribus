@@ -166,41 +166,104 @@ async function gzip(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/** The same data in memory and in the database: same feed markers, same number of rows. */
+/**
+ * What identifies the vehicles and trips: the hash and timestamp of the two feeds they come from. Not the alerts feed
+ * (it changes the alerts, not the vehicles) and not Last-Modified (the HTTP header changes on identical content).
+ */
+const dataKey = (markers: Record<Feed, FeedMarker>) =>
+  (["vp", "tu"] as const).map((f) => `${markers[f]?.hash ?? ""}@${markers[f]?.feedTs ?? ""}`).join("|");
+
+/** The same data in memory and in the database: same feeds behind them, same number of rows. */
 export function sameState(memory: CycleState, db: Pick<PendingState, "markers" | "counts">): boolean {
-  return FEEDS.every((f) => {
-    const a = memory.markers[f];
-    const b = db.markers[f];
-    return (a?.hash ?? null) === (b?.hash ?? null) && (a?.feedTs ?? null) === (b?.feedTs ?? null) &&
-      (a?.lastModified ?? null) === (b?.lastModified ?? null);
-  }) && memory.vehicles.size === db.counts.vehicles && memory.trips.size === db.counts.trips;
+  return dataKey(memory.markers) === dataKey(db.markers) && memory.vehicles.size === db.counts.vehicles &&
+    memory.trips.size === db.counts.trips;
 }
 
+/** The state outside the database, for a runtime whose memory does not last (see keepState). */
+export interface StateSnapshot {
+  /** The last state written, or null when there is none. Throws on a failure: the caller reads the database. */
+  get(): Promise<CycleState | null>;
+  put(state: CycleState): Promise<void>;
+}
+
+/** Where the state a cycle started from came from. */
+export type StateSource = "memory" | "snapshot" | "database";
+
 /**
- * The state between cycles for a runtime that has no process of its own (the edge function): the vehicles and trips
- * are kept in memory while the worker lives, and used only if the database still says the same (a few hundred bytes
- * to ask). Another runtime, a restart or a manual change makes them differ: the state is then read again, and only
- * if a feed brings news. Reading it every cycle was ~4.6 GB a day of egress through the pooler.
+ * The state between cycles for a runtime that has no process of its own (the edge function: a worker per call, gone
+ * five seconds later, so memory alone never helps). The vehicles and trips are looked for, in this order:
+ *
+ * 1. in memory, while the worker lives;
+ * 2. in the snapshot (R2 for the edge function): the last state this poller wrote, after each cycle that changed it;
+ * 3. in the database, only if a feed brings news.
+ *
+ * The first two are used only if the database still says the same (the feed markers and row counts: a few hundred
+ * bytes to ask), so another runtime writing, a missing or older snapshot or a manual change all end in the database.
+ * Reading the vehicles and trips from Postgres at every cycle was ~4.6 GB a day of egress through the pooler.
  */
 export function keepState(
   store: { peek(): Promise<Pick<PendingState, "markers" | "counts">>; loadState(): Promise<CycleState> },
+  snapshot?: StateSnapshot,
 ) {
   let memory: CycleState | null = null;
+  /** The data the snapshot holds, as of the last read or write. */
+  let saved: string | null = null;
+  let source: StateSource = "database";
   return {
-    /** What the next cycle starts from. */
+    /** Where the state of the cycle in progress came from. */
+    get source(): StateSource {
+      return source;
+    },
+    /** What the next cycle starts from. The markers are always the database's: Last-Modified moves on its own. */
     async start(): Promise<CycleState | PendingState> {
       const db = await store.peek();
-      if (memory && sameState(memory, db)) return memory;
+      if (memory && sameState(memory, db)) {
+        source = "memory";
+        return memory = { ...memory, markers: db.markers };
+      }
       memory = null;
+      if (snapshot) {
+        try {
+          const found = await snapshot.get();
+          if (found && sameState(found, db)) {
+            saved = dataKey(found.markers);
+            source = "snapshot";
+            return memory = { ...found, markers: db.markers };
+          }
+        } catch (e) {
+          console.error(`state snapshot not read, using the database: ${e}`);
+        }
+      }
+      source = "database";
       return { ...db, load: () => store.loadState() };
     },
-    /** What the cycle ended with: kept only when the vehicles and trips are known. */
-    end(state: CycleState | PendingState): void {
-      memory = isPending(state) ? null : state;
+    /** What the cycle ended with. Written to the snapshot when its data changed; a failure there only costs a read. */
+    async end(state: CycleState | PendingState): Promise<void> {
+      if (isPending(state)) {
+        memory = null;
+        return;
+      }
+      memory = state;
+      if (snapshot && dataKey(state.markers) !== saved) {
+        try {
+          await snapshot.put(state);
+          saved = dataKey(state.markers);
+        } catch (e) {
+          saved = null;
+          console.error(`state snapshot not written: ${e}`);
+        }
+      }
     },
     /** After a failure the memory may not match what was committed. */
     forget(): void {
       memory = null;
     },
   };
+}
+
+/** Static data of the trips of the active network, kept between workers (see postgresStore). */
+export interface TripInfoCache {
+  /** What was stored for this network version, or null. Throws on a failure: the caller reads the database. */
+  get(version: string): Promise<Record<string, TripInfo> | null>;
+  put(version: string, entries: Record<string, TripInfo>): Promise<void>;
 }
