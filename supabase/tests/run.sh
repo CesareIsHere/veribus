@@ -41,4 +41,6 @@ GTFS_DIR=$G MD5=test bash backend/static-import/import.sh > /dev/null 2>&1
 
 psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f supabase/tests/api_test.sql
 psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f supabase/tests/notify_test.sql
+# As supabase_admin: the postgres role of the image may not SET ROLE to the poller.
+psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -q -f supabase/tests/poller_test.sql > /dev/null
 echo "API tests passed"
