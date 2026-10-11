@@ -112,7 +112,7 @@ Deno.test("a cycle with news reads the vehicles and trips once and gives the sam
   assertEquals("vehicles" in lazy.state, true); // known now: it can be kept
 });
 
-Deno.test("sameState compares the markers and the number of rows", () => {
+Deno.test("sameState compares the data (hash and time of vp and tu) and the number of rows, not the HTTP headers or the alerts", () => {
   const mem = emptyState();
   mem.markers.vp = { lastModified: "t0", hash: "h", feedTs: 5 };
   const db = { markers: structuredClone(mem.markers), counts: { vehicles: 0, trips: 0 } };
@@ -120,39 +120,159 @@ Deno.test("sameState compares the markers and the number of rows", () => {
   assert(!sameState(mem, { ...db, counts: { vehicles: 1, trips: 0 } }));
   assert(!sameState(mem, { ...db, markers: { ...db.markers, vp: { ...db.markers.vp, hash: "other" } } }));
   assert(!sameState(mem, { ...db, markers: { ...db.markers, tu: { ...db.markers.tu, feedTs: 7 } } }));
+  // Last-Modified moves on identical content, and the alerts feed does not touch the vehicles and trips.
+  assert(sameState(mem, { ...db, markers: { ...db.markers, vp: { ...db.markers.vp, lastModified: "t9" } } }));
+  assert(sameState(mem, { ...db, markers: { ...db.markers, sa: { lastModified: "x", hash: "alerts", feedTs: 99 } } }));
 });
 
-Deno.test("keepState: the database is asked for a few hundred bytes, the state only when memory is out of date", async () => {
-  const commits: Commit[] = [];
-  let db = { markers: emptyState().markers, counts: { vehicles: 0, trips: 0 } };
-  const reads = { peek: 0, loadState: 0 };
-  const keeper = keepState({
-    peek: () => (reads.peek++, Promise.resolve(db)),
-    loadState: () => (reads.loadState++, Promise.resolve(emptyState())),
-  });
+/** A store whose database has a state, and a snapshot in a variable. */
+function keeperWith(db: { markers: CycleState["markers"]; counts: { vehicles: number; trips: number } }) {
+  const calls = { peek: 0, loadState: 0, get: 0, put: 0 };
+  const box: { snapshot: CycleState | null; failGet: boolean; failPut: boolean } = {
+    snapshot: null,
+    failGet: false,
+    failPut: false,
+  };
+  const keeper = keepState(
+    {
+      peek: () => (calls.peek++, Promise.resolve(db)),
+      loadState: () => (calls.loadState++, Promise.resolve(emptyState())),
+    },
+    {
+      get: () => {
+        calls.get++;
+        return box.failGet ? Promise.reject(new Error("R2 down")) : Promise.resolve(box.snapshot);
+      },
+      put: (state) => {
+        calls.put++;
+        if (box.failPut) return Promise.reject(new Error("R2 down"));
+        box.snapshot = state;
+        return Promise.resolve();
+      },
+    },
+  );
+  return { keeper, calls, box, setDb: (d: typeof db) => (db = d) };
+}
 
-  // 1. Nothing in memory: lazy start; the news make the cycle read the state once (through `load`).
-  const first = await keeper.start();
-  assertEquals("load" in first, true);
-  const ran = await runCycle(portsWith(commits, true), first);
-  assertEquals(reads.loadState, 1); // the news made the cycle call `load`, and nothing else did
-  keeper.end(ran.state);
-  const kept = ran.state as CycleState;
-  db = { markers: structuredClone(kept.markers), counts: { vehicles: kept.vehicles.size, trips: kept.trips.size } };
+const stateWith = (hash: string, n = 2): CycleState => {
+  const s = emptyState();
+  s.markers.vp = { lastModified: "t", hash, feedTs: 10 };
+  s.markers.tu = { lastModified: "t", hash, feedTs: 10 };
+  for (let i = 0; i < n; i++) {
+    s.vehicles.set(`V${i}`, {
+      vehicleId: `V${i}`,
+      label: null,
+      tripId: `T${i}`,
+      routeId: "R",
+      lat: 1,
+      lon: 2,
+      gpsAt: 3,
+      seq: 1,
+      stopId: null,
+      stillLat: 1,
+      stillLon: 2,
+      stillSince: 3,
+    });
+    s.trips.set(`T${i}`, {
+      tripId: `T${i}`,
+      routeId: "R",
+      vehicleId: `V${i}`,
+      status: "confirmed",
+      signal: null,
+      predSeq: [1],
+      predTs: [5],
+      lastSeq: 1,
+      seenAt: 3,
+      suppressedAt: null,
+    });
+  }
+  return s;
+};
+const dbOf = (s: CycleState) => ({ markers: s.markers, counts: { vehicles: s.vehicles.size, trips: s.trips.size } });
 
-  // 2. The database says what memory says: the very same state comes back, nothing is read.
-  assert(await keeper.start() === kept);
-  assertEquals(reads.loadState, 1); // still the one read of step 1
+Deno.test("keepState: a fresh worker takes the state from the snapshot when the database agrees, and reads Postgres only if not", async () => {
+  const saved = stateWith("h1");
+  const k = keeperWith(dbOf(saved));
+  k.box.snapshot = saved;
 
-  // 3. Someone else wrote (other markers) or a row was lost: the memory is dropped.
-  db = { ...db, markers: { ...db.markers, vp: { ...db.markers.vp, hash: "someone else" } } };
-  assertEquals("load" in await keeper.start(), true);
-  db = { markers: structuredClone(kept.markers), counts: { vehicles: kept.vehicles.size, trips: kept.trips.size } };
-  assertEquals("load" in await keeper.start(), true); // and it does not come back by itself
+  // The database says what the snapshot says: no state read from Postgres, the markers are the database's.
+  const start = await k.keeper.start();
+  assert("vehicles" in start);
+  assertEquals(k.keeper.source, "snapshot");
+  assertEquals(k.calls.loadState, 0);
+  assertEquals((start as CycleState).vehicles.size, 2);
 
-  // 4. After a failure the memory is not trusted, even if the database agrees.
-  keeper.end(kept);
-  assert(await keeper.start() === kept);
-  keeper.forget();
-  assertEquals("load" in await keeper.start(), true);
+  // The snapshot is older than the database (a cycle wrote the database, then died before the snapshot): lazy start.
+  const newer = stateWith("h2");
+  const k2 = keeperWith(dbOf(newer));
+  k2.box.snapshot = saved;
+  assertEquals("load" in await k2.keeper.start(), true);
+  assertEquals(k2.keeper.source, "database");
+
+  // No snapshot yet, or the snapshot cannot be read: also the database, and the cycle goes on.
+  const k3 = keeperWith(dbOf(saved));
+  assertEquals("load" in await k3.keeper.start(), true);
+  const k4 = keeperWith(dbOf(saved));
+  k4.box.snapshot = saved;
+  k4.box.failGet = true;
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    assertEquals("load" in await k4.keeper.start(), true);
+  } finally {
+    console.error = quiet;
+  }
+});
+
+Deno.test("keepState: the snapshot is written only when the vehicles or trips changed, and a failure to write is not a failure", async () => {
+  const before = stateWith("h1");
+  const k = keeperWith(dbOf(before));
+  k.box.snapshot = before;
+  await k.keeper.start(); // from the snapshot
+  assertEquals(k.calls.put, 0);
+
+  // A cycle with no news (only Last-Modified or the alerts moved): nothing to write.
+  const quietCycle = {
+    ...before,
+    markers: { ...before.markers, sa: { lastModified: "x", hash: "alerts", feedTs: 1 } },
+  };
+  await k.keeper.end(quietCycle);
+  assertEquals(k.calls.put, 0);
+
+  // A cycle with news: written once.
+  const after = stateWith("h2", 3);
+  await k.keeper.end(after);
+  assertEquals(k.calls.put, 1);
+  assertEquals(k.box.snapshot, after);
+  await k.keeper.end(after);
+  assertEquals(k.calls.put, 1);
+
+  // Not known (the cycle did not read the vehicles and trips): nothing to write and nothing kept.
+  await k.keeper.end({ markers: after.markers, counts: { vehicles: 3, trips: 3 }, load: () => Promise.resolve(after) });
+
+  // R2 refuses the write: the cycle is not failed, and the next worker will read Postgres.
+  const k2 = keeperWith(dbOf(before));
+  k2.box.failPut = true;
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    await k2.keeper.end(after); // does not throw
+  } finally {
+    console.error = quiet;
+  }
+  assertEquals(k2.calls.put, 1);
+});
+
+Deno.test("keepState: the memory of a living worker is used before the snapshot; after a failure the snapshot is", async () => {
+  const s = stateWith("h1");
+  const k = keeperWith(dbOf(s));
+  await k.keeper.end(s); // this worker ran a cycle that left `s`
+  assertEquals((await k.keeper.start() as CycleState).vehicles.size, 2);
+  assertEquals(k.keeper.source, "memory");
+  assertEquals(k.calls.get, 0);
+
+  k.keeper.forget();
+  await k.keeper.start(); // the snapshot `end` wrote: the database still agrees with it
+  assertEquals(k.keeper.source, "snapshot");
+  assertEquals(k.calls.get, 1);
 });
