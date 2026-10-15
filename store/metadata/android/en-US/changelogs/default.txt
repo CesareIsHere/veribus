@@ -1,0 +1,1 @@
+First release: live arrivals with status and reason, live maps, nearby stops, follow a bus, followed trips with notifications, timetables, alerts, favorites.

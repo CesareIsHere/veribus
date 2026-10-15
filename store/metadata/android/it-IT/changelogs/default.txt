@@ -1,0 +1,1 @@
+Prima versione: arrivi in tempo reale con stato e motivo, mappe dal vivo, fermate vicine, segui un bus, corse seguite con notifiche, orari, avvisi, preferiti.

@@ -1,13 +1,14 @@
-# Regenerate after replacing assets/images/logo.png:
+# Regenerate after changing store/logo_source.png (python store/make_assets.py writes the assets/images files):
 #   dart run flutter_launcher_icons
 flutter_launcher_icons:
-  image_path: assets/images/logo.png
+  image_path: assets/images/launcher_foreground.png
   android: true
   ios: true
   remove_alpha_ios: true
-  adaptive_icon_background: "#3F51B5"
-  adaptive_icon_foreground: assets/images/logo.png
+  background_color_ios: "#FFFFFF"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/launcher_foreground.png
   web:
     generate: true
-    background_color: "#3F51B5"
-    theme_color: "#3F51B5"
+    background_color: "#FFFFFF"
+    theme_color: "#053762"

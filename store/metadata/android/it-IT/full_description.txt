@@ -1,0 +1,28 @@
+Veribus mostra gli arrivi di bus e tram a Roma in tempo reale, e ti dice quanto puoi fidarti di ognuno.
+
+La maggior parte delle app mostra un solo numero, "4 min", e nasconde da dove viene. Veribus ti fa vedere il quadro completo: se la previsione è confermata dal GPS del mezzo, se il bus è fermo al capolinea, se il segnale si è perso o se la corsa che aspettavi è stata cancellata.
+
+ARRIVI ONESTI
+Ogni arrivo ha uno stato scritto a parole, mai affidato al solo colore: Confermato, Da verificare, Programmato, Soppressa, Cancellata. Sotto c'è sempre una riga che spiega il perché: "ultimo segnale GPS 3 min fa", "veicolo fermo da 8 min", "parte dal capolinea alle 13:43". I minuti compaiono solo per le previsioni in tempo reale; un orario programmato resta un orario.
+
+SEGUI IL TUO BUS
+Tocca un arrivo e vedi il mezzo sulla mappa insieme alla fermata e a te, aggiornato dal vivo. Tocca qualsiasi bus sulla mappa per vedere tutto il suo percorso: tratteggiato dove è già passato, pieno dove deve ancora andare.
+
+AVVISI PRIMA CHE PASSI
+Scegli le corse che ti interessano (per esempio le 17:10 e le 17:25 del 64 alla tua fermata), i giorni in cui contano e fino a tre anticipi: 15, 10 e 5 minuti prima. Veribus ti avvisa anche con l'app chiusa quando il bus sta per arrivare, e se succede qualcosa: corsa cancellata, mezzo fermo, segnale perso.
+
+E INOLTRE
+• Fermate vicine, su mappa o in elenco, con il prossimo arrivo di ogni linea
+• Mappe essenziali e leggibili, chiare e scure, con i bus etichettati con la loro linea
+• Dettaglio linea: tutte le fermate in ordine con i mezzi tra una e l'altra, o il percorso su mappa
+• Orari del giorno per linea, direzione e data
+• Ricerca di linee e fermate, direttamente sul telefono
+• Preferiti per fermate e linee
+• Avvisi di servizio e deviazioni, con la gravità indicata da icona e testo
+• Se i dati smettono di arrivare, l'app lo dice
+• Tema chiaro e scuro, italiano e inglese
+
+Serve un account (email) per usare l'app e ricevere le notifiche. Niente pubblicità.
+
+DATI
+Veribus usa gli open data di Roma Servizi per la Mobilità (GTFS e GTFS-Realtime). È un progetto indipendente, non affiliato ad Atac né a RSM. I dati provengono da strumentazione automatica e non sono esaustivi: traffico e malfunzionamenti possono renderli imprecisi, e l'app lo segnala. Mappa © OpenStreetMap contributors, © OpenMapTiles, servita da OpenFreeMap.
