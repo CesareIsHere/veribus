@@ -109,6 +109,8 @@ void main() {
     expect(_selected(tester, '5 min'), isTrue);
     expect(_selected(tester, '15 min'), isFalse);
     expect(find.textContaining('17:15'), findsOneWidget);
+    expect(find.text('Recent weekdays'), findsOneWidget); // what to expect from the trip
+    expect(find.text('Usually on time'), findsOneWidget);
     expect(find.text('Stop following'), findsNothing); // nothing to remove yet
 
     await tester.tap(find.text('Save'));

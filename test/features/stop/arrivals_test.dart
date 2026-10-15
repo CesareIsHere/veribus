@@ -17,18 +17,25 @@ void main() {
   final at = DateTime.now().add(const Duration(minutes: 14));
   final clock = DateFormat.Hm().format(at);
 
-  Arrival arrival(String status, {int? minutes, bool approximate = false, bool withTime = true, int? stopsAway}) =>
-      Arrival.fromJson({
-        'trip_id': 't',
-        'route_id': '64',
-        'direction_id': 0,
-        'headsign': 'TERMINI',
-        'status': status,
-        'time': withTime ? at.toUtc().toIso8601String() : null,
-        'minutes': minutes,
-        'approximate': approximate,
-        'stops_away': stopsAway,
-      });
+  Arrival arrival(
+    String status, {
+    int? minutes,
+    bool approximate = false,
+    bool withTime = true,
+    int? stopsAway,
+    bool overdue = false,
+  }) => Arrival.fromJson({
+    'trip_id': 't',
+    'route_id': '64',
+    'direction_id': 0,
+    'headsign': 'TERMINI',
+    'status': status,
+    'time': withTime ? at.toUtc().toIso8601String() : null,
+    'minutes': minutes,
+    'approximate': approximate,
+    'stops_away': stopsAway,
+    'overdue': overdue,
+  });
 
   group('ArrivalText', () {
     test('a scheduled time is never shown as minutes (RNF-03)', () {
@@ -41,6 +48,16 @@ void main() {
       expect(ArrivalText.time(l10n, arrival('confirmed', minutes: 14, approximate: true)), 'verso le $clock');
       expect(ArrivalText.time(l10n, arrival('confirmed', withTime: false, stopsAway: 3)), 'a 3 fermate');
       expect(ArrivalText.time(l10n, arrival('uncertain', minutes: 0)), 'in arrivo');
+    });
+
+    test('past its time with no bus seen: the time it was due, and that it may still come', () {
+      final late = arrival('uncertain', minutes: 0, overdue: true);
+      expect(ArrivalText.time(l10n, late), clock);
+      expect(ArrivalText.reason(l10n, late, lineWithoutRealtime: false), l10n.overdue(clock));
+      expect(
+        ArrivalText.reason(l10n, arrival('scheduled', overdue: true), lineWithoutRealtime: false),
+        l10n.overdue(clock),
+      );
     });
 
     test('reasons', () {

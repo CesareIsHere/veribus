@@ -17,4 +17,13 @@ abstract interface class ITransitRepository {
   Future<List<TimetableDirection>> timetable(String stopId, String lineId, DateTime day);
 
   Future<List<ServiceAlert>> alerts();
+
+  /// How the slot (stop, line, direction, scheduled time) went in the last 30 days of the same kind, latest first.
+  Future<List<TripDay>> tripHistory(
+    String stopId,
+    String lineId,
+    int directionId,
+    int departureSeconds, {
+    required bool weekend,
+  });
 }

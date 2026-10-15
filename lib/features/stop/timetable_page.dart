@@ -1,24 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:veribus/core/config.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/notifications/components/follow_time_chip.dart'; // feature:push
 import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Scheduled times of a line at a stop, for one day, grouped by hour, first and last trip highlighted (RF-28).
+/// From a stop the line can be changed; from a line ([directionId] set) the stop can, along that direction.
 class TimetablePage extends ConsumerStatefulWidget {
-  const TimetablePage({required this.stopId, required this.lineId, super.key});
+  const TimetablePage({required this.stopId, required this.lineId, this.directionId, super.key});
 
-  static String route(String stopId, String lineId) => '/stop/$stopId/timetable?line=${Uri.encodeComponent(lineId)}';
+  static String route(String stopId, String lineId, {int? directionId}) => Uri(
+    path: '/stop/$stopId/timetable',
+    queryParameters: {'line': lineId, 'dir': ?directionId?.toString()},
+  ).toString();
 
   final String stopId;
   final String lineId;
+  final int? directionId;
 
   @override
   ConsumerState<TimetablePage> createState() => _TimetablePageState();
@@ -26,17 +34,30 @@ class TimetablePage extends ConsumerStatefulWidget {
 
 class _TimetablePageState extends ConsumerState<TimetablePage> {
   late String _line = widget.lineId;
+  late String _stop = widget.stopId;
   DateTime _day = DateUtils.dateOnly(DateTime.now());
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final network = ref.watch(networkProvider).value;
-    final stop = network?.stopById[widget.stopId];
-    final timetable = ref.watch(timetableProvider(widget.stopId, _line, _day));
+    final stop = network?.stopById[_stop];
+    final timetable = ref.watch(timetableProvider(_stop, _line, _day));
+    final fromLine = widget.directionId;
+    final lineStops = fromLine == null ? null : ref.watch(lineDetailProvider(_line, fromLine)).value?.stopIds;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.timetable)),
+      appBar: AppBar(
+        title: Text(l10n.timetable),
+        actions: [
+          if (fromLine == null)
+            IconButton(
+              tooltip: l10n.lineDetail(network?.lines[_line]?.name ?? _line),
+              icon: const Icon(Icons.directions_bus_outlined),
+              onPressed: () => context.push(LinePage.route(_line)),
+            ),
+        ],
+      ),
       body: ListView(
         padding: context.pagePadding(),
         children: [
@@ -45,16 +66,35 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
           Row(
             spacing: Spacing.s,
             children: [
-              DropdownMenu<String>(
-                label: Text(l10n.line),
-                initialSelection: _line,
-                onSelected: (id) => setState(() => _line = id ?? _line),
-                dropdownMenuEntries: [
-                  for (final id in stop?.lineIds ?? [widget.lineId])
-                    DropdownMenuEntry(value: id, label: network?.lines[id]?.name ?? id),
-                ],
-              ),
-              const Spacer(),
+              if (fromLine == null)
+                DropdownMenu<String>(
+                  label: Text(l10n.line),
+                  initialSelection: _line,
+                  onSelected: (id) => setState(() => _line = id ?? _line),
+                  dropdownMenuEntries: [
+                    for (final id in stop?.lineIds ?? [widget.lineId])
+                      DropdownMenuEntry(value: id, label: network?.lines[id]?.name ?? id),
+                  ],
+                )
+              else
+                Expanded(
+                  child: DropdownMenu<String>(
+                    label: Text(l10n.stop),
+                    initialSelection: _stop,
+                    enableFilter: true,
+                    expandedInsets: EdgeInsets.zero,
+                    onSelected: (id) => setState(() => _stop = id ?? _stop),
+                    dropdownMenuEntries: [
+                      // The terminus has no departures: nobody boards there.
+                      for (final id in switch (lineStops) {
+                        final s? => s.take(s.length - 1),
+                        null => [_stop],
+                      })
+                        DropdownMenuEntry(value: id, label: network?.stopById[id]?.name ?? id),
+                    ],
+                  ),
+                ),
+              if (fromLine == null) const Spacer(),
               IconButton(
                 tooltip: l10n.previousDay,
                 icon: const Icon(Icons.chevron_left),
@@ -75,7 +115,10 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
             AsyncValue(:final value?) when value.isEmpty => [
               MessageView(icon: Icons.event_busy_outlined, title: l10n.noServiceThisDay),
             ],
-            AsyncValue(:final value?) => [for (final d in value) ..._direction(context, d)],
+            AsyncValue(:final value?) => [
+              for (final d in value)
+                if (fromLine == null || d.directionId == fromLine) ..._direction(context, d),
+            ],
             AsyncValue(:final error?) => [
               MessageView.error(context, error, onRetry: () => ref.invalidate(timetableProvider)),
             ],
@@ -131,7 +174,7 @@ class _TimetablePageState extends ConsumerState<TimetablePage> {
     // feature:push:start
     if (Features.push) {
       return FollowTimeChip(
-        stopId: widget.stopId,
+        stopId: _stop,
         lineId: _line,
         directionId: d.directionId,
         seconds: s,

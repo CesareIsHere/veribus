@@ -82,7 +82,7 @@ class FavoritesPage extends ConsumerWidget {
                             arrival: a,
                             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
                             lineWithoutRealtime: noRealtime.contains(a.lineId),
-                            onTap: () => context.push(StopPage.route(id)),
+                            onTap: () => context.push(LinePage.routeOf(a, id)),
                           ),
                       const SizedBox(height: Spacing.s),
                     ],

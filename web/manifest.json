@@ -3,9 +3,9 @@
     "short_name": "Veribus",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#3F51B5",
-    "theme_color": "#3F51B5",
-    "description": "Flutter template by Emiliano Cesare",
+    "background_color": "#FFFFFF",
+    "theme_color": "#053762",
+    "description": "Veribus: Rome bus and tram arrivals, live.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

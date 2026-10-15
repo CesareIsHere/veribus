@@ -1,11 +1,13 @@
-# Regenerate after replacing assets/images/logo.png:
+# Regenerate after changing the logo (python store/make_assets.py):
 #   dart run flutter_native_splash:create
 flutter_native_splash:
   color: "#FFFFFF"
   color_dark: "#121212"
   image: assets/images/logo.png
   android_12:
-    image: assets/images/logo.png
+    image: assets/images/launcher_foreground.png
+    icon_background_color: "#FFFFFF"
+    icon_background_color_dark: "#FFFFFF"
     color: "#FFFFFF"
     color_dark: "#121212"
   web: true

@@ -9,6 +9,7 @@ import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
+import 'package:veribus/models/transit/network.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// One bar for lines and stops, searched on the phone while typing (RF-10, RF-11).
@@ -56,28 +57,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     }
                     return ListView(
                       padding: context.listPadding(),
-                      children: [
-                        if (r.lines.isNotEmpty) SectionHeader(l10n.lines),
-                        for (final line in r.lines)
-                          ListTile(
-                            leading: LineBadge(line.name, withoutRealtime: noRealtime.contains(line.id)),
-                            title: Text(line.ends),
-                            subtitle: noRealtime.contains(line.id) ? Text(l10n.withoutRealtime) : null,
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => context.push(LinePage.route(line.id)),
-                          ),
-                        if (r.stops.isNotEmpty) SectionHeader(l10n.stops),
-                        for (final stop in r.stops)
-                          ListTile(
-                            leading: SizedBox(
-                              width: Spacing.xxxl,
-                              child: Text(stop.id, style: context.textTheme.labelMedium),
-                            ),
-                            title: Text(stop.name),
-                            subtitle: Text(stop.lineIds.map((id) => value.lines[id]?.name ?? id).join(', ')),
-                            onTap: () => context.push(StopPage.route(stop.id)),
-                          ),
-                      ],
+                      children: searchResults(context, value, r, noRealtime, open: (route) => context.push(route)),
                     );
                   },
                 ),
@@ -94,4 +74,37 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       ),
     );
   }
+}
+
+/// The tiles of a search: lines, then stops. Shared by this tab and the bar on Nearby, which closes its view in [open].
+List<Widget> searchResults(
+  BuildContext context,
+  Network network,
+  ({List<Line> lines, List<Stop> stops}) r,
+  Set<String> noRealtime, {
+  required void Function(String route) open,
+}) {
+  final l10n = context.l10n;
+  return [
+    if (r.lines.isNotEmpty) SectionHeader(l10n.lines),
+    for (final line in r.lines)
+      ListTile(
+        leading: LineBadge(line.name, withoutRealtime: noRealtime.contains(line.id)),
+        title: Text(line.ends),
+        subtitle: noRealtime.contains(line.id) ? Text(l10n.withoutRealtime) : null,
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => open(LinePage.route(line.id)),
+      ),
+    if (r.stops.isNotEmpty) SectionHeader(l10n.stops),
+    for (final stop in r.stops)
+      ListTile(
+        leading: SizedBox(
+          width: Spacing.xxxl,
+          child: Text(stop.id, style: context.textTheme.labelMedium),
+        ),
+        title: Text(stop.name),
+        subtitle: Text(stop.lineIds.map((id) => network.lines[id]?.name ?? id).join(', ')),
+        onTap: () => open(StopPage.route(stop.id)),
+      ),
+  ];
 }

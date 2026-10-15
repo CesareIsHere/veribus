@@ -1,0 +1,28 @@
+Veribus shows Rome's bus and tram arrivals live, and tells you how far you can trust each one.
+
+Most apps show a single number, "4 min", and hide where it comes from. Veribus shows the whole picture: whether the prediction is confirmed by the vehicle's GPS, whether the bus is still at the terminus, whether its signal was lost, or whether the trip you were waiting for was canceled.
+
+HONEST ARRIVALS
+Every arrival has a status spelled out in words, never told by color alone: Confirmed, To be checked, Scheduled, Suppressed, Canceled. Underneath there's always a line saying why: "last GPS signal 3 min ago", "vehicle stopped for 8 min", "leaves the terminus at 13:43". Minutes appear only for real-time predictions; a scheduled time stays a time.
+
+FOLLOW YOUR BUS
+Tap an arrival to see the vehicle on the map together with the stop and you, updating live. Tap any bus on a map to see its whole route: dashed where it has been, solid where it still goes.
+
+A HEADS-UP BEFORE IT ARRIVES
+Pick the trips you care about (say the 17:10 and 17:25 of line 64 at your stop), the weekdays they matter on, and up to three lead times: 15, 10 and 5 minutes before. Veribus notifies you, even with the app closed, when the bus is about to arrive, and when something happens to it: canceled, standing still, signal lost.
+
+ALSO
+• Nearby stops, on a map or in a list, with the next arrival of each line
+• Clean, readable maps, light and dark, with buses labelled with their line
+• Line detail: every stop in order with the vehicles between them, or the route on a map
+• Daily timetable by line, direction and date
+• Search for lines and stops, right on your phone
+• Favorite stops and lines
+• Service alerts and detours, severity told by icon and text
+• If the data stops coming, the app says so
+• Light and dark theme, Italian and English
+
+An account (email) is required to use the app and receive notifications. No ads.
+
+DATA
+Veribus uses the open data of Roma Servizi per la Mobilità (GTFS and GTFS-Realtime). It is an independent project, not affiliated with Atac or RSM. The data comes from automated instrumentation and is not exhaustive: traffic and malfunctions can make it inaccurate, and the app says so. Map © OpenStreetMap contributors, © OpenMapTiles, served by OpenFreeMap.

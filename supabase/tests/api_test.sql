@@ -68,3 +68,43 @@ do $$ begin
   perform pg_temp.check(not has_function_privilege('authenticated', 'api._feed(timestamptz)', 'execute'), 'helpers private');
   perform pg_temp.check(not has_table_privilege('authenticated', 'live.trip_state', 'select'), 'tables private');
 end $$;
+
+-- Delay history: T1's vehicle moves from stop 1 to stop 3, so A and B are passed now (12 and 14 minutes early).
+update live.feed_status set feed_ts = now() - interval '20 seconds';
+update live.trip_state set last_seq = 1 where trip_id = 'T1';
+select history.record(jsonb_build_array(
+  jsonb_build_object('trip_id', 'T1', 'status', 'confirmed', 'last_seq', 3, 'seen_at', now()),
+  jsonb_build_object('trip_id', 'T2', 'status', 'canceled', 'last_seq', null, 'seen_at', null)));
+do $$
+declare
+  h history.trip_run := (select h from history.trip_run h where trip_id = 'T1');
+  b int := (select departure_s from network.stop_time where trip_id = 'T1' and stop_id = 'B');
+  today date := (now() at time zone 'Europe/Rome')::date;
+  weekend boolean := extract(isodow from today) >= 6;
+  days jsonb;
+begin
+  perform pg_temp.check(h.stop_ids = '{A,B}' and h.delay_s[2] between -900 and -780, 'passages recorded with delay');
+  perform pg_temp.check((select canceled and cardinality(stop_ids) = 3 from history.trip_run where trip_id = 'T2'),
+    'canceled trip keeps its schedule');
+  perform pg_temp.check(pg_temp.at_b()->'T1' is null, 'a passed stop is not an arrival any more');
+
+  -- Two weeks ago it ran 2 minutes late; a week ago the line was tracked but not this trip; the other days no data.
+  insert into history.trip_run (service_date, trip_id, route_id, direction_id, stop_ids, dep_s, delay_s)
+  values (today - 14, 'OLD', 'R1', 0, '{A,B}', array[b - 120, b + 60], '{100,120}');
+  insert into network_meta.route_seen values ('R1', today - 7), ('R1', today - 21);
+  days := api.trip_history('B', 'R1', 0, b, weekend);
+  perform pg_temp.check(jsonb_array_length(days) = 2, 'history: only recorded days with data');
+  perform pg_temp.check(days->0->>'status' = 'not_tracked', 'history: line tracked, trip not');
+  perform pg_temp.check(days->1->>'status' = 'ran' and days->1->>'delay_s' = '120', 'history: delay at the stop');
+  perform pg_temp.check(api.trip_history('B', 'R1', 0, b, not weekend) = '[]', 'history: weekdays and weekend apart');
+end $$;
+
+-- A scheduled trip stays 10 minutes after its time, flagged overdue (missed_grace_min), then goes.
+update network.stop_time set departure_s = departure_s - 2400 where trip_id = 'T5';
+do $$ begin
+  perform pg_temp.check((pg_temp.at_b()->'T5'->>'overdue')::boolean, 'overdue scheduled trip still shown');
+end $$;
+update network.stop_time set departure_s = departure_s - 600 where trip_id = 'T5';
+do $$ begin
+  perform pg_temp.check(pg_temp.at_b()->'T5' is null, 'gone after the grace minutes');
+end $$;

@@ -9,6 +9,8 @@ import 'package:veribus/core/utils/exception_handler.dart';
 import 'package:veribus/core/widgets/dialogs/confirm_dialog.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/line/components/trip_history_card.dart';
+import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/notifications/components/notifications_banner.dart';
 import 'package:veribus/features/notifications/providers/follow_providers.dart';
 import 'package:veribus/features/notifications/providers/push_notifier.dart';
@@ -107,12 +109,31 @@ class _FollowPageState extends ConsumerState<FollowPage> {
           Card.outlined(
             margin: EdgeInsets.zero,
             child: ListTile(
+              onTap: () => context.push(
+                LinePage.route(
+                  widget.lineId,
+                  directionId: widget.directionId,
+                  stopId: widget.stopId,
+                  departureSeconds: widget.departureSeconds,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right),
               leading: LineBadge(line?.name ?? widget.lineId),
               title: Text('→ ${line?.headsignOf(widget.directionId) ?? ''}'),
               subtitle: Text(
                 '${network?.stopById[widget.stopId]?.name ?? widget.stopId} · ${clockOf(widget.departureSeconds)}',
               ),
             ),
+          ),
+          // What to expect from this trip on the days chosen.
+          TripHistoryCard(
+            stopId: widget.stopId,
+            lineId: widget.lineId,
+            directionId: widget.directionId,
+            departureSeconds: widget.departureSeconds,
+            weekend: days.isNotEmpty && days.every((d) => d >= DateTime.saturday),
+            margin: const EdgeInsets.only(top: Spacing.l),
+            showTrip: false,
           ),
           const NotificationsBanner(),
           SectionHeader(

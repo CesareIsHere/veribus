@@ -10,6 +10,7 @@ import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/core/widgets/vehicle_route.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
@@ -75,6 +76,13 @@ class VehicleRouteSheet extends ConsumerWidget {
             ),
           ),
           ListTile(
+            onTap: () {
+              Navigator.of(context).pop();
+              unawaited(
+                context.push(LinePage.route(vehicle.lineId, directionId: vehicle.directionId, vehicleId: vehicle.id)),
+              );
+            },
+            trailing: const Icon(Icons.chevron_right),
             leading: LineBadge(vehicle.label),
             title: Text(
               detail?.headsign == null ? l10n.vehicleNumber(vehicle.fleet ?? vehicle.id) : '→ ${detail!.headsign}',

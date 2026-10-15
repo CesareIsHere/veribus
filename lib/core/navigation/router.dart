@@ -146,14 +146,26 @@ GoRouter router(Ref ref) {
         routes: [
           GoRoute(
             path: 'timetable',
-            builder: (_, state) =>
-                TimetablePage(stopId: state.pathParameters['id']!, lineId: state.uri.queryParameters['line'] ?? ''),
+            builder: (_, state) => TimetablePage(
+              stopId: state.pathParameters['id']!,
+              lineId: state.uri.queryParameters['line'] ?? '',
+              directionId: int.tryParse(state.uri.queryParameters['dir'] ?? ''),
+            ),
           ),
         ],
       ),
       GoRoute(
         path: '/line/:id',
-        builder: (_, state) => LinePage(lineId: state.pathParameters['id']!),
+        builder: (_, state) {
+          final q = state.uri.queryParameters;
+          return LinePage(
+            lineId: state.pathParameters['id']!,
+            directionId: int.tryParse(q['dir'] ?? ''),
+            stopId: q['stop'],
+            departureSeconds: int.tryParse(q['dep'] ?? ''),
+            vehicleId: q['vehicle'],
+          );
+        },
       ),
       // feature:push:start
       GoRoute(path: TripsPage.route, builder: (_, _) => const TripsPage()),
