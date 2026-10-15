@@ -16,7 +16,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get account => 'Account';
 
   @override
-  String get appTitle => 'Template';
+  String get appTitle => 'Veribus';
 
   @override
   String get appearance => 'Appearance';
@@ -261,6 +261,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get line => 'Line';
+
+  @override
+  String get stop => 'Stop';
 
   @override
   String get lines => 'Lines';
@@ -677,4 +680,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String pushLostBody(String time, String place) {
     return 'The vehicle of the $time at $place stopped transmitting: it may not arrive';
   }
+
+  @override
+  String overdue(String time) {
+    return 'Due at $time, it may still come';
+  }
+
+  @override
+  String get showOnMap => 'Show on the map';
+
+  @override
+  String get editFollow => 'Edit';
+
+  @override
+  String tripAt(String time, String stop) {
+    return '$time trip at $stop';
+  }
+
+  @override
+  String get tripHistoryWeekdays => 'Recent weekdays';
+
+  @override
+  String get tripHistoryWeekend => 'Recent weekends';
+
+  @override
+  String get tripHistoryEmpty => 'No data yet: the history fills up day by day.';
+
+  @override
+  String get tripUsuallyOnTime => 'Usually on time';
+
+  @override
+  String tripUsuallyLate(int n) {
+    return 'Usually about $n min late';
+  }
+
+  @override
+  String tripUsuallyEarly(int n) {
+    return 'Usually about $n min early';
+  }
+
+  @override
+  String get tripRarelyTracked => 'Rarely tracked: it may pass all the same';
+
+  @override
+  String tripOnTimeCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n on time', one: '1 on time');
+    return '$_temp0';
+  }
+
+  @override
+  String tripLateCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n late', one: '1 late');
+    return '$_temp0';
+  }
+
+  @override
+  String tripEarlyCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n early', one: '1 early');
+    return '$_temp0';
+  }
+
+  @override
+  String tripNotTrackedCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n not tracked', one: '1 not tracked');
+    return '$_temp0';
+  }
+
+  @override
+  String tripCanceledCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n canceled', one: '1 canceled');
+    return '$_temp0';
+  }
+
+  @override
+  String get tripDayNotTracked => 'not tracked';
+
+  @override
+  String get tripDayCanceled => 'canceled';
 }

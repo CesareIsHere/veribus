@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
@@ -13,7 +14,9 @@ import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/components/vehicle_route_sheet.dart';
+import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
+import 'package:veribus/features/search/search_page.dart';
 import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
@@ -39,20 +42,43 @@ class NearbyPage extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, Spacing.xs, Spacing.s),
-              child: Row(
+              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.s),
+              child: Column(
+                spacing: Spacing.s,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: SegmentedButton<bool>(
-                      segments: [
-                        ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
-                        ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
-                      ],
-                      selected: {map},
-                      onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
-                    ),
+                  // The same search as the Search tab, without leaving the page.
+                  SearchAnchor.bar(
+                    barHintText: l10n.searchHint,
+                    barLeading: const Icon(Icons.search),
+                    barTrailing: const [SettingsButton()],
+                    viewHintText: l10n.searchHint,
+                    suggestionsBuilder: (context, controller) {
+                      final network = ref.read(networkProvider).value;
+                      if (network == null || controller.text.trim().isEmpty) return const <Widget>[];
+                      final r = network.search(controller.text);
+                      if (r.lines.isEmpty && r.stops.isEmpty) return [ListTile(title: Text(l10n.searchNoResults))];
+                      final noRealtime = ref.read(networkInfoProvider).value?.noRealtime ?? const {};
+                      return searchResults(
+                        context,
+                        network,
+                        r,
+                        noRealtime,
+                        open: (route) {
+                          controller.closeView('');
+                          unawaited(context.push(route));
+                        },
+                      );
+                    },
                   ),
-                  const SettingsButton(),
+                  SegmentedButton<bool>(
+                    segments: [
+                      ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
+                      ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
+                    ],
+                    selected: {map},
+                    onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
+                  ),
                 ],
               ),
             ),
@@ -160,6 +186,7 @@ class _NearbyList extends ConsumerWidget {
     final arrivals = ref.watch(nearbyArrivalsProvider).value;
     final network = ref.watch(networkProvider).value;
     final noRealtime = ref.watch(networkInfoProvider).value?.noRealtime ?? const {};
+    final favorites = ref.watch(favoritesProvider.select((f) => f.stops.toSet()));
     return switch (stops) {
       AsyncValue(:final value?) when value.isEmpty => MessageView(
         icon: Icons.near_me_disabled,
@@ -171,10 +198,14 @@ class _NearbyList extends ConsumerWidget {
           padding: context.listPadding(),
           children: [
             StaleBanner(arrivals?.feed),
-            for (final (:stop, :meters) in value)
+            // Favorite stops first when they are nearby, then by distance (the sort is stable).
+            for (final (:stop, :meters) in [
+              ...value,
+            ]..sort((a, b) => (favorites.contains(b.stop.id) ? 1 : 0) - (favorites.contains(a.stop.id) ? 1 : 0)))
               _StopCard(
                 stop: stop,
                 meters: meters,
+                favorite: favorites.contains(stop.id),
                 next: arrivals == null ? null : firstPerLine(arrivals.byStop[stop.id] ?? const []),
                 network: network,
                 noRealtime: noRealtime,
@@ -196,6 +227,7 @@ class _StopCard extends StatelessWidget {
   const _StopCard({
     required this.stop,
     required this.meters,
+    required this.favorite,
     required this.next,
     required this.network,
     required this.noRealtime,
@@ -203,6 +235,7 @@ class _StopCard extends StatelessWidget {
 
   final Stop stop;
   final double meters;
+  final bool favorite;
   final List<Arrival>? next;
   final Network? network;
   final Set<String> noRealtime;
@@ -218,7 +251,15 @@ class _StopCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              spacing: Spacing.xs,
               children: [
+                if (favorite)
+                  Icon(
+                    Icons.star,
+                    size: Spacing.l,
+                    color: context.colors.primary,
+                    semanticLabel: context.l10n.favorites,
+                  ),
                 Expanded(child: Text(stop.name, style: context.textTheme.titleSmall)),
                 Text(context.l10n.meters(meters.round()), style: context.textTheme.bodySmall),
               ],
@@ -228,18 +269,22 @@ class _StopCard extends StatelessWidget {
             else if (next!.isEmpty)
               Text(context.l10n.noArrivals, style: context.textTheme.bodySmall)
             else
+              // The card leads to the stop, each of its buses to its line.
               for (final a in next!)
-                Row(
-                  spacing: Spacing.s,
-                  children: [
-                    LineBadge(
-                      network?.lines[a.lineId]?.name ?? a.lineId,
-                      withoutRealtime: noRealtime.contains(a.lineId),
-                    ),
-                    Expanded(child: Text('→ ${a.headsign}', maxLines: 2)),
-                    ArrivalTime(a, large: false),
-                    StatusTag(a.status),
-                  ],
+                InkWell(
+                  onTap: () => context.push(LinePage.routeOf(a, stop.id)),
+                  child: Row(
+                    spacing: Spacing.s,
+                    children: [
+                      LineBadge(
+                        network?.lines[a.lineId]?.name ?? a.lineId,
+                        withoutRealtime: noRealtime.contains(a.lineId),
+                      ),
+                      Expanded(child: Text('→ ${a.headsign}', maxLines: 2)),
+                      ArrivalTime(a, large: false),
+                      StatusTag(a.status),
+                    ],
+                  ),
                 ),
           ],
         ),

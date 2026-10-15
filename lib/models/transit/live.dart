@@ -50,10 +50,12 @@ class Arrival {
       lineId = json['route_id'] as String,
       directionId = json['direction_id'] as int,
       headsign = json['headsign'] as String? ?? '',
+      departureSeconds = json['departure_s'] as int? ?? 0,
       status = ArrivalStatus.values.byName(json['status'] as String),
       time = json['time'] == null ? null : DateTime.parse(json['time'] as String),
       minutes = json['minutes'] as int?,
       approximate = json['approximate'] as bool? ?? false,
+      overdue = json['overdue'] as bool? ?? false,
       signal = _signal(json['signal']),
       stopsAway = json['stops_away'] as int?,
       vehicle = json['vehicle'] == null ? null : VehicleInfo.fromJson(json['vehicle'] as Map<String, dynamic>);
@@ -62,6 +64,9 @@ class Arrival {
   final String lineId;
   final int directionId;
   final String headsign;
+
+  /// Scheduled time at the stop, in seconds from the service day's midnight: the trip's slot (its history).
+  final int departureSeconds;
   final ArrivalStatus status;
 
   /// Predicted time (confirmed/uncertain), scheduled time otherwise. Null for "N stops away" (RF-26).
@@ -70,6 +75,9 @@ class Arrival {
   /// Only for realtime predictions: a scheduled time never becomes minutes (RNF-03).
   final int? minutes;
   final bool approximate;
+
+  /// Its time has passed, the bus has not been seen passing: it may still come (`missed_grace_min`).
+  final bool overdue;
   final Signal? signal;
   final int? stopsAway;
   final VehicleInfo? vehicle;
@@ -167,6 +175,26 @@ class TimetableDirection {
   final int directionId;
   final String headsign;
   final List<int> departures;
+}
+
+enum TripDayStatus { ran, canceled, notTracked }
+
+/// `api.trip_history`: how one slot (stop, line, direction, time) went on a past day.
+class TripDay {
+  TripDay.fromJson(Map<String, dynamic> json)
+    : date = DateTime.parse(json['date'] as String),
+      status = switch (json['status']) {
+        'ran' => TripDayStatus.ran,
+        'canceled' => TripDayStatus.canceled,
+        _ => TripDayStatus.notTracked,
+      },
+      delay = json['delay_s'] == null ? null : Duration(seconds: json['delay_s'] as int);
+
+  final DateTime date;
+  final TripDayStatus status;
+
+  /// At the stop; negative when early. Only when it [TripDayStatus.ran].
+  final Duration? delay;
 }
 
 DateTime? _epoch(Object? s) => s == null ? null : DateTime.fromMillisecondsSinceEpoch((s as int) * 1000);

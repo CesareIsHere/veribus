@@ -17,9 +17,11 @@ import 'package:veribus/core/widgets/vehicle_route.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/components/timeline.dart';
+import 'package:veribus/features/line/components/trip_history_card.dart';
 import 'package:veribus/features/line/providers/line_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
+import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
 import 'package:veribus/styles/app_spacing.dart';
@@ -28,23 +30,54 @@ import 'package:veribus/styles/app_spacing.dart';
 const _nearRouteMeters = 1500.0;
 
 /// Line detail (RF-30..35): stops of a direction in order with the vehicles between them, or the map.
+/// Opened from a trip (an arrival, a followed trip) it starts on its direction and shows how that trip usually goes.
 class LinePage extends ConsumerStatefulWidget {
-  const LinePage({required this.lineId, super.key});
+  const LinePage({
+    required this.lineId,
+    this.directionId,
+    this.stopId,
+    this.departureSeconds,
+    this.vehicleId,
+    super.key,
+  });
 
-  static String route(String id) => '/line/${Uri.encodeComponent(id)}';
+  static String route(String id, {int? directionId, String? stopId, int? departureSeconds, String? vehicleId}) {
+    final q = {
+      'dir': ?directionId?.toString(),
+      'stop': ?stopId,
+      'dep': ?departureSeconds?.toString(),
+      'vehicle': ?vehicleId,
+    };
+    return '/line/${Uri.encodeComponent(id)}${q.isEmpty ? '' : '?${Uri(queryParameters: q).query}'}';
+  }
+
+  /// The line of an arrival at [stopId]: its direction, the trip's history at the stop, its vehicle.
+  static String routeOf(Arrival a, String stopId) => route(
+    a.lineId,
+    directionId: a.directionId,
+    stopId: stopId,
+    departureSeconds: a.departureSeconds,
+    vehicleId: a.vehicle?.id,
+  );
 
   final String lineId;
+  final int? directionId;
+
+  /// The trip the page was opened from: its stop and scheduled time there.
+  final String? stopId;
+  final int? departureSeconds;
+  final String? vehicleId;
 
   @override
   ConsumerState<LinePage> createState() => _LinePageState();
 }
 
 class _LinePageState extends ConsumerState<LinePage> {
-  int? _direction;
+  late int? _direction = widget.directionId;
   bool _map = false;
 
-  /// The vehicle whose route the map shows (tapped on the map or in the list).
-  String? _selected;
+  /// The vehicle whose route the map shows (tapped on the map or in the list, or the trip's).
+  late String? _selected = widget.vehicleId;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +105,14 @@ class _LinePageState extends ConsumerState<LinePage> {
           children: [LineBadge(line?.name ?? widget.lineId, withoutRealtime: withoutRealtime)],
         ),
         actions: [
+          IconButton(
+            tooltip: l10n.timetable,
+            icon: const Icon(Icons.schedule),
+            onPressed: switch (_timetableStop(detail.value, direction)) {
+              final stop? => () => context.push(TimetablePage.route(stop, widget.lineId, directionId: direction)),
+              null => null,
+            },
+          ),
           IconButton(
             tooltip: favorite ? l10n.removeFavorite : l10n.addFavorite,
             icon: Icon(favorite ? Icons.star : Icons.star_outline),
@@ -141,6 +182,10 @@ class _LinePageState extends ConsumerState<LinePage> {
     );
   }
 
+  /// Today's timetable opens at the trip's stop, otherwise at the first stop of the direction.
+  String? _timetableStop(LineDetail? d, int direction) =>
+      widget.stopId != null && direction == widget.directionId ? widget.stopId : d?.stopIds.firstOrNull;
+
   Widget _listView(BuildContext context, LineDetail d, Network network, bool withoutRealtime, int direction) {
     final l10n = context.l10n;
     final kind = network.lines[widget.lineId]?.kind;
@@ -154,6 +199,28 @@ class _LinePageState extends ConsumerState<LinePage> {
       children: [
         StaleBanner(d.feed),
         if (d.alerts.isNotEmpty) AlertsTile(d.alerts),
+        if ((widget.stopId, widget.departureSeconds) case (final stop?, final dep?)
+            when direction == widget.directionId)
+          TripHistoryCard(
+            stopId: stop,
+            lineId: widget.lineId,
+            directionId: direction,
+            departureSeconds: dep,
+            weekend: DateTime.now().weekday >= DateTime.saturday,
+            action: d.vehicles.any((v) => v.id == widget.vehicleId)
+                ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.map_outlined),
+                      label: Text(l10n.showOnMap),
+                      onPressed: () => setState(() {
+                        _map = true;
+                        _selected = widget.vehicleId;
+                      }),
+                    ),
+                  )
+                : null,
+          ),
         _Summary(d, kind: kind, withoutRealtime: withoutRealtime),
         // The route in the order of the trip, with the vehicles where they are.
         const SizedBox(height: Spacing.s),

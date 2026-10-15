@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Template'**
+  /// **'Veribus'**
   String get appTitle;
 
   /// No description provided for @appearance.
@@ -595,6 +595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Line'**
   String get line;
+
+  /// No description provided for @stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
 
   /// No description provided for @lines.
   ///
@@ -1267,6 +1273,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The vehicle of the {time} at {place} stopped transmitting: it may not arrive'**
   String pushLostBody(String time, String place);
+
+  /// No description provided for @overdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due at {time}, it may still come'**
+  String overdue(String time);
+
+  /// No description provided for @showOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on the map'**
+  String get showOnMap;
+
+  /// No description provided for @editFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editFollow;
+
+  /// No description provided for @tripAt.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} trip at {stop}'**
+  String tripAt(String time, String stop);
+
+  /// No description provided for @tripHistoryWeekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent weekdays'**
+  String get tripHistoryWeekdays;
+
+  /// No description provided for @tripHistoryWeekend.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent weekends'**
+  String get tripHistoryWeekend;
+
+  /// No description provided for @tripHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No data yet: the history fills up day by day.'**
+  String get tripHistoryEmpty;
+
+  /// No description provided for @tripUsuallyOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Usually on time'**
+  String get tripUsuallyOnTime;
+
+  /// No description provided for @tripUsuallyLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Usually about {n} min late'**
+  String tripUsuallyLate(int n);
+
+  /// No description provided for @tripUsuallyEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Usually about {n} min early'**
+  String tripUsuallyEarly(int n);
+
+  /// No description provided for @tripRarelyTracked.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely tracked: it may pass all the same'**
+  String get tripRarelyTracked;
+
+  /// No description provided for @tripOnTimeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 on time} other{{n} on time}}'**
+  String tripOnTimeCount(int n);
+
+  /// No description provided for @tripLateCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 late} other{{n} late}}'**
+  String tripLateCount(int n);
+
+  /// No description provided for @tripEarlyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 early} other{{n} early}}'**
+  String tripEarlyCount(int n);
+
+  /// No description provided for @tripNotTrackedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 not tracked} other{{n} not tracked}}'**
+  String tripNotTrackedCount(int n);
+
+  /// No description provided for @tripCanceledCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 canceled} other{{n} canceled}}'**
+  String tripCanceledCount(int n);
+
+  /// No description provided for @tripDayNotTracked.
+  ///
+  /// In en, this message translates to:
+  /// **'not tracked'**
+  String get tripDayNotTracked;
+
+  /// No description provided for @tripDayCanceled.
+  ///
+  /// In en, this message translates to:
+  /// **'canceled'**
+  String get tripDayCanceled;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

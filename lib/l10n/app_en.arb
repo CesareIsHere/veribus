@@ -2,7 +2,7 @@
   "@@locale": "en",
   "about": "About",
   "account": "Account",
-  "appTitle": "Template",
+  "appTitle": "Veribus",
   "appearance": "Appearance",
   "cancel": "Cancel",
   "changePhoto": "Change photo",
@@ -84,6 +84,7 @@
   "reportProblem": "Report a problem",
   "allLines": "All",
   "line": "Line",
+  "stop": "Stop",
   "lines": "Lines",
   "stops": "Stops",
   "lineDetail": "Line {name}",
@@ -423,5 +424,89 @@
         "type": "String"
       }
     }
-  }
+  },
+  "overdue": "Due at {time}, it may still come",
+  "@overdue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "showOnMap": "Show on the map",
+  "editFollow": "Edit",
+  "tripAt": "{time} trip at {stop}",
+  "@tripAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "tripHistoryWeekdays": "Recent weekdays",
+  "tripHistoryWeekend": "Recent weekends",
+  "tripHistoryEmpty": "No data yet: the history fills up day by day.",
+  "tripUsuallyOnTime": "Usually on time",
+  "tripUsuallyLate": "Usually about {n} min late",
+  "@tripUsuallyLate": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripUsuallyEarly": "Usually about {n} min early",
+  "@tripUsuallyEarly": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripRarelyTracked": "Rarely tracked: it may pass all the same",
+  "tripOnTimeCount": "{n, plural, =1{1 on time} other{{n} on time}}",
+  "@tripOnTimeCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripLateCount": "{n, plural, =1{1 late} other{{n} late}}",
+  "@tripLateCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripEarlyCount": "{n, plural, =1{1 early} other{{n} early}}",
+  "@tripEarlyCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNotTrackedCount": "{n, plural, =1{1 not tracked} other{{n} not tracked}}",
+  "@tripNotTrackedCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripCanceledCount": "{n, plural, =1{1 canceled} other{{n} canceled}}",
+  "@tripCanceledCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripDayNotTracked": "not tracked",
+  "tripDayCanceled": "canceled"
 }

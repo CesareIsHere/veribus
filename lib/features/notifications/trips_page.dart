@@ -8,6 +8,7 @@ import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/utils/exception_handler.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/notifications/components/notifications_banner.dart';
 import 'package:veribus/features/notifications/follow_page.dart';
 import 'package:veribus/features/notifications/providers/follow_providers.dart';
@@ -76,13 +77,14 @@ class _FollowTile extends ConsumerWidget {
     final headsign = line?.headsignOf(follow.directionId) ?? '';
     final today = follow.today;
     final muted = follow.enabled ? null : context.colors.onSurfaceVariant;
+    // The trip leads to its line (with how it usually goes); the follow is edited with the pencil.
     return InkWell(
       onTap: () => unawaited(
         context.push(
-          FollowPage.routeFor(
-            stopId: follow.stopId,
-            lineId: follow.lineId,
+          LinePage.route(
+            follow.lineId,
             directionId: follow.directionId,
+            stopId: follow.stopId,
             departureSeconds: follow.departureSeconds,
           ),
         ),
@@ -133,6 +135,20 @@ class _FollowTile extends ConsumerWidget {
                       ),
                     ),
                 ],
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.editFollow,
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => unawaited(
+                context.push(
+                  FollowPage.routeFor(
+                    stopId: follow.stopId,
+                    lineId: follow.lineId,
+                    directionId: follow.directionId,
+                    departureSeconds: follow.departureSeconds,
+                  ),
+                ),
               ),
             ),
             Switch(

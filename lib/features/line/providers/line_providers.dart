@@ -11,3 +11,14 @@ Future<LineDetail?> lineDetail(Ref ref, String lineId, int directionId) {
   ref.refreshEvery();
   return ref.watch(transitRepositoryProvider).line(lineId, directionId);
 }
+
+/// How a slot went on past days of the same kind (weekdays / weekend). It changes once a day: no refresh.
+@riverpod
+Future<List<TripDay>> tripHistory(
+  Ref ref,
+  String stopId,
+  String lineId,
+  int directionId,
+  int departureSeconds, {
+  required bool weekend,
+}) => ref.watch(transitRepositoryProvider).tripHistory(stopId, lineId, directionId, departureSeconds, weekend: weekend);

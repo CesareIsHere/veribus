@@ -10,7 +10,6 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
-import 'package:veribus/features/stop/components/vehicle_sheet.dart';
 import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -143,7 +142,7 @@ class _StopPageState extends ConsumerState<StopPage> {
             arrival: a,
             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
             lineWithoutRealtime: noRealtime.contains(a.lineId),
-            onTap: a.vehicle == null || stop == null ? null : () => showVehicleSheet(context, stop: stop, arrival: a),
+            onTap: () => context.push(LinePage.routeOf(a, widget.stopId)),
           ),
       const Divider(),
       Padding(

@@ -136,6 +136,8 @@ export function postgresStore(url: string): StateStore & { notify: NotifyStore; 
             suppressed_at: iso(t.suppressedAt),
           }));
           await replace("live.vehicle", vehicles);
+          // Before the replace: it compares the new stop sequences with the previous ones.
+          await tx.unsafe("select history.record($1::text::jsonb)", [JSON.stringify(trips)]);
           await replace("live.trip_state", trips);
           await tx`insert into network_meta.route_seen (route_id, date)
                    select unnest(${c.result.seenRoutes}::text[]), (now() at time zone 'Europe/Rome')::date

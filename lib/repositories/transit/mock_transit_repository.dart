@@ -104,16 +104,27 @@ class MockTransitRepository implements ITransitRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final now = DateTime.now().toUtc();
     String at(int minutes) => now.add(Duration(minutes: minutes)).toIso8601String();
-    Map<String, dynamic> arrival(String line, String status, int minutes, {Map<String, dynamic>? signal}) => {
-      'sort': minutes.abs(),
+    final local = DateTime.now();
+    final midnight = DateTime(local.year, local.month, local.day);
+    // `noTime`: a located vehicle with no prediction, "N stops away" (RF-26). Negative minutes: overdue.
+    Map<String, dynamic> arrival(
+      String line,
+      String status,
+      int minutes, {
+      Map<String, dynamic>? signal,
+      bool noTime = false,
+    }) => {
+      'sort': minutes,
       'trip_id': '$line-$minutes',
       'route_id': line,
       'direction_id': 1,
       'headsign': _lines.firstWhere((l) => l[0] == line)[5],
+      'departure_s': local.add(Duration(minutes: minutes)).difference(midnight).inSeconds,
+      'overdue': minutes < 0,
       'status': status,
-      'time': status == 'confirmed' && minutes < 0 ? null : at(minutes.abs()),
-      'minutes': status == 'confirmed' || status == 'uncertain' ? minutes.abs() : null,
-      'approximate': minutes > 10,
+      'time': noTime ? null : at(minutes),
+      'minutes': !noTime && (status == 'confirmed' || status == 'uncertain') ? minutes : null,
+      'approximate': !noTime && minutes > 10,
       'signal': signal,
       'stops_away': status == 'scheduled' ? null : 3,
       'vehicle': status == 'scheduled'
@@ -129,7 +140,12 @@ class MockTransitRepository implements ITransitRepository {
           ...switch (i) {
             _ when stale => [arrival(line, 'scheduled', 6 + i * 5)],
             _ when line == '8BUS' => [arrival(line, 'scheduled', 12), arrival(line, 'scheduled', 27)],
-            0 => [arrival(line, 'confirmed', 4), arrival(line, 'confirmed', 14), arrival(line, 'confirmed', -21)],
+            0 => [
+              arrival(line, 'scheduled', -6),
+              arrival(line, 'confirmed', 4),
+              arrival(line, 'confirmed', 14),
+              arrival(line, 'confirmed', 21, noTime: true),
+            ],
             1 => [
               arrival(line, 'uncertain', 7, signal: {'code': 'S3', 'min': 8}),
               arrival(line, 'suppressed', 9, signal: {'code': 'S2', 'min': 6}),
@@ -241,4 +257,30 @@ class MockTransitRepository implements ITransitRepository {
       'route_ids': ['40'],
     }),
   ];
+
+  @override
+  Future<List<TripDay>> tripHistory(
+    String stopId,
+    String lineId,
+    int directionId,
+    int departureSeconds, {
+    required bool weekend,
+  }) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // A mixed record: mostly a few minutes late, a day not tracked, one canceled.
+    const delays = [120, 240, null, 60, 300, -45, 180, 420, 90, -1, 150, 200];
+    return [
+      for (final (i, d) in delays.indexed)
+        TripDay.fromJson({
+          'date': today.subtract(Duration(days: (i + 1) * (weekend ? 3 : 1))).toIso8601String().substring(0, 10),
+          'status': switch (d) {
+            null => 'not_tracked',
+            -1 => 'canceled',
+            _ => 'ran',
+          },
+          'delay_s': d == null || d == -1 ? null : d,
+        }),
+    ];
+  }
 }

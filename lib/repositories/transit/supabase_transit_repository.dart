@@ -62,4 +62,22 @@ class SupabaseTransitRepository implements ITransitRepository {
   Future<List<ServiceAlert>> alerts() async => [
     for (final a in await _rpc('alerts') as List) ServiceAlert.fromJson(a as Map<String, dynamic>),
   ];
+
+  @override
+  Future<List<TripDay>> tripHistory(
+    String stopId,
+    String lineId,
+    int directionId,
+    int departureSeconds, {
+    required bool weekend,
+  }) async => [
+    for (final d in await _rpc('trip_history', {
+      'stop_id': stopId,
+      'route_id': lineId,
+      'direction_id': directionId,
+      'departure_s': departureSeconds,
+      'weekend': weekend,
+    }) as List)
+      TripDay.fromJson(d as Map<String, dynamic>),
+  ];
 }

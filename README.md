@@ -62,15 +62,20 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
 - **Minimal live maps**: a clean navigation-style base map (roads, water, green, street names, no buildings or shops),
   light and dark, with the buses (labelled with their line) refreshed every 15 seconds.
 - **Nearby**: stops around you on a map or in a list, with the next arrival of each line.
-- **Follow a bus**: tap an arrival to see its vehicle on the map, framed together with the stop and your position,
-  updating live. Tap any bus on a map to see its whole route: dashed where it has been, solid where it still goes.
+- **Every bus leads to its line**: tap an arrival (stop, favorites, nearby, followed trips) and the line opens on its
+  direction, with that trip's vehicle and **how the trip usually goes**: its delay at the stop on each of the last
+  30 days of the same kind (weekdays or weekend), how often it was late, not tracked, canceled. Tap any bus on a map to
+  see its whole route: dashed where it has been, solid where it still goes.
+- **Buses without data are not dropped**: an arrival stays 10 minutes past its time ("it may still come") unless the
+  bus was seen passing the stop.
 - **Followed trips**: pick the exact trips you care about (say the 17:10 and 17:25 of line 64 at your stop), the weekdays
   they matter on, and up to three lead times (15, 10 and 5 minutes before). Veribus notifies you, even with the app closed,
   when the bus is about to pass, and when something happens to it: canceled, standing still, signal lost.
 - **Line detail**: every stop in order with the vehicles between them, or the whole route on a map.
-- **Daily timetable** by line, direction and day.
-- **Search** for lines and stops, running entirely on the phone.
-- **Favorites** for stops and lines, and a dedicated **Alerts** section (severity is told by icon and text).
+- **Daily timetable** by line, direction and day, from a stop or from a line (any stop along it).
+- **Search** for lines and stops, running entirely on the phone, from its tab or straight from Nearby.
+- **Favorites** for stops and lines (favorite stops first in the nearby list), and a dedicated **Alerts** section
+  (severity is told by icon and text) filtered by line.
 - **Honest signals**: cancelled trips, vehicles that stopped transmitting, stuck vehicles, old GPS fixes, late data,
   a stale feed. If the feed stops, the app says so.
 - **A GPS that recovers by itself**: turn the location on while the app is open and the blue dot comes back, no restart.
@@ -165,8 +170,9 @@ flowchart LR
 | `network_meta` | imported versions, lines seen in real time | import, poller |
 | `live` | vehicles, trip state, alerts, feed status, snapshot index, lease | the poller (role `poller`) |
 | `config` | signal thresholds, minimum app version | by hand |
+| `history` | when each tracked trip passed each stop, 30 days (`trip_run`, appended by `history.record` at every cycle) | the poller (role `poller`) |
 | `notify` | what to notify now (`claim`), taking it back when sending failed (`release`), forgetting dead tokens | the poller (role `poller`) |
-| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()`, `my_follows()`, `register_push_token(token, locale)` | nothing: read-only functions, except the token (one device, one user) |
+| `api` | `network()`, `arrivals(stop_ids, route_ids)`, `route(route_id, direction_id)`, `timetable(stop_id, route_id, day)`, `alerts()`, `my_follows()`, `trip_history(stop_id, route_id, direction_id, departure_s, weekend)`, `register_push_token(token, locale)` | nothing: read-only functions, except the token (one device, one user) |
 
 Two small tables live in `public` (row level security, owner only): `push_tokens` (FCM token and app language per device)
 and `trip_follow` (the trips each user follows).
@@ -420,11 +426,12 @@ with a throwaway debug key that changes on every build (it installs, but it cann
 
 ## Before the public launch
 
-- App name (without references to Atac) and icon (`assets/images/logo.png`, then `dart run flutter_launcher_icons`).
+- Google Play listing: texts, images, Console answers and blockers are in [`store/`](store/README.md).
 - Map tiles: the app draws OpenFreeMap vector tiles with its own style (no key needed, see
   `lib/styles/minimal_map_style.dart`). Check OpenFreeMap's terms of use for your expected traffic and consider hosting
   the tiles. `vector_map_tiles` is on its 9.x beta line, the one compatible with flutter_map 8.
-- Terms for the RSM data and the attribution text; a privacy policy (`PRIVACY_URL`), required by the stores.
+- Terms for the RSM data and the attribution text. Privacy policy and terms are `web/privacy.html` and
+  `web/terms.html`, published with the web app (`PRIVACY_URL`, `TERMS_URL` in `env/prod.json`).
 - A per-client rate limit on the API.
 - The signing key for the release APK (see above) and the store credentials if you enable the deploy workflows.
 
