@@ -74,6 +74,12 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
 - **Line detail**: every stop in order with the vehicles between them, or the whole route on a map.
 - **Daily timetable** by line, direction and day, from a stop or from a line (any stop along it).
 - **Search** for lines and stops, running entirely on the phone, from its tab or straight from Nearby.
+- **Go home**: from where you are to the home saved on your phone, which bus (or metro) to take, with at most two
+  changes. Each journey says the state of its first bus in the same words as the stop page, canceled and suppressed
+  trips are left out, late ones run at their predicted time, and each change says how often it worked in the last
+  30 days and what to take if it is missed. When the service ends soon, the last way home comes first. The planner
+  (RAPTOR) runs on the phone over one day of the network, metro included (0.6–0.8 MB a day): see
+  [`tool/journeys`](tool/journeys/README.md).
 - **Favorites** for stops and lines (favorite stops first in the nearby list), and a dedicated **Alerts** section
   (severity is told by icon and text) filtered by line.
 - **Honest signals**: cancelled trips, vehicles that stopped transmitting, stuck vehicles, old GPS fixes, late data,
@@ -135,7 +141,7 @@ flowchart LR
   RSM[("RSM open data<br/>GTFS + GTFS-Realtime")]
   subgraph SB["Supabase"]
     PG[("Postgres<br/>network · live · config · api")]
-    ST["Storage<br/>network/vMD5.json"]
+    ST["Storage<br/>network/vMD5.json<br/>journeys/vMD5/day.bin.gz"]
     EF["Edge Function<br/>poller + notices"]
     CR["pg_cron<br/>every 10 s"]
   end
@@ -161,6 +167,8 @@ flowchart LR
 - The poller reads the real-time feeds every 10 seconds. The data changes at most every 30 seconds, so the app polls
   every 15 seconds while a page is open.
 - Search and nearby stops run on the phone, on the network file downloaded once per version.
+- The journey planner runs on the phone too, on one timetable file per day (today and the next 7, built by the same
+  import, metro included) and on `api.arrivals` for the trips it proposes.
 
 **Postgres schemas** (none exposed except `api`, row level security on everything):
 
@@ -200,7 +208,7 @@ signal and time into words: `features/stop/components/arrival_tile.dart`.
 .
 ├── lib/
 │   ├── core/            app shell, router, config, shared widgets (TransitMap, VehiclesLayer, …)
-│   ├── features/        nearby · search · favorites · alerts · stop · line · notifications · settings · auth
+│   ├── features/        nearby · search · favorites · alerts · stop · line · journeys · notifications · settings · auth
 │   ├── models/          transit (network, live data), user
 │   ├── repositories/    I<X>Repository + mock_ / supabase_ implementations + providers
 │   ├── services/        location, map tiles, push, sign-in wrappers
@@ -210,7 +218,7 @@ signal and time into words: `features/stop/components/arrival_tile.dart`.
 │   ├── core/            the engine: pure TypeScript, no I/O (signals, cycle)
 │   ├── adapters/        HTTP, Postgres and FCM adapters
 │   ├── runtimes/        Edge Function and container entry points
-│   ├── static-import/   nightly GTFS import (bash + psql)
+│   ├── static-import/   nightly GTFS import (bash + psql; the journey timetables with Dart)
 │   └── replay/          re-run the engine over an archive
 ├── supabase/            migrations and API tests
 ├── env/                 per-stage configuration (dev, mock, local, staging, prod)
@@ -418,7 +426,7 @@ Notices travel through Firebase Cloud Messaging; the Spark (free) plan is enough
 |---|---|---|
 | `ci.yml` | every PR and push to `main` | app: codegen is up to date, format, analyze, test, web compile check · backend: `deno task check` and the SQL API tests |
 | `release.yml` | every push to `main` | bumps the semver from the commits, tags it, creates the GitHub Release and attaches the release APK. Run by hand with a tag to rebuild only the APK of an existing release |
-| `static_import.yml` | every night and by hand | imports the GTFS when its md5 changed (`vars.IN_PLACE=1` on the free plan) |
+| `static_import.yml` | every night and by hand | imports the GTFS when its md5 changed (`vars.IN_PLACE=1` on the free plan), and builds the journey timetables |
 | `deploy_android.yml` · `deploy_ios.yml` · `deploy_web.yml` | after a release, if `vars.DEPLOY_ANDROID` / `DEPLOY_IOS` / `DEPLOY_WEB` is `true` | Play Store (internal track) · TestFlight · Firebase Hosting |
 | `revert_release.yml` | a merged PR titled `Revert …` | reverts the last version bump and deletes its release |
 
