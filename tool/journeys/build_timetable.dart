@@ -11,7 +11,7 @@ import 'dart:io';
 
 import 'package:veribus/models/journeys/timetable.dart';
 
-import 'timetable_builder.dart';
+import 'package:veribus/models/journeys/timetable_builder.dart';
 
 Future<void> main(List<String> args) async {
   if (args.length < 3) {

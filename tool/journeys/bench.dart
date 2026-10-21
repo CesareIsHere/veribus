@@ -8,7 +8,7 @@ import 'dart:math' as math;
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 
-import 'timetable_builder.dart' show WalkRules, meters;
+import 'package:veribus/models/journeys/timetable_builder.dart' show WalkRules, meters;
 
 const origins = {
   'Trastevere': (41.8891, 12.4699),

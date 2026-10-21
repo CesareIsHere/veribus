@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 
-import '../../../tool/journeys/timetable_builder.dart';
+import 'package:veribus/models/journeys/timetable_builder.dart';
 
 /// Stops on a line 1 km apart (no walking between them), unless placed by [near]: 100 m east of another stop.
 List<GtfsStop> _stops(List<String> ids, {Map<String, String> near = const {}}) {

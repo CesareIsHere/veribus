@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veribus/models/journeys/timetable.dart';
+import 'package:veribus/models/journeys/timetable_builder.dart';
 
 import '../../tool/journeys/build_timetable.dart';
-import '../../tool/journeys/timetable_builder.dart';
 
 void main() {
   test('walking links: within the radius only, longer when an end is a metro station', () {
