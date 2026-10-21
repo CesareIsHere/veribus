@@ -27,6 +27,40 @@ void main() {
     expect(links['metro'], closeTo(100 * 1.3 / 1.2 + 120, 2));
   });
 
+  test('distances along the streets replace the straight line; links long on foot, or with no way, are dropped', () {
+    // Three stops 100 m apart as the crow flies: one is across the river (no way on foot), one a 600 m detour.
+    final stops = <GtfsStop>[
+      (id: 'a', name: 'A', lat: 41.9, lon: 12.5),
+      (id: 'b', name: 'B', lat: 41.9, lon: 12.5 + 100 / 83000),
+      (id: 'c', name: 'C', lat: 41.9 + 100 / 110540, lon: 12.5),
+      (id: 'd', name: 'D', lat: 41.9 - 100 / 110540, lon: 12.5),
+    ];
+    final tt = buildTimetable(
+      date: 20261020,
+      stops: stops,
+      trips: [
+        (
+          line: 'L',
+          direction: 0,
+          headsign: '',
+          stops: ['a', 'b', 'c', 'd'],
+          times: [0, 60, 120, 180],
+          previousDay: false,
+        ),
+      ],
+      walkingMeters: {'a|b': 130, 'a|c': -1, 'a|d': 600},
+    );
+    final a = tt.stopIndex['a']!;
+    final links = {
+      for (var j = tt.footStart[a]; j < tt.footStart[a + 1]; j++) tt.stopIds[tt.footTo[j]]: tt.footSeconds[j],
+    };
+    expect(links, {'b': (130 / 1.2).round()});
+    // The other way round was not measured: the straight line × 1.3.
+    final c = tt.stopIndex['c']!;
+    final back = [for (var j = tt.footStart[c]; j < tt.footStart[c + 1]; j++) tt.stopIds[tt.footTo[j]]];
+    expect(back, contains('a'));
+  });
+
   test('names, line types, directions and previous-day trips survive the binary format', () {
     final tt = Timetable.decode(
       buildTimetable(

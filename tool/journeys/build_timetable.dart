@@ -1,6 +1,10 @@
 // Builds the RAPTOR timetables of consecutive days from an unzipped GTFS: one file per day, `<out dir>/<yyyymmdd>.bin`.
 //
 //   dart run tool/journeys/build_timetable.dart <gtfs dir> <out dir> <first yyyymmdd> [days, default 1]
+//       [--walking=<walking.csv[.gz]>]
+//
+// --walking: distances on foot between nearby stops (tool/journeys/walking.py, refreshed weekly); without it, walking
+// is the straight line × 1.3.
 //
 // Run by backend/static-import/import.sh for today and the 7 days after (the window the import keeps). Keeps bus (3),
 // tram (0) and metro (1): the metro is not in the app's network file, it serves only journeys. The day's trips are
@@ -13,11 +17,23 @@ import 'package:veribus/models/journeys/timetable.dart';
 
 import 'package:veribus/models/journeys/timetable_builder.dart';
 
-Future<void> main(List<String> args) async {
+Future<void> main(List<String> arguments) async {
+  final args = [
+    for (final a in arguments)
+      if (!a.startsWith('--')) a,
+  ];
   if (args.length < 3) {
-    stderr.writeln('Usage: dart run tool/journeys/build_timetable.dart <gtfs dir> <out dir> <first yyyymmdd> [days]');
+    stderr.writeln(
+      'Usage: dart run tool/journeys/build_timetable.dart <gtfs dir> <out dir> <first yyyymmdd> [days] '
+      '[--walking=<csv>]',
+    );
     exit(64);
   }
+  final walkingFile = [
+    for (final a in arguments)
+      if (a.startsWith('--walking=')) a.substring(10),
+  ].firstOrNull;
+  final walkingMeters = walkingFile == null ? const <String, int>{} : readWalking(walkingFile);
   final dir = args[0];
   final out = Directory(args[1])..createSync(recursive: true);
   final first = _date(args[2]);
@@ -104,7 +120,13 @@ Future<void> main(List<String> args) async {
         ));
       }
     }
-    final timetable = buildTimetable(date: int.parse(_key(day)), stops: stops, trips: dayTrips, lines: lines);
+    final timetable = buildTimetable(
+      date: int.parse(_key(day)),
+      stops: stops,
+      trips: dayTrips,
+      lines: lines,
+      walkingMeters: walkingMeters,
+    );
     final bytes = timetable.encode();
     final again = Timetable.decode(bytes);
     if (again.tripCount != timetable.tripCount || again.times.last != timetable.times.last) {
@@ -117,6 +139,18 @@ Future<void> main(List<String> args) async {
       '${_mb(bytes.length)} MB, ${_mb(gzip.encode(bytes).length)} MB gzipped (${watch.elapsed.inSeconds} s)',
     );
   }
+}
+
+/// `from_stop,to_stop,metres` (gzipped or not) → metres by `from|to`.
+Map<String, int> readWalking(String path) {
+  final bytes = File(path).readAsBytesSync();
+  final text = utf8.decode(path.endsWith('.gz') ? gzip.decode(bytes) : bytes);
+  final walking = <String, int>{
+    for (final line in const LineSplitter().convert(text).skip(1))
+      if (line.split(',') case [final from, final to, final m]) '$from|$to': int.parse(m),
+  };
+  print('Walking: ${walking.length} pairs from $path');
+  return walking;
 }
 
 /// The name people know: the metro lines are MEA, MEB, MEB1, MEC in the GTFS and A, B, B1, C on the signs.

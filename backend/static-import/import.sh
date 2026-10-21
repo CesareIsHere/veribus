@@ -66,7 +66,15 @@ REPO=$(cd ../.. && pwd)
 if command -v dart > /dev/null && [ -f "$REPO/pubspec.yaml" ]; then
   TT=$(mktemp -d)
   GTFS_ABS=$(cd "$GTFS_DIR" && pwd)
-  if (cd "$REPO" && dart run tool/journeys/build_timetable.dart "$GTFS_ABS" "$TT" "$(TZ=Europe/Rome date +%Y%m%d)" 8); then
+  # Distances on foot along the streets (weekly, .github/workflows/walking.yml); without them, the straight line.
+  WALKING=()
+  if [ -n "${SUPABASE_URL:-}" ] \
+    && curl -fsS -o "$TT/walking.csv.gz" "$SUPABASE_URL/storage/v1/object/public/network/journeys/walking.csv.gz"; then
+    WALKING=("--walking=$TT/walking.csv.gz")
+  fi
+  if (cd "$REPO" && dart run tool/journeys/build_timetable.dart "$GTFS_ABS" "$TT" "$(TZ=Europe/Rome date +%Y%m%d)" 8 \
+    "${WALKING[@]}"); then
+    rm -f "$TT/walking.csv.gz"
     gzip -9 "$TT"/*.bin
     if [ -n "${SUPABASE_URL:-}" ]; then
       for f in "$TT"/*.bin.gz; do

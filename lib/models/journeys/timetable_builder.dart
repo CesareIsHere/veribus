@@ -22,13 +22,24 @@ typedef GtfsTrip = ({
 
 /// Walking between stops: straight line × [walkFactor] at [walkSpeed] m/s, up to [radius] metres. [stationPenalty]
 /// seconds are added for each end that is a station (stairs and corridors: metro platforms are underground).
+///
+/// With the distances along the streets (tool/journeys/walking.py), a link takes them at [walkSpeed] instead, and a link
+/// longer than [maxRouteMeters] on foot, or with no way at all, is dropped: across the Tiber, 150 m apart can be a
+/// bridge away.
 class WalkRules {
-  const WalkRules({this.radius = 250, this.walkFactor = 1.3, this.walkSpeed = 1.2, this.stationPenalty = 120});
+  const WalkRules({
+    this.radius = 250,
+    this.walkFactor = 1.3,
+    this.walkSpeed = 1.2,
+    this.stationPenalty = 120,
+    this.maxRouteMeters = 400,
+  });
 
   final double radius;
   final double walkFactor;
   final double walkSpeed;
   final int stationPenalty;
+  final int maxRouteMeters;
 
   int seconds(double meters) => (meters * walkFactor / walkSpeed).round();
 }
@@ -36,13 +47,15 @@ class WalkRules {
 /// Builds the [Timetable] of one day from its trips: groups them into routes by stop sequence, splits a route where a
 /// later trip would overtake an earlier one (RAPTOR needs trips sorted at every stop), and links stops within
 /// walking distance. Only stops served by a trip are kept. Stops served by the metro count as stations. A line
-/// missing from [lines] is a bus named after its id.
+/// missing from [lines] is a bus named after its id. [walkingMeters]: metres on foot by `from|to` stop ids, -1 for no
+/// way; pairs missing from it fall back to the straight line.
 Timetable buildTimetable({
   required int date,
   required List<GtfsStop> stops,
   required List<GtfsTrip> trips,
   Map<String, GtfsLine> lines = const {},
   WalkRules walk = const WalkRules(),
+  Map<String, int> walkingMeters = const {},
 }) {
   GtfsLine lineOf(String id) => lines[id] ?? (name: id, type: Timetable.bus);
   final used = {for (final t in trips) ...t.stops};
@@ -106,7 +119,7 @@ Timetable buildTimetable({
       if (lineOf(t.line).type == Timetable.metro)
         for (final s in t.stops) index[s]!,
   };
-  final foot = _footpaths(kept, stations, walk);
+  final foot = _footpaths(kept, stations, walk, walkingMeters);
   return Timetable(
     date: date,
     stopIds: [for (final s in kept) s.id],
@@ -154,6 +167,7 @@ double meters(double lat1, double lon1, double lat2, double lon2) {
   List<GtfsStop> stops,
   Set<int> stations,
   WalkRules walk,
+  Map<String, int> walkingMeters,
 ) {
   // A grid of cells as wide as the radius: neighbours are in the 3×3 cells around a stop.
   final cellLat = walk.radius / 110540;
@@ -176,9 +190,12 @@ double meters(double lat1, double lon1, double lat2, double lon2) {
           if (j == i) continue;
           final d = meters(a.lat, a.lon, stops[j].lat, stops[j].lon);
           if (d > walk.radius) continue;
+          final routed = walkingMeters['${a.id}|${stops[j].id}'];
+          if (routed != null && (routed < 0 || routed > walk.maxRouteMeters)) continue;
           final penalty =
               (stations.contains(i) ? walk.stationPenalty : 0) + (stations.contains(j) ? walk.stationPenalty : 0);
-          near.add((j, walk.seconds(d) + penalty));
+          final seconds = routed == null ? walk.seconds(d) : (routed / walk.walkSpeed).round();
+          near.add((j, seconds + penalty));
         }
       }
     }
