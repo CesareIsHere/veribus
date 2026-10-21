@@ -12,15 +12,25 @@ List<GtfsStop> _stops(List<String> ids, {Map<String, String> near = const {}}) {
   for (final (i, id) in ids.indexed) {
     final base = near[id];
     final at = base == null ? null : out.firstWhere((s) => s.id == base);
-    out.add(at == null ? (id: id, lat: 41.9 + i * 0.009, lon: 12.5) : (id: id, lat: at.lat, lon: at.lon + 100 / 83000));
+    out.add(
+      at == null
+          ? (id: id, name: id, lat: 41.9 + i * 0.009, lon: 12.5)
+          : (id: id, name: id, lat: at.lat, lon: at.lon + 100 / 83000),
+    );
   }
   return out;
 }
 
 int _hm(String hhmm) => int.parse(hhmm.substring(0, 2)) * 3600 + int.parse(hhmm.substring(3)) * 60;
 
-GtfsTrip _trip(String line, List<String> stops, List<String> times) =>
-    (line: line, headsign: line, stops: stops, times: [for (final t in times) _hm(t)]);
+GtfsTrip _trip(String line, List<String> stops, List<String> times) => (
+  line: line,
+  direction: 0,
+  headsign: line,
+  stops: stops,
+  times: [for (final t in times) _hm(t)],
+  previousDay: false,
+);
 
 /// The legs of a journey as text: "walk>A 64:A-C walk>place".
 String _describe(Timetable tt, Journey j) => j.legs
@@ -169,6 +179,7 @@ void main() {
           for (final id in ids)
             (
               id: id,
+              name: id,
               lat: 41.9 + random.nextInt(4) * 0.02 + random.nextDouble() * 0.0005,
               lon: 12.5 + random.nextDouble() * 0.0005,
             ),
@@ -179,7 +190,14 @@ void main() {
           final hops = [for (var i = 1; i < path.length; i++) 60 + random.nextInt(600)];
           for (var trip = 0; trip < 1 + random.nextInt(5); trip++) {
             var t = 36000 + random.nextInt(7200);
-            trips.add((line: 'L$line', headsign: '', stops: path, times: [t, for (final h in hops) t += h]));
+            trips.add((
+              line: 'L$line',
+              direction: 0,
+              headsign: '',
+              stops: path,
+              times: [t, for (final h in hops) t += h],
+              previousDay: false,
+            ));
           }
         }
         final tt = buildTimetable(date: 20261020, stops: stops, trips: trips);

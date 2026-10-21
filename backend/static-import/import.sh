@@ -8,7 +8,7 @@
 # IN_PLACE=1 drops the active network before building the new one, so the database never holds two of them
 # (Supabase free plan, 500 MB): the API is down for about a minute, and if the import fails there is no network
 # until the next successful run (it gives up RF-81, "keep the previous version"). Leave it off on Pro.
-# Without SUPABASE_URL the network JSON is left in ./network.json instead of Storage.
+# Without SUPABASE_URL the network JSON is left in ./network.json and the journey timetables in ./journeys/.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -57,6 +57,32 @@ if [ -n "${SUPABASE_URL:-}" ]; then
     -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" -H "Content-Type: application/json" \
     -H "Cache-Control: max-age=31536000" -H "x-upsert: true" --data-binary @network.json > /dev/null
   rm network.json
+fi
+
+# Journey planner timetables (tool/journeys/build_timetable.dart): today and the next 7 days, gzipped, under
+# journeys/v<md5>/ next to the network file, also before the swap. They need Dart (the workflow sets up Flutter).
+# Without Dart, or if the build fails, the network import goes on: only the journey planner is missing for this version.
+REPO=$(cd ../.. && pwd)
+if command -v dart > /dev/null && [ -f "$REPO/pubspec.yaml" ]; then
+  TT=$(mktemp -d)
+  GTFS_ABS=$(cd "$GTFS_DIR" && pwd)
+  if (cd "$REPO" && dart run tool/journeys/build_timetable.dart "$GTFS_ABS" "$TT" "$(TZ=Europe/Rome date +%Y%m%d)" 8); then
+    gzip -9 "$TT"/*.bin
+    if [ -n "${SUPABASE_URL:-}" ]; then
+      for f in "$TT"/*.bin.gz; do
+        curl -fsS -X POST "$SUPABASE_URL/storage/v1/object/network/journeys/v$MD5/$(basename "$f")" \
+          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" -H "Content-Type: application/gzip" \
+          -H "Cache-Control: max-age=31536000" -H "x-upsert: true" --data-binary @"$f" > /dev/null \
+          || echo "::warning::Upload of $(basename "$f") failed: the planner misses that day for $MD5"
+      done
+    else
+      mkdir -p journeys && mv "$TT"/*.bin.gz journeys/
+    fi
+  else
+    echo "::warning::Journey timetables not built: the planner is unavailable for $MD5"
+  fi
+else
+  echo "Dart not found: journey timetables skipped"
 fi
 
 psql -v md5="$MD5" -f swap.sql

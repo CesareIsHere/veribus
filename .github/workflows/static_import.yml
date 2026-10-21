@@ -23,6 +23,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      # Dart builds the journey planner timetables (tool/journeys).
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter pub get
       - run: bash backend/static-import/import.sh
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}

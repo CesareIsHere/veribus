@@ -4,10 +4,21 @@ import 'dart:typed_data';
 import 'package:veribus/models/journeys/timetable.dart';
 
 /// A stop as read from stops.txt.
-typedef GtfsStop = ({String id, double lat, double lon});
+typedef GtfsStop = ({String id, String name, double lat, double lon});
 
-/// A trip of the day: its line, headsign, stops and the departure time at each (seconds from midnight).
-typedef GtfsTrip = ({String line, String headsign, List<String> stops, List<int> times});
+/// A line as read from routes.txt: the name shown and the GTFS route type (`Timetable.bus`, tram or metro).
+typedef GtfsLine = ({String name, int type});
+
+/// A trip of the day: its line, direction, headsign, stops and the departure time at each (seconds from the
+/// timetable's midnight). `previousDay`: a trip of the previous service day, after midnight.
+typedef GtfsTrip = ({
+  String line,
+  int direction,
+  String headsign,
+  List<String> stops,
+  List<int> times,
+  bool previousDay,
+});
 
 /// Walking between stops: straight line × [walkFactor] at [walkSpeed] m/s, up to [radius] metres. [stationPenalty]
 /// seconds are added for each end that is a station (stairs and corridors: metro platforms are underground).
@@ -24,14 +35,16 @@ class WalkRules {
 
 /// Builds the [Timetable] of one day from its trips: groups them into routes by stop sequence, splits a route where a
 /// later trip would overtake an earlier one (RAPTOR needs trips sorted at every stop), and links stops within
-/// walking distance. Only stops served by a trip are kept.
+/// walking distance. Only stops served by a trip are kept. Stops served by the metro count as stations. A line
+/// missing from [lines] is a bus named after its id.
 Timetable buildTimetable({
   required int date,
   required List<GtfsStop> stops,
   required List<GtfsTrip> trips,
-  Set<String> stations = const {},
+  Map<String, GtfsLine> lines = const {},
   WalkRules walk = const WalkRules(),
 }) {
+  GtfsLine lineOf(String id) => lines[id] ?? (name: id, type: Timetable.bus);
   final used = {for (final t in trips) ...t.stops};
   final kept = [
     for (final s in stops)
@@ -44,7 +57,7 @@ Timetable buildTimetable({
   final patterns = <String, List<GtfsTrip>>{};
   for (final t in trips) {
     if (t.stops.length < 2) continue;
-    (patterns['${t.line}|${t.stops.join(',')}'] ??= []).add(t);
+    (patterns['${t.line}|${t.direction}|${t.stops.join(',')}'] ??= []).add(t);
   }
   final routes = <List<GtfsTrip>>[];
   for (final group in patterns.values) {
@@ -88,20 +101,34 @@ Timetable buildTimetable({
     }
   }
 
-  final foot = _footpaths(kept, {for (final s in stations) ?index[s]}, walk);
+  final stations = {
+    for (final t in trips)
+      if (lineOf(t.line).type == Timetable.metro)
+        for (final s in t.stops) index[s]!,
+  };
+  final foot = _footpaths(kept, stations, walk);
   return Timetable(
     date: date,
     stopIds: [for (final s in kept) s.id],
+    stopNames: [for (final s in kept) s.name],
     stopLat: Int32List.fromList([for (final s in kept) (s.lat * 1e6).round()]),
     stopLon: Int32List.fromList([for (final s in kept) (s.lon * 1e6).round()]),
     lineIds: lineIds,
+    lineNames: [for (final l in lineIds) lineOf(l).name],
+    lineTypes: Uint8List.fromList([for (final l in lineIds) lineOf(l).type]),
     routeLine: Uint16List.fromList([for (final r in routes) lineIndex[r.first.line]!]),
+    routeDirection: Uint8List.fromList([for (final r in routes) r.first.direction]),
     routeHeadsign: [for (final r in routes) r.first.headsign],
     routeStopStart: routeStopStart,
     routeTripStart: routeTripStart,
     routeStops: routeStops,
     tripDeparture: tripDeparture,
     tripOffsets: Uint16List.fromList(offsets),
+    tripPreviousDay: Uint8List.fromList([
+      for (final r in routes)
+        for (final t in r)
+          if (t.previousDay) 1 else 0,
+    ]),
     footStart: foot.start,
     footTo: foot.to,
     footSeconds: foot.seconds,

@@ -1,21 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veribus/models/journeys/timetable.dart';
 
 import '../../tool/journeys/build_timetable.dart';
 import '../../tool/journeys/timetable_builder.dart';
 
 void main() {
-  test('walking links: within the radius only, longer when an end is a station', () {
+  test('walking links: within the radius only, longer when an end is a metro station', () {
     final tt = buildTimetable(
       date: 20261020,
       stops: [
-        (id: 'bus', lat: 41.9, lon: 12.5),
-        (id: 'metro', lat: 41.9, lon: 12.5 + 100 / 83000),
-        (id: 'far', lat: 41.9 + 300 / 110540, lon: 12.5),
+        (id: 'bus', name: 'Bus stop', lat: 41.9, lon: 12.5),
+        (id: 'metro', name: 'Station', lat: 41.9, lon: 12.5 + 100 / 83000),
+        (id: 'far', name: 'Far', lat: 41.9 + 300 / 110540, lon: 12.5),
       ],
       trips: [
-        (line: 'L', headsign: '', stops: ['bus', 'metro', 'far'], times: [0, 60, 120]),
+        (line: 'L', direction: 0, headsign: '', stops: ['bus', 'far'], times: [0, 60], previousDay: false),
+        (line: 'MEA', direction: 1, headsign: '', stops: ['metro', 'far'], times: [0, 60], previousDay: false),
       ],
-      stations: {'metro'},
+      lines: {'MEA': (name: 'A', type: Timetable.metro)},
     );
     final bus = tt.stopIndex['bus']!;
     final links = {
@@ -25,9 +27,40 @@ void main() {
     expect(links['metro'], closeTo(100 * 1.3 / 1.2 + 120, 2));
   });
 
-  test('GTFS fields: quoted commas, doubled quotes, times past midnight', () {
+  test('names, line types, directions and previous-day trips survive the binary format', () {
+    final tt = Timetable.decode(
+      buildTimetable(
+        date: 20261020,
+        stops: [
+          (id: 'a', name: 'Termini', lat: 41.9, lon: 12.5),
+          (id: 'b', name: 'Vittorio Emanuele', lat: 41.91, lon: 12.5),
+        ],
+        trips: [
+          (line: 'MEA', direction: 1, headsign: 'Anagnina', stops: ['a', 'b'], times: [600, 720], previousDay: true),
+          (line: '64', direction: 0, headsign: 'S. Pietro', stops: ['a', 'b'], times: [900, 1200], previousDay: false),
+        ],
+        lines: {'MEA': (name: lineName('MEA', Timetable.metro), type: Timetable.metro)},
+      ).encode(),
+    );
+    expect(tt.stopNames, ['Termini', 'Vittorio Emanuele']);
+    expect([for (var r = 0; r < tt.routeCount; r++) tt.lineNames[tt.routeLine[r]]], unorderedEquals(['A', '64']));
+    final metro = tt.lineIds.indexOf('MEA');
+    expect(tt.lineTypes[metro], Timetable.metro);
+    expect(tt.lineTypes[tt.lineIds.indexOf('64')], Timetable.bus);
+    final route = [for (var r = 0; r < tt.routeCount; r++) r].firstWhere((r) => tt.routeLine[r] == metro);
+    expect(tt.routeDirection[route], 1);
+    expect(tt.routeHeadsign[route], 'Anagnina');
+    final trip = tt.routeTripStart[route];
+    expect(tt.tripPreviousDay[trip], 1);
+    expect(tt.serviceSeconds(trip, 0), 600 + 86400, reason: 'the history counts from its own service day');
+    expect(tt.midnight, DateTime(2026, 10, 20));
+  });
+
+  test('GTFS fields: quoted commas, doubled quotes, times past midnight, metro names', () {
     expect(splitCsv('05000,"TERMINI (MA-MB-FS)",,41.9'), ['05000', 'TERMINI (MA-MB-FS)', '', '41.9']);
     expect(splitCsv('1,"Piazza ""Venezia"", lato B",x'), ['1', 'Piazza "Venezia", lato B', 'x']);
     expect(parseTime('25:10:30'), 25 * 3600 + 10 * 60 + 30);
+    expect(lineName('MEB1', Timetable.metro), 'B1');
+    expect(lineName('ME', Timetable.bus), 'ME');
   });
 }

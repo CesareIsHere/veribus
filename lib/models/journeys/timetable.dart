@@ -13,16 +13,21 @@ class Timetable {
   Timetable({
     required this.date,
     required this.stopIds,
+    required this.stopNames,
     required this.stopLat,
     required this.stopLon,
     required this.lineIds,
+    required this.lineNames,
+    required this.lineTypes,
     required this.routeLine,
+    required this.routeDirection,
     required this.routeHeadsign,
     required this.routeStopStart,
     required this.routeTripStart,
     required this.routeStops,
     required this.tripDeparture,
     required this.tripOffsets,
+    required this.tripPreviousDay,
     required this.footStart,
     required this.footTo,
     required this.footSeconds,
@@ -34,20 +39,35 @@ class Timetable {
   factory Timetable.decode(Uint8List bytes) => _Reader(bytes).timetable();
 
   static const _magic = 0x54544256; // "VBTT"
-  static const _version = 1;
+  static const _version = 2;
+
+  /// GTFS route types kept: tram, metro, bus.
+  static const tram = 0;
+  static const metro = 1;
+  static const bus = 3;
 
   /// The day the times refer to, as yyyymmdd.
   final int date;
 
   final List<String> stopIds;
+  final List<String> stopNames;
 
   /// Stop positions in millionths of a degree.
   final Int32List stopLat;
   final Int32List stopLon;
 
-  /// GTFS route ids (the lines of the app); [routeLine] points into it.
+  /// GTFS route ids (the lines of the app, plus the metro); [routeLine] points into them.
   final List<String> lineIds;
+
+  /// The names shown to people: "64", "8", "A" for the metro line MEA.
+  final List<String> lineNames;
+
+  /// GTFS route type of each line: [tram], [metro] or [bus].
+  final Uint8List lineTypes;
   final Uint16List routeLine;
+
+  /// GTFS direction_id of each route: with the line and the time at a stop it names the slot of the history.
+  final Uint8List routeDirection;
   final List<String> routeHeadsign;
 
   /// Route r stops at `routeStops[routeStopStart[r] .. routeStopStart[r + 1]]`.
@@ -62,6 +82,9 @@ class Timetable {
 
   /// Seconds from the trip's departure to each of its stops, trip after trip.
   final Uint16List tripOffsets;
+
+  /// 1 for the trips of the previous service day (their times here are 24 h earlier than in the GTFS).
+  final Uint8List tripPreviousDay;
 
   /// Walking links of stop s: `footTo/footSeconds[footStart[s] .. footStart[s + 1]]`.
   final Uint32List footStart;
@@ -87,6 +110,13 @@ class Timetable {
   int routeLength(int r) => routeStopStart[r + 1] - routeStopStart[r];
   int routeStop(int r, int i) => routeStops[routeStopStart[r] + i];
   int time(int trip, int i) => times[tripTimeStart[trip] + i];
+
+  /// Scheduled time of [trip] at its [i]-th stop in seconds from its own service day's midnight, as the API and the
+  /// history count it (past 24 h after midnight).
+  int serviceSeconds(int trip, int i) => time(trip, i) + tripPreviousDay[trip] * 86400;
+
+  /// The midnight the times count from, in local time.
+  DateTime get midnight => DateTime(date ~/ 10000, date ~/ 100 % 100, date % 100);
 
   void _index() {
     tripTimeStart = Uint32List(tripCount);
@@ -130,16 +160,21 @@ class Timetable {
       ..u32(_version)
       ..u32(date)
       ..strings(stopIds)
+      ..strings(stopNames)
       ..i32s(stopLat)
       ..i32s(stopLon)
       ..strings(lineIds)
+      ..strings(lineNames)
+      ..u8s(lineTypes)
       ..strings(routeHeadsign)
       ..u16s(routeLine)
+      ..u8s(routeDirection)
       ..u32s(routeStopStart)
       ..u32s(routeTripStart)
       ..u16s(routeStops)
       ..i32s(tripDeparture)
       ..u16s(tripOffsets)
+      ..u8s(tripPreviousDay)
       ..u32s(footStart)
       ..u16s(footTo)
       ..u16s(footSeconds);
@@ -171,6 +206,7 @@ class _Writer {
   }
 
   // Typed arrays are written in the platform's byte order, which is little-endian on every phone and desktop we run.
+  void u8s(Uint8List v) => _typed(v.length, v);
   void u16s(Uint16List v) => _typed(v.length, v.buffer.asUint8List(v.offsetInBytes, v.lengthInBytes));
   void u32s(Uint32List v) => _typed(v.length, v.buffer.asUint8List(v.offsetInBytes, v.lengthInBytes));
   void i32s(Int32List v) => _typed(v.length, v.buffer.asUint8List(v.offsetInBytes, v.lengthInBytes));
@@ -208,6 +244,7 @@ class _Reader {
     return count == 0 ? const [] : text.split('\n');
   }
 
+  Uint8List _u8s() => _copy(_u32(), 1, Uint8List.sublistView);
   Uint16List _u16s() => _copy(_u32(), 2, Uint16List.sublistView);
   Uint32List _u32s() => _copy(_u32(), 4, Uint32List.sublistView);
   Int32List _i32s() => _copy(_u32(), 4, Int32List.sublistView);
@@ -227,16 +264,21 @@ class _Reader {
     return Timetable(
       date: _u32(),
       stopIds: _strings(),
+      stopNames: _strings(),
       stopLat: _i32s(),
       stopLon: _i32s(),
       lineIds: _strings(),
+      lineNames: _strings(),
+      lineTypes: _u8s(),
       routeHeadsign: _strings(),
       routeLine: _u16s(),
+      routeDirection: _u8s(),
       routeStopStart: _u32s(),
       routeTripStart: _u32s(),
       routeStops: _u16s(),
       tripDeparture: _i32s(),
       tripOffsets: _u16s(),
+      tripPreviousDay: _u8s(),
       footStart: _u32s(),
       footTo: _u16s(),
       footSeconds: _u16s(),
