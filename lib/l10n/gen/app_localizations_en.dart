@@ -757,4 +757,167 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripDayCanceled => 'canceled';
+
+  @override
+  String get journeysHome => 'Go home';
+
+  @override
+  String get journeysSetHome => 'Set home';
+
+  @override
+  String get journeysChangeHome => 'Change home';
+
+  @override
+  String get journeysHomeTitle => 'Where is home?';
+
+  @override
+  String get journeysHomeHint => 'Move the map until the pin is on your home. It is saved only on this phone.';
+
+  @override
+  String get journeysRemoveHome => 'Remove home';
+
+  @override
+  String get journeysHomeSaved => 'Home saved';
+
+  @override
+  String get journeysNoHome => 'You have not set your home yet';
+
+  @override
+  String get journeysNoHomeHint =>
+      'Set it once and Veribus tells you which bus to take to get back, from wherever you are.';
+
+  @override
+  String get journeysNeedPosition => 'Your position is needed to find the way home';
+
+  @override
+  String get journeysAtHome => 'You are already home';
+
+  @override
+  String get journeysNone => 'No way home with at most two changes';
+
+  @override
+  String get journeysNoneHint =>
+      'At this hour the network may not reach your home. The last journey of the night, when there is one, is shown at the top.';
+
+  @override
+  String get journeysUnavailable => 'Journeys are not available for today';
+
+  @override
+  String get journeysUnavailableHint =>
+      'The timetable for the planner has not been published yet. Arrivals at the stops still work.';
+
+  @override
+  String get journeysOpenGoogleMaps => 'Open in Google Maps';
+
+  @override
+  String get journeysDirect => 'Direct';
+
+  @override
+  String journeysChanges(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n changes', one: '1 change');
+    return '$_temp0';
+  }
+
+  @override
+  String get journeysWalkOnly => 'On foot';
+
+  @override
+  String journeysTimes(String depart, String arrive) {
+    return '$depart → $arrive';
+  }
+
+  @override
+  String journeysFrom(String stop) {
+    return 'from $stop';
+  }
+
+  @override
+  String journeysLeaveAt(String time) {
+    return 'Leave at $time';
+  }
+
+  @override
+  String journeysWalkToStop(int minutes, String stop) {
+    return 'Walk $minutes min to $stop';
+  }
+
+  @override
+  String journeysWalkHome(int minutes) {
+    return 'Walk $minutes min home';
+  }
+
+  @override
+  String journeysWalkBetween(int minutes, String stop) {
+    return 'Walk $minutes min to $stop';
+  }
+
+  @override
+  String journeysBoard(String stop, String time) {
+    return 'Get on at $stop, $time';
+  }
+
+  @override
+  String journeysAlight(String stop, String time, String stops) {
+    return 'Get off at $stop, $time · $stops';
+  }
+
+  @override
+  String journeysStops(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n stops', one: '1 stop');
+    return '$_temp0';
+  }
+
+  @override
+  String journeysWait(int minutes) {
+    return 'Wait $minutes min';
+  }
+
+  @override
+  String journeysArriveHome(String time) {
+    return 'Home around $time';
+  }
+
+  @override
+  String journeysIfMissed(String line, String time) {
+    return 'If you miss it: next $line at $time';
+  }
+
+  @override
+  String journeysIfMissedNone(String line) {
+    return 'If you miss it there is no other $line tonight';
+  }
+
+  @override
+  String journeysLast(String time) {
+    return 'Last way home: leave by $time';
+  }
+
+  @override
+  String get journeysLastHint => 'After that there is no journey home with at most two changes.';
+
+  @override
+  String journeysChangeRecord(int made, int days) {
+    return 'This change worked $made times out of $days';
+  }
+
+  @override
+  String get journeysChangeNoRecord => 'No history for this change yet';
+
+  @override
+  String get journeysLongWait => 'A long wait';
+
+  @override
+  String journeysMetro(String line) {
+    return 'Metro $line';
+  }
+
+  @override
+  String get journeysNote =>
+      'Walking times are estimated as the crow flies. Beyond the next hour, times are the scheduled ones.';
+
+  @override
+  String get journeysDetails => 'Journey';
+
+  @override
+  String get journeysGone => 'This journey is no longer available: go back to the list.';
 }

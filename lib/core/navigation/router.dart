@@ -17,6 +17,9 @@ import 'package:veribus/features/auth/login_page.dart';
 import 'package:veribus/features/auth/register_page.dart';
 import 'package:veribus/features/auth/reset_password_page.dart';
 import 'package:veribus/features/favorites/favorites_page.dart';
+import 'package:veribus/features/journeys/home_place_page.dart';
+import 'package:veribus/features/journeys/journey_page.dart';
+import 'package:veribus/features/journeys/journeys_page.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/nearby/nearby_page.dart';
 import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
@@ -166,6 +169,22 @@ GoRouter router(Ref ref) {
             vehicleId: q['vehicle'],
           );
         },
+      ),
+      GoRoute(
+        path: JourneysPage.route,
+        builder: (_, _) => const JourneysPage(),
+        routes: [
+          GoRoute(
+            path: HomePlacePage.route.substring(JourneysPage.route.length + 1),
+            // A create/edit screen: full-screen dialog, close + Save.
+            pageBuilder: (_, _) => const MaterialPage(fullscreenDialog: true, child: HomePlacePage()),
+          ),
+          GoRoute(
+            path: JourneyPage.route.substring(JourneysPage.route.length + 1),
+            // The journey travels with the navigation: restored without it, the page says to go back.
+            builder: (_, state) => JourneyPage(args: state.extra is JourneyArgs ? state.extra! as JourneyArgs : null),
+          ),
+        ],
       ),
       // feature:push:start
       GoRoute(path: TripsPage.route, builder: (_, _) => const TripsPage()),
