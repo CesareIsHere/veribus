@@ -79,8 +79,9 @@ do $$
 declare
   h history.trip_run := (select h from history.trip_run h where trip_id = 'T1');
   b int := (select departure_s from network.stop_time where trip_id = 'T1' and stop_id = 'B');
-  today date := (now() at time zone 'Europe/Rome')::date;
-  weekend boolean := extract(isodow from today) >= 6;
+  -- T1's service day: today, or yesterday in the hour after midnight (run.sh).
+  sday date := h.service_date;
+  weekend boolean := extract(isodow from sday) >= 6;
   days jsonb;
 begin
   perform pg_temp.check(h.stop_ids = '{A,B}' and h.delay_s[2] between -900 and -780, 'passages recorded with delay');
@@ -90,9 +91,12 @@ begin
 
   -- Two weeks ago it ran 2 minutes late; a week ago the line was tracked but not this trip; the other days no data.
   insert into history.trip_run (service_date, trip_id, route_id, direction_id, stop_ids, dep_s, delay_s)
-  values (today - 14, 'OLD', 'R1', 0, '{A,B}', array[b - 120, b + 60], '{100,120}');
-  insert into network_meta.route_seen values ('R1', today - 7), ('R1', today - 21);
-  days := api.trip_history('B', 'R1', 0, b, weekend);
+  values (sday - 14, 'OLD', 'R1', 0, '{A,B}', array[b - 120, b + 60], '{100,120}');
+  insert into network_meta.route_seen values ('R1', sday - 7), ('R1', sday - 21);
+  -- After midnight T1's run just recorded is already a past day: left out here.
+  days := (select coalesce(jsonb_agg(x order by n), '[]')
+           from jsonb_array_elements(api.trip_history('B', 'R1', 0, b, weekend)) with ordinality d (x, n)
+           where (x->>'date')::date < sday);
   perform pg_temp.check(jsonb_array_length(days) = 2, 'history: only recorded days with data');
   perform pg_temp.check(days->0->>'status' = 'not_tracked', 'history: line tracked, trip not');
   perform pg_temp.check(days->1->>'status' = 'ran' and days->1->>'delay_s' = '120', 'history: delay at the stop');
@@ -108,3 +112,4 @@ update network.stop_time set departure_s = departure_s - 600 where trip_id = 'T5
 do $$ begin
   perform pg_temp.check(pg_temp.at_b()->'T5' is null, 'gone after the grace minutes');
 end $$;
+update network.stop_time set departure_s = departure_s + 3000 where trip_id = 'T5';  -- back for notify_test.sql
