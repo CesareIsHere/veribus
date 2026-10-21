@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:veribus/core/config.dart'; // feature:push
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
@@ -178,7 +179,17 @@ class _LastJourney extends StatelessWidget {
           l10n.journeysLastHint,
           style: context.textTheme.bodySmall?.copyWith(color: context.colors.onTertiaryContainer),
         ),
-        trailing: Icon(Icons.chevron_right, color: context.colors.onTertiaryContainer),
+        trailing: switch (journey.rides.firstOrNull) {
+          // feature:push:start
+          // Notified before the last bus passes, through the followed trips.
+          final ride? when Features.push && followRouteOf(planner, ride) != null => IconButton(
+            tooltip: l10n.followTrip,
+            onPressed: () => context.push(followRouteOf(planner, ride)!),
+            icon: Icon(Icons.notifications_outlined, color: context.colors.onTertiaryContainer),
+          ),
+          // feature:push:end
+          _ => Icon(Icons.chevron_right, color: context.colors.onTertiaryContainer),
+        },
       ),
     );
   }

@@ -427,6 +427,7 @@ Notices travel through Firebase Cloud Messaging; the Spark (free) plan is enough
 | `ci.yml` | every PR and push to `main` | app: codegen is up to date, format, analyze, test, web compile check · backend: `deno task check` and the SQL API tests |
 | `release.yml` | every push to `main` | bumps the semver from the commits, tags it, creates the GitHub Release and attaches the release APK. Run by hand with a tag to rebuild only the APK of an existing release |
 | `static_import.yml` | every night and by hand | imports the GTFS when its md5 changed (`vars.IN_PLACE=1` on the free plan), and builds the journey timetables |
+| `walking.yml` | every Monday and by hand | measures on foot (OpenStreetMap + OSRM) the pairs of nearby stops, for the journey timetables |
 | `deploy_android.yml` · `deploy_ios.yml` · `deploy_web.yml` | after a release, if `vars.DEPLOY_ANDROID` / `DEPLOY_IOS` / `DEPLOY_WEB` is `true` | Play Store (internal track) · TestFlight · Firebase Hosting |
 | `revert_release.yml` | a merged PR titled `Revert …` | reverts the last version bump and deletes its release |
 

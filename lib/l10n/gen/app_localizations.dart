@@ -1613,7 +1613,7 @@ abstract class AppLocalizations {
   /// No description provided for @journeysNote.
   ///
   /// In en, this message translates to:
-  /// **'Walking times are estimated as the crow flies. Beyond the next hour, times are the scheduled ones.'**
+  /// **'Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.'**
   String get journeysNote;
 
   /// No description provided for @journeysDetails.

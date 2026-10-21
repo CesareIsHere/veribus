@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:veribus/core/config.dart'; // feature:push
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
@@ -119,6 +120,18 @@ class JourneyPage extends ConsumerWidget {
                       l10n.journeysStops(leg.alight - leg.board),
                     ),
                   ),
+                  // feature:push:start
+                  if (Features.push)
+                    if (followRouteOf(planner, leg) case final route?)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => context.push(route),
+                          icon: const Icon(Icons.notifications_outlined),
+                          label: Text(l10n.followTrip),
+                        ),
+                      ),
+                  // feature:push:end
                   // Missing a change is what goes wrong: what to take then.
                   if (previous != null)
                     Text(

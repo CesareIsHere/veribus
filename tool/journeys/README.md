@@ -14,12 +14,13 @@ casa": analisi, misure e RAPTOR*.
 | `lib/repositories/journeys/` | Downloads and caches the day's timetable; the mock builds one around Termini |
 | `lib/features/journeys/` | Home on the phone, the "Go home" list and the journey page |
 | `tool/journeys/build_timetable.dart` | GTFS → one file per day, run by `backend/static-import/import.sh` |
+| `tool/journeys/walking.py`, `walking.sh` | Distances on foot between nearby stops (OpenStreetMap + OSRM), weekly in `.github/workflows/walking.yml` |
 | `tool/journeys/bench.dart` | Times the search on a real timetable and prints the coverage |
 | `tool/journeys/coverage.py`, `network_stats.py` | The measurements of the analysis (Python, numpy + pandas) |
 
 ```bash
 curl -fsSL -o gtfs.zip https://romamobilita.it/wp-content/uploads/shared/rome_static_gtfs.zip && unzip -q gtfs.zip -d gtfs
-dart run tool/journeys/build_timetable.dart gtfs out 20261020 8          # 8 days from 20 Oct: out/2026102x.bin
+dart run tool/journeys/build_timetable.dart gtfs out 20261020 8 [--walking=walking.csv.gz]   # out/2026102x.bin
 dart compile exe tool/journeys/bench.dart -o bench && ./bench out/20261020.bin    # AOT, as in a release build
 python3 -I tool/journeys/coverage.py gtfs [--no-metro] [--rides 3]
 python3 -I tool/journeys/network_stats.py gtfs 20261020
@@ -27,7 +28,12 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
 
 ## How it works
 
-- **Nightly**: the import builds today and the next 7 days, gzips them and uploads them to the `network` bucket as
+- **Weekly**: `walking.yml` cuts Rome out of the Geofabrik central Italy extract, builds an OSRM foot graph and
+  measures on foot every pair of stops within 250 m as the crow flies; `journeys/walking.csv.gz` goes to Storage.
+  Measured on 21/10: 42,096 pairs, all reachable, 2,782 (6.6%) longer than 400 m on foot, so dropped (the river, the
+  railways, the big roads). About 2 minutes.
+- **Nightly**: the import builds today and the next 7 days, with those distances (a link takes the routed metres at
+  1.2 m/s; pairs not measured, such as a new stop, keep the straight line × 1.3), gzips them and uploads them to the `network` bucket as
   `journeys/v<md5>/<yyyymmdd>.bin.gz`, before the swap. A failed build or upload warns and the network import goes on.
 - **On the phone**: the timetable of the day is downloaded once and kept in the app support folder. A search walks to
   the stops within 500 m (600 m at home, twice that when there are none), runs RAPTOR with up to 3 rides, asks
@@ -48,8 +54,8 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
 
 ## Known limits
 
-- Walking is a straight line × 1.3: across the Tiber or a railway it can be badly wrong. Real walking distances from
-  OpenStreetMap, computed once per night for the pairs of stops within the radius, are the planned fix.
+- Walking from the user to the first stop and from the last stop home is still the straight line × 1.3 (measured on
+  the phone, where there is no street graph).
 - Walking links are not chained (A→B→C on foot), as RAPTOR assumes them transitively closed: nearly true at 250 m.
 - A delay moves the whole trip by the delay predicted at the boarding stop; beyond the next hour times are scheduled.
 - No rail (FL, Roma-Lido, Roma-Viterbo): it is not in the RSM feed. The metro has no realtime.

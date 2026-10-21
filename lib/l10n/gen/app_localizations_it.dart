@@ -914,7 +914,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get journeysNote =>
-      'I tratti a piedi sono stimati in linea d\'aria. Oltre la prossima ora gli orari sono quelli programmati.';
+      'I tratti a piedi da te alla fermata e dalla fermata a casa sono stimati in linea d\'aria. Oltre la prossima ora gli orari sono quelli programmati.';
 
   @override
   String get journeysDetails => 'Percorso';

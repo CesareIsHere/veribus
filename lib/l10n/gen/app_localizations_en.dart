@@ -913,7 +913,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journeysNote =>
-      'Walking times are estimated as the crow flies. Beyond the next hour, times are the scheduled ones.';
+      'Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.';
 
   @override
   String get journeysDetails => 'Journey';

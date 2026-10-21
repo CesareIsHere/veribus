@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
 import 'package:veribus/models/journeys/raptor.dart';
@@ -45,6 +46,22 @@ class RideBadge extends StatelessWidget {
     );
   }
 }
+
+// feature:push:start
+/// The followed-trip page for [ride] (lib/features/notifications): notified before its bus passes, on the weekday of
+/// its service day. Null for the metro, which is not in the network the follows use.
+String? followRouteOf(JourneyPlanner planner, RideLeg ride) {
+  final tt = planner.timetable;
+  if (tt.lineTypes[tt.routeLine[ride.route]] == Timetable.metro) return null;
+  return FollowPage.routeFor(
+    stopId: tt.stopIds[ride.fromStop],
+    lineId: tt.lineIds[tt.routeLine[ride.route]],
+    directionId: tt.routeDirection[ride.route],
+    departureSeconds: tt.serviceSeconds(ride.trip, ride.board),
+    weekday: tt.midnight.subtract(Duration(days: tt.tripPreviousDay[ride.trip])).weekday,
+  );
+}
+// feature:push:end
 
 /// The metro publishes no realtime; nor do the lines the API lists as never transmitting.
 bool rideWithoutRealtime(JourneyPlanner planner, RideLeg ride, Set<String> noRealtime) {

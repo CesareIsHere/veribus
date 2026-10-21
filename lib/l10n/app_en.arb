@@ -690,7 +690,7 @@
       }
     }
   },
-  "journeysNote": "Walking times are estimated as the crow flies. Beyond the next hour, times are the scheduled ones.",
+  "journeysNote": "Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.",
   "journeysDetails": "Journey",
   "journeysGone": "This journey is no longer available: go back to the list."
 }
