@@ -14,6 +14,7 @@ import 'package:veribus/features/notifications/trips_page.dart'; // feature:push
 import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Favorite stops with their next arrivals and lines with vehicles in service (RF-41). Info is reached from here.
@@ -81,6 +82,7 @@ class FavoritesPage extends ConsumerWidget {
                           ArrivalTile(
                             arrival: a,
                             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
+                            kind: TransitKind.ofLineOrBus(network?.lines[a.lineId]),
                             lineWithoutRealtime: noRealtime.contains(a.lineId),
                             onTap: () => context.push(LinePage.routeOf(a, id)),
                           ),
@@ -92,7 +94,11 @@ class FavoritesPage extends ConsumerWidget {
                       _NotServed(title: id, onRemove: () => ref.read(favoritesProvider.notifier).toggleLine(id))
                     else
                       ListTile(
-                        leading: LineBadge(network?.lines[id]?.name ?? id, withoutRealtime: noRealtime.contains(id)),
+                        leading: LineBadge(
+                          network?.lines[id]?.name ?? id,
+                          kind: TransitKind.ofLineOrBus(network?.lines[id]),
+                          withoutRealtime: noRealtime.contains(id),
+                        ),
                         title: Text(network?.lines[id]?.ends ?? ''),
                         subtitle: Text(
                           noRealtime.contains(id)

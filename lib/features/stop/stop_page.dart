@@ -8,12 +8,15 @@ import 'package:veribus/core/widgets/alert_card.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/journeys/journeys_page.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Stop panel (RF-20..29): arrivals of every line in the next 60 minutes, with status and reason.
@@ -52,13 +55,6 @@ class _StopPageState extends ConsumerState<StopPage> {
       appBar: AppBar(
         // Opened from a link there is nothing to pop: go back to the tabs.
         leading: Navigator.canPop(context) ? null : BackButton(onPressed: () => context.go('/')),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(stop?.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(l10n.stopCode(widget.stopId), style: context.textTheme.bodySmall),
-          ],
-        ),
         actions: [
           IconButton(
             tooltip: favorite ? l10n.removeFavorite : l10n.addFavorite,
@@ -78,6 +74,7 @@ class _StopPageState extends ConsumerState<StopPage> {
         child: ListView(
           padding: context.listPadding(),
           children: [
+            if (stop != null) _header(context, stop),
             if (stop != null) _lineFilter(context, network!, stop, noRealtime),
             ...switch (arrivals) {
               AsyncValue(:final value?) => _arrivals(context, network, stop, value, noRealtime),
@@ -96,6 +93,53 @@ class _StopPageState extends ConsumerState<StopPage> {
             },
           ],
         ),
+      ),
+    );
+  }
+
+  /// The stop in big letters, with the way into the planner (how to get here) and today's timetable.
+  Widget _header(BuildContext context, Stop stop) {
+    final l10n = context.l10n;
+    final line = _line ?? stop.lineIds.firstOrNull;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: Spacing.m,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(stop.name, style: context.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                l10n.stopCode(widget.stopId),
+                style: context.textTheme.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+              ),
+            ],
+          ),
+          Wrap(
+            spacing: Spacing.s,
+            runSpacing: Spacing.s,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: () => context.push(
+                  JourneysPage.route,
+                  extra: JourneysArgs(
+                    to: Place(name: stop.name, point: stop.position, type: PlaceType.stop),
+                  ),
+                ),
+                icon: const Icon(Icons.directions),
+                label: Text(l10n.stopDirectionsHere),
+              ),
+              if (line != null)
+                OutlinedButton.icon(
+                  onPressed: () => context.push(TimetablePage.route(widget.stopId, line)),
+                  icon: const Icon(Icons.schedule),
+                  label: Text(l10n.timetable),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -128,7 +172,6 @@ class _StopPageState extends ConsumerState<StopPage> {
       for (final a in data.byStop[widget.stopId] ?? const <Arrival>[])
         if (_line == null || a.lineId == _line) a,
     ];
-    final line = _line ?? stop?.lineIds.firstOrNull;
     final seconds = DateTime.now().difference(data.computedAt).inSeconds.clamp(0, 3600);
     return [
       if (data.alertsAt(widget.stopId) case final alerts when alerts.isNotEmpty)
@@ -141,6 +184,7 @@ class _StopPageState extends ConsumerState<StopPage> {
           ArrivalTile(
             arrival: a,
             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
+            kind: TransitKind.ofLineOrBus(network?.lines[a.lineId]),
             lineWithoutRealtime: noRealtime.contains(a.lineId),
             onTap: () => context.push(LinePage.routeOf(a, widget.stopId)),
           ),
@@ -153,11 +197,6 @@ class _StopPageState extends ConsumerState<StopPage> {
           alignment: WrapAlignment.spaceBetween,
           children: [
             Text(l10n.updatedAgo(seconds), style: context.textTheme.bodySmall),
-            if (line != null)
-              TextButton(
-                onPressed: () => context.push(TimetablePage.route(widget.stopId, line)),
-                child: Text(l10n.timetable),
-              ),
             if (_line != null)
               TextButton(
                 onPressed: () => context.push(LinePage.route(_line!)),

@@ -10,6 +10,7 @@ casa": analisi, misure e RAPTOR*.
 | `lib/models/journeys/timetable_builder.dart` | Builds a timetable from trips: routes split where trips overtake, walking links |
 | `lib/models/journeys/raptor.dart` | The search, with an optional realtime layer (removed and delayed trips) |
 | `lib/models/journeys/journey_planner.dart` | Plans with the realtime of `api.arrivals`, filters, options, last journey, next trip |
+| `lib/models/journeys/trip_progress.dart` | Where the traveller is in a journey they follow: walking, at the stop, on board, changing, arrived |
 | `lib/models/journeys/change_reliability.dart` | How often a change worked, from the history of both trips |
 | `lib/repositories/journeys/` | Downloads and caches the day's timetable; the mock builds one around Termini |
 | `lib/features/journeys/` | Home and recent destinations on the phone, the address search, the journeys list and the journey page |
@@ -63,6 +64,10 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
 - Walking links are not chained (A→B→C on foot), as RAPTOR assumes them transitively closed: nearly true at 250 m.
 - A delay moves the whole trip by the delay predicted at the boarding stop; beyond the next hour times are scheduled.
 - No rail (FL, Roma-Lido, Roma-Viterbo): it is not in the RSM feed. The metro has no realtime.
+- Following a journey works in the foreground only: the position is asked while the app is in front. With the screen off
+  there is no tracking (a foreground service with a persistent notification would be needed).
+- "Arrive by" and the sort by fewer changes or less walking are not offered: the planner searches forward in time and
+  keeps one journey per number of rides.
 - The address search uses the public Photon instance: fair use, no guarantee, Italian names only as OpenStreetMap
   has them (its `lang` does not take `it`).
 - The journeys page needs a timetable for today: without it (import failed) it says so and offers Google Maps.

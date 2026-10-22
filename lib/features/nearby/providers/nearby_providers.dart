@@ -5,7 +5,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:veribus/core/providers/auto_refresh.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
-import 'package:veribus/core/providers/shared_preferences_provider.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
@@ -51,18 +50,4 @@ Future<Arrivals?> nearbyArrivals(Ref ref) async {
   if (stops.isEmpty) return null;
   ref.refreshEvery();
   return await ref.watch(transitRepositoryProvider).arrivals([for (final s in stops) s.stop.id]);
-}
-
-/// Map or list, remembered between launches (RF-01).
-@riverpod
-class NearbyMapView extends _$NearbyMapView {
-  static const _key = 'nearby_map_view';
-
-  @override
-  bool build() => ref.watch(sharedPreferencesProvider).getBool(_key) ?? true;
-
-  Future<void> set({required bool map}) async {
-    state = map;
-    await ref.read(sharedPreferencesProvider).setBool(_key, map);
-  }
 }

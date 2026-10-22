@@ -31,7 +31,7 @@ void main() {
     }
     // Found again a few metres away: moves to the top, not added twice.
     await recent.add(_place('Place 3 again', 41.8 + 3 * 0.01 + 0.0001));
-    await recent.add(const Place(name: 'Home', point: LatLng(41.9, 12.5), isHome: true));
+    await recent.add(const Place(name: 'Home', point: LatLng(41.9, 12.5), type: PlaceType.home));
     expect(
       [for (final p in container.read(recentPlacesProvider)) p.name],
       ['Place 3 again', 'Place 5', 'Place 4', 'Place 2', 'Place 1'],

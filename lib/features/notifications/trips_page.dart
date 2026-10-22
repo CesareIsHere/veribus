@@ -15,6 +15,7 @@ import 'package:veribus/features/notifications/providers/follow_providers.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/models/transit/trip_follow.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
@@ -95,7 +96,7 @@ class _FollowTile extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Spacing.l,
           children: [
-            LineBadge(line?.name ?? follow.lineId, muted: !follow.enabled),
+            LineBadge(line?.name ?? follow.lineId, kind: TransitKind.ofLineOrBus(line), muted: !follow.enabled),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

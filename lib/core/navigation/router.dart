@@ -17,10 +17,11 @@ import 'package:veribus/features/auth/login_page.dart';
 import 'package:veribus/features/auth/register_page.dart';
 import 'package:veribus/features/auth/reset_password_page.dart';
 import 'package:veribus/features/favorites/favorites_page.dart';
-import 'package:veribus/features/journeys/home_place_page.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
 import 'package:veribus/features/journeys/journeys_page.dart';
 import 'package:veribus/features/journeys/place_search_page.dart';
+import 'package:veribus/features/journeys/save_place_page.dart';
+import 'package:veribus/features/journeys/trip_page.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/nearby/nearby_page.dart';
 import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
@@ -30,6 +31,7 @@ import 'package:veribus/features/settings/profile_page.dart';
 import 'package:veribus/features/settings/settings_page.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/user/user_model.dart';
 
 part 'router.g.dart';
@@ -102,12 +104,12 @@ GoRouter router(Ref ref) {
     (
       route: NearbyPage.route,
       page: const NearbyPage(),
-      nav: (c) => (icon: Icons.near_me_outlined, selectedIcon: Icons.near_me, label: c.l10n.nearby),
+      nav: (c) => (icon: Icons.explore_outlined, selectedIcon: Icons.explore, label: c.l10n.nearby),
     ),
     (
       route: SearchPage.route,
       page: const SearchPage(),
-      nav: (c) => (icon: Icons.search, selectedIcon: Icons.search, label: c.l10n.search),
+      nav: (c) => (icon: Icons.directions_bus_outlined, selectedIcon: Icons.directions_bus, label: c.l10n.search),
     ),
     (
       route: FavoritesPage.route,
@@ -173,23 +175,34 @@ GoRouter router(Ref ref) {
       ),
       GoRoute(
         path: JourneysPage.route,
-        builder: (_, _) => const JourneysPage(),
+        builder: (_, state) => JourneysPage(args: state.extra is JourneysArgs ? state.extra! as JourneysArgs : null),
         routes: [
-          GoRoute(
-            path: HomePlacePage.route.substring(JourneysPage.route.length + 1),
-            // A create/edit screen: full-screen dialog, close + Save.
-            pageBuilder: (_, _) => const MaterialPage(fullscreenDialog: true, child: HomePlacePage()),
-          ),
           GoRoute(
             path: PlaceSearchPage.route.substring(JourneysPage.route.length + 1),
             builder: (_, state) => PlaceSearchPage(
-              purpose: state.extra is PlaceSearchFor ? state.extra! as PlaceSearchFor : PlaceSearchFor.destination,
+              args: state.extra is PlaceSearchArgs ? state.extra! as PlaceSearchArgs : const PlaceSearchArgs(),
+            ),
+          ),
+          GoRoute(
+            path: SavePlacePage.route.substring(JourneysPage.route.length + 1),
+            // A create/edit screen: full-screen dialog.
+            pageBuilder: (_, state) => MaterialPage(
+              fullscreenDialog: true,
+              child: SavePlacePage(
+                args: state.extra is SavePlaceArgs
+                    ? state.extra! as SavePlaceArgs
+                    : const SavePlaceArgs(type: PlaceType.home),
+              ),
             ),
           ),
           GoRoute(
             path: JourneyPage.route.substring(JourneysPage.route.length + 1),
             // The journey travels with the navigation: restored without it, the page says to go back.
             builder: (_, state) => JourneyPage(args: state.extra is JourneyArgs ? state.extra! as JourneyArgs : null),
+          ),
+          GoRoute(
+            path: TripPage.route.substring(JourneysPage.route.length + 1),
+            builder: (_, state) => TripPage(args: state.extra is JourneyArgs ? state.extra! as JourneyArgs : null),
           ),
         ],
       ),

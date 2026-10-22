@@ -1,15 +1,20 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:veribus/core/widgets/line_chip.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
 import 'package:veribus/features/stop/components/arrival_tile.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/models/transit/live.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// "21:47" for seconds from the planner's midnight.
@@ -77,33 +82,57 @@ List<LatLng> alongShape(List<LatLng> shape, List<LatLng> stops, int board, int a
   return length(piece) > 2 * length(straight) + 500 ? straight : piece;
 }
 
-/// The line of a ride: its badge, after a metro or tram icon (the badge alone would read as a bus).
-class RideBadge extends StatelessWidget {
-  const RideBadge({required this.planner, required this.ride, required this.noRealtime, super.key});
+/// "1 h 5 min" from 60 minutes up, "42 min" below: the big number of a journey.
+String journeyDuration(AppLocalizations l10n, int seconds) {
+  final minutes = journeyMinutes(seconds);
+  return minutes < 60 ? l10n.minutes(minutes) : l10n.journeysDurationHm(minutes ~/ 60, minutes % 60);
+}
+
+/// The kind of vehicle of a ride: what its chip shows.
+TransitKind rideKind(JourneyPlanner planner, RideLeg ride) {
+  final tt = planner.timetable;
+  final line = tt.routeLine[ride.route];
+  return TransitKind.ofTimetable(
+    name: tt.lineNames[line],
+    isTram: tt.lineTypes[line] == Timetable.tram,
+    isMetro: tt.lineTypes[line] == Timetable.metro,
+  );
+}
+
+/// The streets of [ride] on the map: the line's path cut between its stops, or from stop to stop for the metro and
+/// when the line has no path (`alongShape`). Watches the path of the line, which the first call loads.
+List<LatLng> rideRoute(WidgetRef ref, JourneyPlanner planner, RideLeg ride) {
+  final tt = planner.timetable;
+  LatLng stop(int s) => LatLng(tt.stopLat[s] / 1e6, tt.stopLon[s] / 1e6);
+  final stops = [for (var i = 0; i <= ride.alight; i++) stop(tt.routeStop(ride.route, i))];
+  if (rideKind(planner, ride) == TransitKind.metro) return stops.sublist(ride.board);
+  final shape = ref.watch(lineShapeProvider(tt.lineIds[tt.routeLine[ride.route]], tt.routeDirection[ride.route]));
+  return alongShape(shape.value ?? const [], stops, ride.board, ride.alight);
+}
+
+/// The line of a ride: its chip with the color and the icon of its kind (the metro and the tram are told apart from
+/// the bus by the icon, not by color alone). Muted when the line never transmits positions; not for the metro, whose
+/// colors are what riders look for.
+class RideChip extends StatelessWidget {
+  const RideChip({required this.planner, required this.ride, required this.noRealtime, this.large = false, super.key});
 
   final JourneyPlanner planner;
   final RideLeg ride;
   final Set<String> noRealtime;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
     final tt = planner.timetable;
     final line = tt.routeLine[ride.route];
-    final name = tt.lineNames[line];
-    final icon = switch (tt.lineTypes[line]) {
-      Timetable.metro => Icons.subway_outlined,
-      Timetable.tram => Icons.tram,
-      _ => null,
-    };
+    final kind = rideKind(planner, ride);
     return Semantics(
-      label: tt.lineTypes[line] == Timetable.metro ? context.l10n.journeysMetro(name) : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: Spacing.xs,
-        children: [
-          if (icon != null) Icon(icon, size: Spacing.l + Spacing.xs, color: context.colors.onSurfaceVariant),
-          LineBadge(name, withoutRealtime: rideWithoutRealtime(planner, ride, noRealtime)),
-        ],
+      label: kind == TransitKind.metro ? context.l10n.journeysMetro(tt.lineNames[line]) : null,
+      child: LineChip(
+        tt.lineNames[line],
+        kind: kind,
+        muted: kind != TransitKind.metro && noRealtime.contains(tt.lineIds[line]),
+        large: large,
       ),
     );
   }
@@ -173,9 +202,12 @@ class RideStatus extends StatelessWidget {
   }
 }
 
-/// One journey in the list: leave → arrive, how long, the legs at a glance, and the state of the first bus (the one
-/// to catch now).
-class JourneyCard extends StatelessWidget {
+/// Seconds on foot in a journey, whatever the legs.
+int walkingSeconds(Journey journey) => journey.legs.whereType<WalkLeg>().fold(0, (sum, w) => sum + (w.end - w.start));
+
+/// One journey in the list: how long it takes, with what (the legs at a glance), when, and the state of the first
+/// bus (the one to catch now) with how often the first change worked.
+class JourneyCard extends ConsumerWidget {
   const JourneyCard({
     required this.planner,
     required this.journey,
@@ -190,13 +222,14 @@ class JourneyCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final j = journey.journey;
     final rides = journey.rides;
-    final tt = planner.timetable;
     final changes = rides.length - 1;
-    return Card.outlined(
+    final walk = journeyMinutes(walkingSeconds(j));
+    final first = rides.firstOrNull;
+    return Card.filled(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -208,28 +241,31 @@ class JourneyCard extends StatelessWidget {
             spacing: Spacing.s,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: Spacing.s,
                 children: [
                   Expanded(
-                    child: Text(
-                      l10n.journeysTimes(journeyClock(planner, j.depart), journeyClock(planner, j.arrive)),
-                      style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                    ),
+                    child: LegsSummary(planner: planner, journey: j, noRealtime: noRealtime),
                   ),
-                  Text(l10n.minutes(journeyMinutes(j.arrive - j.depart)), style: context.textTheme.titleMedium),
+                  Text(
+                    journeyDuration(l10n, j.arrive - j.depart),
+                    style: context.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                 ],
               ),
-              LegsSummary(planner: planner, journey: j, noRealtime: noRealtime),
-              if (rides.isEmpty)
-                Text(l10n.journeysWalkOnly, style: context.textTheme.bodyMedium)
-              else ...[
-                Text(
-                  '${changes == 0 ? l10n.journeysDirect : l10n.journeysChanges(changes)} · '
-                  '${l10n.journeysFrom(tt.stopNames[rides.first.fromStop])}',
-                  style: context.textTheme.bodyMedium,
-                ),
-                RideStatus(planner: planner, journey: journey, ride: rides.first, noRealtime: noRealtime),
+              Text(
+                [
+                  l10n.journeysTimes(journeyClock(planner, j.depart), journeyClock(planner, j.arrive)),
+                  if (first == null) l10n.journeysWalkOnly else if (changes > 0) l10n.journeysChanges(changes),
+                  if (first != null && changes == 0) l10n.journeysDirect,
+                  if (walk > 0 && first != null) l10n.journeysWalkTotal(walk),
+                ].join(' · '),
+                style: context.textTheme.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+              ),
+              if (first != null) ...[
+                const Divider(height: Spacing.l),
+                _FirstRide(planner: planner, journey: journey, ride: first, noRealtime: noRealtime),
+                if (changes > 0) _ChangeRecord(planner: planner, rides: rides, journey: j),
               ],
             ],
           ),
@@ -239,7 +275,79 @@ class JourneyCard extends StatelessWidget {
   }
 }
 
-/// The legs in a row: walking minutes and line badges, with arrows between them.
+/// The first bus: when it comes, from which stop, and how sure that is.
+class _FirstRide extends StatelessWidget {
+  const _FirstRide({required this.planner, required this.journey, required this.ride, required this.noRealtime});
+
+  final JourneyPlanner planner;
+  final PlannedJourney journey;
+  final RideLeg ride;
+  final Set<String> noRealtime;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final arrival = journey.realtimeOf(ride);
+    final tt = planner.timetable;
+    return Row(
+      spacing: Spacing.s,
+      children: [
+        if (arrival != null)
+          ArrivalTime(arrival, large: false)
+        else
+          Text(journeyClock(planner, ride.start), style: context.textTheme.titleSmall),
+        Expanded(
+          child: Text(
+            l10n.journeysFrom(tt.stopNames[ride.fromStop]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.bodyMedium,
+          ),
+        ),
+        StatusTag(arrival?.status ?? ArrivalStatus.scheduled),
+      ],
+    );
+  }
+}
+
+/// How often the first change of the journey worked in the last weeks: "17 times out of 20". Nothing without history.
+class _ChangeRecord extends ConsumerWidget {
+  const _ChangeRecord({required this.planner, required this.rides, required this.journey});
+
+  final JourneyPlanner planner;
+  final List<RideLeg> rides;
+  final Journey journey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final legs = journey.legs;
+    final next = legs.indexOf(rides[1]);
+    final before = next > 0 ? legs[next - 1] : null;
+    final walk = before is WalkLeg && before.from != null ? before.end - before.start : 0;
+    final record = ref.watch(changeReliabilityProvider(changeSlots(planner, rides[0], rides[1], walk)));
+    return switch (record) {
+      AsyncValue(value: (:final made, :final days)?) when days > 0 => Row(
+        spacing: Spacing.s,
+        children: [
+          Icon(
+            made * 10 >= days * 7 ? Icons.check_circle_outline : Icons.warning_amber,
+            size: Spacing.l,
+            color: made * 10 >= days * 7 ? context.appColors.success : context.colors.tertiary,
+          ),
+          Expanded(
+            child: Text(
+              context.l10n.journeysChangeRecord(made, days),
+              style: context.textTheme.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+      _ => const SizedBox.shrink(),
+    };
+  }
+}
+
+/// The legs in a row: the minutes on foot and the chips of the lines, with arrows between them.
 class LegsSummary extends StatelessWidget {
   const LegsSummary({required this.planner, required this.journey, required this.noRealtime, super.key});
 
@@ -249,39 +357,51 @@ class LegsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = context.colors.onSurfaceVariant;
-    final parts = <Widget?>[
+    final parts = <Widget>[
       for (final leg in journey.legs)
         switch (leg) {
-          RideLeg() => RideBadge(planner: planner, ride: leg, noRealtime: noRealtime),
+          RideLeg() => RideChip(planner: planner, ride: leg, noRealtime: noRealtime),
           // The number alone reads as minutes on foot next to its icon; screen readers get it in words.
-          WalkLeg() when leg.end - leg.start >= 60 => Semantics(
-            label: '${context.l10n.journeysWalkOnly} ${context.l10n.minutes(journeyMinutes(leg.end - leg.start))}',
-            excludeSemantics: true,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.directions_walk, size: Spacing.l + Spacing.xs, color: muted),
-                Text(
-                  '${journeyMinutes(leg.end - leg.start)}',
-                  style: context.textTheme.labelLarge?.copyWith(color: muted),
-                ),
-              ],
-            ),
-          ),
-          WalkLeg() => null,
+          WalkLeg() when leg.end - leg.start >= 60 => WalkChip(minutes: journeyMinutes(leg.end - leg.start)),
+          WalkLeg() => const SizedBox.shrink(),
         },
-    ].nonNulls.toList();
+    ].where((w) => w is! SizedBox).toList();
     return Wrap(
       spacing: Spacing.xs,
       runSpacing: Spacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (final (i, part) in parts.indexed) ...[
-          if (i > 0) Icon(Icons.chevron_right, size: Spacing.l, color: muted),
+          if (i > 0) Icon(Icons.chevron_right, size: Spacing.l, color: context.colors.outline),
           part,
         ],
       ],
+    );
+  }
+}
+
+/// Minutes on foot: the walking icon and the number.
+class WalkChip extends StatelessWidget {
+  const WalkChip({required this.minutes, super.key});
+
+  final int minutes;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.colors.onSurfaceVariant;
+    return Semantics(
+      label: context.l10n.journeysWalkTotal(minutes),
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.directions_walk, size: Spacing.l + Spacing.xs, color: color),
+          Text(
+            '$minutes',
+            style: context.textTheme.labelLarge?.copyWith(color: color, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
     );
   }
 }

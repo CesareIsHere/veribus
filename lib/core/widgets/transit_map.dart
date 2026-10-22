@@ -22,7 +22,17 @@ const rome = LatLng(41.8986, 12.4768);
 /// OpenFreeMap vector tiles, in the light or dark variant of the app theme. Every map shows the device position as a
 /// blue dot above everything else, with a button to come back to it.
 class TransitMap extends ConsumerStatefulWidget {
-  const TransitMap({required this.children, this.center = rome, this.zoom = 16, this.controller, this.fit, super.key});
+  const TransitMap({
+    required this.children,
+    this.center = rome,
+    this.zoom = 16,
+    this.controller,
+    this.fit,
+    this.fitPadding = const EdgeInsets.all(Spacing.xxxl + Spacing.s),
+    this.onMoved,
+    this.locateButton = true,
+    super.key,
+  });
 
   final List<Widget> children;
   final LatLng center;
@@ -33,6 +43,15 @@ class TransitMap extends ConsumerStatefulWidget {
   /// and again if one leaves the view, so the zoom adapts to the distance. [center] and [zoom] are then ignored.
   /// Once the user moves the map by hand it is left alone.
   final List<LatLng>? fit;
+
+  /// The margin around the [fit] points: a sheet over the map takes its share of the bottom.
+  final EdgeInsets fitPadding;
+
+  /// Called after every camera move, by the user or by code.
+  final void Function(MapCamera camera, {required bool byUser})? onMoved;
+
+  /// The button that brings the camera back to the user; off when something of the page covers its corner.
+  final bool locateButton;
 
   @override
   ConsumerState<TransitMap> createState() => _TransitMapState();
@@ -50,11 +69,7 @@ class _TransitMapState extends ConsumerState<TransitMap> {
   CameraFit? get _cameraFit {
     final points = widget.fit;
     if (points == null || points.length < 2) return null;
-    return CameraFit.coordinates(
-      coordinates: points,
-      padding: const EdgeInsets.all(Spacing.xxxl + Spacing.s),
-      maxZoom: 17,
-    );
+    return CameraFit.coordinates(coordinates: points, padding: widget.fitPadding, maxZoom: 17);
   }
 
   @override
@@ -95,8 +110,9 @@ class _TransitMapState extends ConsumerState<TransitMap> {
               initialZoom: widget.zoom,
               initialCameraFit: _cameraFit,
               onMapReady: () => _ready = true,
-              onPositionChanged: (_, hasGesture) {
+              onPositionChanged: (camera, hasGesture) {
                 if (hasGesture) _moved = true;
+                widget.onMoved?.call(camera, byUser: hasGesture);
               },
               minZoom: 10,
               maxZoom: 19,
@@ -122,7 +138,7 @@ class _TransitMapState extends ConsumerState<TransitMap> {
               ),
             ],
           ),
-          if (position != null)
+          if (position != null && widget.locateButton)
             Positioned(
               right: Spacing.l,
               bottom: Spacing.xxxl + Spacing.l, // above the map attribution button

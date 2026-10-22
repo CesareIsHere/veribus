@@ -9,6 +9,7 @@ import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/utils/report_problem.dart';
 import 'package:veribus/core/widgets/alert_card.dart';
+import 'package:veribus/core/widgets/line_chip.dart';
 import 'package:veribus/core/widgets/section_header.dart';
 import 'package:veribus/core/widgets/stale_banner.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
@@ -24,6 +25,7 @@ import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// How close the user must be to a stop of the line for the map to include them in the view.
@@ -102,7 +104,14 @@ class _LinePageState extends ConsumerState<LinePage> {
         leading: Navigator.canPop(context) ? null : BackButton(onPressed: () => context.go('/')),
         title: Row(
           spacing: Spacing.m,
-          children: [LineBadge(line?.name ?? widget.lineId, withoutRealtime: withoutRealtime)],
+          children: [
+            LineBadge(
+              line?.name ?? widget.lineId,
+              kind: TransitKind.ofLineOrBus(line),
+              withoutRealtime: withoutRealtime,
+              large: true,
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -189,6 +198,11 @@ class _LinePageState extends ConsumerState<LinePage> {
   Widget _listView(BuildContext context, LineDetail d, Network network, bool withoutRealtime, int direction) {
     final l10n = context.l10n;
     final kind = network.lines[widget.lineId]?.kind;
+    final color = LineChip.colorOf(
+      context,
+      TransitKind.ofLineOrBus(network.lines[widget.lineId]),
+      network.lines[widget.lineId]?.name ?? widget.lineId,
+    );
     final byIndex = <int, List<VehicleInfo>>{};
     for (final v in d.vehicles) {
       if (v.index != null) byIndex.putIfAbsent(v.index!, () => []).add(v);
@@ -229,7 +243,8 @@ class _LinePageState extends ConsumerState<LinePage> {
           for (final v in byIndex[i] ?? const <VehicleInfo>[])
             TimelineRow(
               first: i == 0,
-              node: TimelineVehicle.node(context, kind),
+              railColor: color,
+              node: TimelineVehicle.node(context, kind, color: color),
               child: TimelineVehicle(
                 vehicle: v,
                 nextStop: network.stopById[id]?.name,
@@ -242,10 +257,13 @@ class _LinePageState extends ConsumerState<LinePage> {
           TimelineRow(
             first: i == 0,
             last: i == last,
-            node: TimelineStop.node(context, terminus: i == 0 || i == last),
+            railColor: color,
+            node: TimelineStop.node(context, terminus: i == 0 || i == last, color: color),
             child: TimelineStop(
               name: network.stopById[id]?.name ?? id,
               terminus: i == 0 || i == last,
+              highlight: id == widget.stopId,
+              badge: id == widget.stopId ? l10n.lineYourStop : null,
               onTap: () => context.push(StopPage.route(id)),
             ),
           ),

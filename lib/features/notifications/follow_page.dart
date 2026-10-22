@@ -16,6 +16,7 @@ import 'package:veribus/features/notifications/providers/follow_providers.dart';
 import 'package:veribus/features/notifications/providers/push_notifier.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/models/transit/trip_follow.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
@@ -118,7 +119,7 @@ class _FollowPageState extends ConsumerState<FollowPage> {
                 ),
               ),
               trailing: const Icon(Icons.chevron_right),
-              leading: LineBadge(line?.name ?? widget.lineId),
+              leading: LineBadge(line?.name ?? widget.lineId, kind: TransitKind.ofLineOrBus(line)),
               title: Text('→ ${line?.headsignOf(widget.directionId) ?? ''}'),
               subtitle: Text(
                 '${network?.stopById[widget.stopId]?.name ?? widget.stopId} · ${clockOf(widget.departureSeconds)}',

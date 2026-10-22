@@ -4,6 +4,11 @@ import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/models/journeys/timetable_builder.dart';
 import 'package:veribus/models/transit/live.dart';
 
+/// What the traveller leaves out: the metro, the night buses.
+typedef JourneyFilter = ({bool metro, bool night});
+
+const JourneyFilter allTransport = (metro: true, night: true);
+
 /// Realtime arrivals at stops for lines, as `api.arrivals` gives them (the next 60 minutes).
 typedef ArrivalsSource = Future<Arrivals> Function(List<String> stopIds, List<String> lineIds);
 
@@ -41,6 +46,21 @@ class JourneyPlanner {
   final int minGainPerRide;
   final WalkRules walk;
   final Raptor _raptor;
+  final _blockedCache = <JourneyFilter, Set<int>>{};
+
+  /// The routes [filter] leaves out: the metro lines, the night buses (`n1`).
+  Set<int> _blocked(JourneyFilter filter) => filter == allTransport
+      ? const {}
+      : _blockedCache.putIfAbsent(filter, () {
+          final tt = timetable;
+          return {
+            for (var r = 0; r < tt.routeCount; r++)
+              if (tt.lineTypes[tt.routeLine[r]] == Timetable.metro
+                  ? !filter.metro
+                  : !filter.night && RegExp(r'^[nN]\d').hasMatch(tt.lineNames[tt.routeLine[r]]))
+                r,
+          };
+        });
 
   /// How many times the search runs again with new realtime before it settles.
   static const _realtimeRounds = 3;
@@ -73,6 +93,7 @@ class JourneyPlanner {
     required LatLng to,
     required DateTime at,
     int options = 3,
+    JourneyFilter filter = allTransport,
   }) async {
     final origins = stopsAround(from);
     final destinations = stopsAround(to, radius: 600);
@@ -83,7 +104,7 @@ class JourneyPlanner {
     final seen = <String>{};
     var departure = now;
     for (var option = 0; option < options; option++) {
-      final journeys = await _searchLive(origins, destinations, departure, now, live);
+      final journeys = await _searchLive(origins, destinations, departure, now, live, _blocked(filter));
       final rides = journeys.where((j) => j.rides > 0).toList();
       for (final j in journeys) {
         final key = j.legs.whereType<RideLeg>().map((r) => r.trip).join(',');
@@ -104,12 +125,19 @@ class JourneyPlanner {
     required LatLng to,
     required DateTime at,
     int horizon = 4 * 3600,
+    JourneyFilter filter = allTransport,
   }) {
     final origins = stopsAround(from);
     final destinations = stopsAround(to, radius: 600);
     if (origins.isEmpty || destinations.isEmpty) return null;
     Journey? first(int departure) => _sensible(
-      _raptor.search(origins: origins, destinations: destinations, departure: departure, maxRides: maxRides),
+      _raptor.search(
+        origins: origins,
+        destinations: destinations,
+        departure: departure,
+        maxRides: maxRides,
+        blockedRoutes: _blocked(filter),
+      ),
     ).where((j) => j.rides > 0).firstOrNull;
     final now = secondsOf(at);
     if (first(now + horizon) != null) return null;
@@ -159,6 +187,7 @@ class JourneyPlanner {
     int departure,
     int now,
     _Live live,
+    Set<int> blocked,
   ) async {
     var journeys = <Journey>[];
     for (var round = 0; round < _realtimeRounds; round++) {
@@ -169,6 +198,7 @@ class JourneyPlanner {
           departure: departure,
           maxRides: maxRides,
           realtime: live.realtime(),
+          blockedRoutes: blocked,
         ),
       );
       final unknown = [
