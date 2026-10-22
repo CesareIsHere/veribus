@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:veribus/core/utils/app_failure.dart';
 import 'package:veribus/services/place_search_service.dart';
 
@@ -83,5 +84,23 @@ void main() {
       down.search('colosseo'),
       throwsA(isA<ServerFailure>().having((f) => f.statusCode, 'status', 503)),
     );
+  });
+
+  test('the address under a point: the first place, nothing when the service fails', () async {
+    late Uri asked;
+    final service = PlaceSearchService(
+      MockClient((request) async {
+        asked = request.url;
+        return http.Response.bytes(utf8.encode(jsonEncode(_photon)), 200);
+      }),
+    );
+    final place = await service.reverse(const LatLng(41.8902, 12.4924));
+    expect(place?.name, 'Colosseo');
+    expect(asked.path, '/api/reverse');
+    expect(asked.queryParameters['lat'], '41.8902');
+    final down = PlaceSearchService(MockClient((_) async => http.Response('', 503)));
+    expect(await down.reverse(const LatLng(41.89, 12.49)), isNull);
+    final offline = PlaceSearchService(MockClient((_) async => throw http.ClientException('offline')));
+    expect(await offline.reverse(const LatLng(41.89, 12.49)), isNull);
   });
 }

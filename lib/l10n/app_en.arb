@@ -233,15 +233,12 @@
       }
     }
   },
-  "searchHint": "Line or stop code",
-  "searchEmpty": "Search runs on your phone: results show up as you type.",
   "searchNoResults": "No results. Check the code written on the stop pole.",
   "locationDenied": "Turn on location to see nearby stops",
   "locationDeniedList": "Without your position the list is empty: use Search to find a stop.",
   "enableLocation": "Turn on",
   "you": "You are here",
   "backToMyPosition": "Back to my position",
-  "zoomInForStops": "Zoom in to see the stops",
   "noStopsNearby": "No stops within 1 km",
   "nearbyNote": "Stops within 500 m, sorted by distance. If there are none, the radius grows to 1 km.",
   "meters": "{n} m",
@@ -509,23 +506,16 @@
   },
   "tripDayNotTracked": "not tracked",
   "tripDayCanceled": "canceled",
-  "journeysTitle": "Journeys",
   "journeysHomePlace": "Home",
   "journeysWhereTo": "Where to?",
-  "journeysChangeDestination": "Change",
   "journeysAlreadyThere": "You are already there",
   "journeysSearchHint": "Address or place",
   "journeysSearchAddress": "Search for an address",
-  "journeysSearchEmpty": "Type an address or the name of a place",
   "journeysSearchNone": "No address found in Rome",
   "journeysRecent": "Recent",
   "journeysSetHome": "Set home",
-  "journeysChangeHome": "Change home",
-  "journeysHomeTitle": "Where is home?",
-  "journeysHomeHint": "Search for the address, or move the map until the pin is on your home. It is saved only on this phone.",
   "journeysRemoveHome": "Remove home",
   "journeysHomeSaved": "Home saved",
-  "journeysNoHome": "You have not set your home yet",
   "journeysNoHomeHint": "Set it once and Veribus tells you which bus to take to get back, from wherever you are. Or search for any destination above.",
   "journeysNeedPosition": "Your position is needed to plan the journey",
   "journeysAtHome": "You are already home",
@@ -563,89 +553,10 @@
       }
     }
   },
-  "journeysLeaveAt": "Leave at {time}",
-  "@journeysLeaveAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "journeysWalkToStop": "Walk {minutes} min to {stop}",
-  "@journeysWalkToStop": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "stop": {
-        "type": "String"
-      }
-    }
-  },
-  "journeysWalkHome": "Walk {minutes} min home",
-  "@journeysWalkHome": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "journeysWalkToDestination": "Walk {minutes} min to the destination",
-  "@journeysWalkToDestination": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "journeysWalkBetween": "Walk {minutes} min to {stop}",
-  "@journeysWalkBetween": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "stop": {
-        "type": "String"
-      }
-    }
-  },
-  "journeysBoard": "Get on at {stop}, {time}",
-  "@journeysBoard": {
-    "placeholders": {
-      "stop": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "journeysAlight": "Get off at {stop}, {time} · {stops}",
-  "@journeysAlight": {
-    "placeholders": {
-      "stop": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      },
-      "stops": {
-        "type": "String"
-      }
-    }
-  },
   "journeysStops": "{n, plural, =1{1 stop} other{{n} stops}}",
   "@journeysStops": {
     "placeholders": {
       "n": {
-        "type": "int"
-      }
-    }
-  },
-  "journeysWait": "Wait {minutes} min",
-  "@journeysWait": {
-    "placeholders": {
-      "minutes": {
         "type": "int"
       }
     }
@@ -731,9 +642,6 @@
   },
   "journeysOptions": "Options",
   "journeysOptionsTitle": "When and how",
-  "journeysWhen": "When",
-  "journeysDay": "Day",
-  "journeysTime": "Time",
   "journeysToday": "Today",
   "journeysTomorrow": "Tomorrow",
   "journeysUseMetro": "Use the metro",
@@ -800,20 +708,6 @@
       }
     }
   },
-  "journeysStartFrom": "{line} {when} from {stop}",
-  "@journeysStartFrom": {
-    "placeholders": {
-      "line": {
-        "type": "String"
-      },
-      "when": {
-        "type": "String"
-      },
-      "stop": {
-        "type": "String"
-      }
-    }
-  },
   "journeysInMinutes": "in {minutes} min",
   "@journeysInMinutes": {
     "placeholders": {
@@ -837,7 +731,6 @@
   "journeysWorkSaved": "Work saved",
   "journeysRemoveWork": "Remove work",
   "journeysPinPlace": "Place on the map",
-  "journeysAddPlace": "Add a place",
   "exploreNearYou": "Near you",
   "exploreWalk": "{minutes} min on foot · {meters} m",
   "@exploreWalk": {
@@ -854,7 +747,6 @@
   "exploreBus": "Bus",
   "exploreTram": "Tram",
   "exploreProfile": "Profile and settings",
-  "linesTitle": "Lines",
   "linesBus": "Buses",
   "linesTram": "Trams",
   "linesNight": "Night buses",
@@ -927,28 +819,6 @@
       }
     }
   },
-  "tripChangeAt": "Change at {stop}",
-  "@tripChangeAt": {
-    "placeholders": {
-      "stop": {
-        "type": "String"
-      }
-    }
-  },
-  "tripThen": "Then {line} at {time}, {walk} min on foot",
-  "@tripThen": {
-    "placeholders": {
-      "line": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      },
-      "walk": {
-        "type": "int"
-      }
-    }
-  },
   "tripThenNoWalk": "Then {line} at {time}",
   "@tripThenNoWalk": {
     "placeholders": {
@@ -966,16 +836,6 @@
   "tripAlertHint": "The phone vibrates one stop before, with the screen on.",
   "tripAlertTitle": "Get off at the next stop",
   "tripNeedPosition": "Your position is needed to follow you step by step",
-  "tripRemaining": "{stops} to go",
-  "@tripRemaining": {
-    "placeholders": {
-      "stops": {
-        "type": "String"
-      }
-    }
-  },
-  "tripNow": "now",
-  "tripFollowing": "Journey in progress",
   "tripAtTime": "at {time}",
   "@tripAtTime": {
     "placeholders": {

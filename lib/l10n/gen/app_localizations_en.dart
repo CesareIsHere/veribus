@@ -442,12 +442,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get searchHint => 'Line or stop code';
-
-  @override
-  String get searchEmpty => 'Search runs on your phone: results show up as you type.';
-
-  @override
   String get searchNoResults => 'No results. Check the code written on the stop pole.';
 
   @override
@@ -464,9 +458,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backToMyPosition => 'Back to my position';
-
-  @override
-  String get zoomInForStops => 'Zoom in to see the stops';
 
   @override
   String get noStopsNearby => 'No stops within 1 km';
@@ -762,16 +753,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tripDayCanceled => 'canceled';
 
   @override
-  String get journeysTitle => 'Journeys';
-
-  @override
   String get journeysHomePlace => 'Home';
 
   @override
   String get journeysWhereTo => 'Where to?';
-
-  @override
-  String get journeysChangeDestination => 'Change';
 
   @override
   String get journeysAlreadyThere => 'You are already there';
@@ -783,9 +768,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeysSearchAddress => 'Search for an address';
 
   @override
-  String get journeysSearchEmpty => 'Type an address or the name of a place';
-
-  @override
   String get journeysSearchNone => 'No address found in Rome';
 
   @override
@@ -795,23 +777,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeysSetHome => 'Set home';
 
   @override
-  String get journeysChangeHome => 'Change home';
-
-  @override
-  String get journeysHomeTitle => 'Where is home?';
-
-  @override
-  String get journeysHomeHint =>
-      'Search for the address, or move the map until the pin is on your home. It is saved only on this phone.';
-
-  @override
   String get journeysRemoveHome => 'Remove home';
 
   @override
   String get journeysHomeSaved => 'Home saved';
-
-  @override
-  String get journeysNoHome => 'You have not set your home yet';
 
   @override
   String get journeysNoHomeHint =>
@@ -863,49 +832,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String journeysLeaveAt(String time) {
-    return 'Leave at $time';
-  }
-
-  @override
-  String journeysWalkToStop(int minutes, String stop) {
-    return 'Walk $minutes min to $stop';
-  }
-
-  @override
-  String journeysWalkHome(int minutes) {
-    return 'Walk $minutes min home';
-  }
-
-  @override
-  String journeysWalkToDestination(int minutes) {
-    return 'Walk $minutes min to the destination';
-  }
-
-  @override
-  String journeysWalkBetween(int minutes, String stop) {
-    return 'Walk $minutes min to $stop';
-  }
-
-  @override
-  String journeysBoard(String stop, String time) {
-    return 'Get on at $stop, $time';
-  }
-
-  @override
-  String journeysAlight(String stop, String time, String stops) {
-    return 'Get off at $stop, $time · $stops';
-  }
-
-  @override
   String journeysStops(int n) {
     String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n stops', one: '1 stop');
     return '$_temp0';
-  }
-
-  @override
-  String journeysWait(int minutes) {
-    return 'Wait $minutes min';
   }
 
   @override
@@ -983,15 +912,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeysOptionsTitle => 'When and how';
 
   @override
-  String get journeysWhen => 'When';
-
-  @override
-  String get journeysDay => 'Day';
-
-  @override
-  String get journeysTime => 'Time';
-
-  @override
   String get journeysToday => 'Today';
 
   @override
@@ -1049,11 +969,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String journeysStartFrom(String line, String when, String stop) {
-    return '$line $when from $stop';
-  }
-
-  @override
   String journeysInMinutes(int minutes) {
     return 'in $minutes min';
   }
@@ -1104,9 +1019,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeysPinPlace => 'Place on the map';
 
   @override
-  String get journeysAddPlace => 'Add a place';
-
-  @override
   String get exploreNearYou => 'Near you';
 
   @override
@@ -1125,9 +1037,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exploreProfile => 'Profile and settings';
-
-  @override
-  String get linesTitle => 'Lines';
 
   @override
   String get linesBus => 'Buses';
@@ -1187,16 +1096,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String tripChangeAt(String stop) {
-    return 'Change at $stop';
-  }
-
-  @override
-  String tripThen(String line, String time, int walk) {
-    return 'Then $line at $time, $walk min on foot';
-  }
-
-  @override
   String tripThenNoWalk(String line, String time) {
     return 'Then $line at $time';
   }
@@ -1218,17 +1117,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripNeedPosition => 'Your position is needed to follow you step by step';
-
-  @override
-  String tripRemaining(String stops) {
-    return '$stops to go';
-  }
-
-  @override
-  String get tripNow => 'now';
-
-  @override
-  String get tripFollowing => 'Journey in progress';
 
   @override
   String tripAtTime(String time) {
