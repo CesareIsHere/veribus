@@ -19,7 +19,7 @@ jobs:
       (vars.DEPLOY_IOS == 'true' && github.event.workflow_run.conclusion == 'success')
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
 
