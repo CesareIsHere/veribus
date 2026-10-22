@@ -34,7 +34,8 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
   railways, the big roads). About 2 minutes.
 - **Nightly**: the import builds today and the next 7 days, with those distances (a link takes the routed metres at
   1.2 m/s; pairs not measured, such as a new stop, keep the straight line × 1.3), gzips them and uploads them to the `network` bucket as
-  `journeys/v<md5>/<yyyymmdd>.bin.gz`, before the swap. A failed build or upload warns and the network import goes on.
+  `journeys/v<md5>/<yyyymmdd>.bin.gz`, before the swap. A failed build or upload warns and the network import goes on. When the GTFS has not changed, the import still builds
+  the timetables if today's file is missing (the days roll forward), without touching the database.
 - **On the phone**: the timetable of the day is downloaded once and kept in the app support folder. A search walks to
   the stops within 500 m (600 m at home, twice that when there are none), runs RAPTOR with up to 3 rides, asks
   `api.arrivals` for the trips of the next hour it proposes (matched by slot: line and scheduled time at the boarding
