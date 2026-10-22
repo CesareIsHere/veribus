@@ -16,13 +16,61 @@ GTFS_URL=${GTFS_URL:-https://romamobilita.it/wp-content/uploads/shared/rome_stat
 # Supabase cancels long statements (statement_timeout): the import turns it off in every session it opens.
 psql() { command psql "$DB_URL" -v ON_ERROR_STOP=1 -q -c "set statement_timeout = 0" "$@"; }
 
+# Journey planner timetables (tool/journeys/build_timetable.dart): today and the next 7 days, gzipped, under
+# journeys/v<md5>/ next to the network file, also before the swap. They need Dart (the workflow sets up Flutter).
+# Without Dart, or if the build fails, the network import goes on: only the journey planner is missing for this version.
+# Also run when the GTFS is unchanged: the files roll forward a day at a time.
+timetables() {
+  REPO=$(cd ../.. && pwd)
+  if command -v dart > /dev/null && [ -f "$REPO/pubspec.yaml" ]; then
+    TT=$(mktemp -d)
+    GTFS_ABS=$(cd "$GTFS_DIR" && pwd)
+    # Distances on foot along the streets (weekly, .github/workflows/walking.yml); without them, the straight line.
+    WALKING=()
+    if [ -n "${SUPABASE_URL:-}" ] \
+      && curl -fsS -o "$TT/walking.csv.gz" "$SUPABASE_URL/storage/v1/object/public/network/journeys/walking.csv.gz"; then
+      WALKING=("--walking=$TT/walking.csv.gz")
+    fi
+    if (cd "$REPO" && dart run tool/journeys/build_timetable.dart "$GTFS_ABS" "$TT" "$(TZ=Europe/Rome date +%Y%m%d)" 8 \
+      "${WALKING[@]}"); then
+      rm -f "$TT/walking.csv.gz"
+      gzip -9 "$TT"/*.bin
+      if [ -n "${SUPABASE_URL:-}" ]; then
+        for f in "$TT"/*.bin.gz; do
+          curl -fsS -X POST "$SUPABASE_URL/storage/v1/object/network/journeys/v$MD5/$(basename "$f")" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" -H "Content-Type: application/gzip" \
+            -H "Cache-Control: max-age=31536000" -H "x-upsert: true" --data-binary @"$f" > /dev/null \
+            || echo "::warning::Upload of $(basename "$f") failed: the planner misses that day for $MD5"
+        done
+      else
+        mkdir -p journeys && mv "$TT"/*.bin.gz journeys/
+      fi
+    else
+      echo "::warning::Journey timetables not built: the planner is unavailable for $MD5"
+    fi
+  else
+    echo "Dart not found: journey timetables skipped"
+  fi
+}
+
 if [ -z "${GTFS_DIR:-}" ]; then
   MD5=$(curl -fsSL "$GTFS_URL.md5" | cut -d' ' -f1)
   LAST=$(psql -Atc "select md5 from network_meta.version order by imported_at desc limit 1")
-  if [ "$MD5" = "$LAST" ] && [ -z "${FORCE:-}" ]; then echo "GTFS unchanged ($MD5)"; exit 0; fi
+  UNCHANGED=$([ "$MD5" = "$LAST" ] && [ -z "${FORCE:-}" ] && echo 1 || true)
+  TODAY_FILE="${SUPABASE_URL:-}/storage/v1/object/public/network/journeys/v$MD5/$(TZ=Europe/Rome date +%Y%m%d).bin.gz"
+  # Unchanged and today's journey timetable already there: nothing to do.
+  if [ -n "$UNCHANGED" ] && { [ -z "${SUPABASE_URL:-}" ] || curl -fsI -o /dev/null "$TODAY_FILE"; }; then
+    echo "GTFS unchanged ($MD5)"; exit 0
+  fi
   GTFS_DIR=$(mktemp -d)
   curl -fsSL -o "$GTFS_DIR/gtfs.zip" "$GTFS_URL"
   unzip -q "$GTFS_DIR/gtfs.zip" -d "$GTFS_DIR"
+  # Unchanged network, but the days have moved on: only the journey timetables, the database stays as it is.
+  if [ -n "$UNCHANGED" ]; then
+    echo "GTFS unchanged ($MD5): building the journey timetables only"
+    timetables
+    exit 0
+  fi
 else
   MD5=${MD5:-$(cat "$GTFS_DIR"/*.txt | md5sum | cut -d' ' -f1)}
 fi
@@ -59,39 +107,7 @@ if [ -n "${SUPABASE_URL:-}" ]; then
   rm network.json
 fi
 
-# Journey planner timetables (tool/journeys/build_timetable.dart): today and the next 7 days, gzipped, under
-# journeys/v<md5>/ next to the network file, also before the swap. They need Dart (the workflow sets up Flutter).
-# Without Dart, or if the build fails, the network import goes on: only the journey planner is missing for this version.
-REPO=$(cd ../.. && pwd)
-if command -v dart > /dev/null && [ -f "$REPO/pubspec.yaml" ]; then
-  TT=$(mktemp -d)
-  GTFS_ABS=$(cd "$GTFS_DIR" && pwd)
-  # Distances on foot along the streets (weekly, .github/workflows/walking.yml); without them, the straight line.
-  WALKING=()
-  if [ -n "${SUPABASE_URL:-}" ] \
-    && curl -fsS -o "$TT/walking.csv.gz" "$SUPABASE_URL/storage/v1/object/public/network/journeys/walking.csv.gz"; then
-    WALKING=("--walking=$TT/walking.csv.gz")
-  fi
-  if (cd "$REPO" && dart run tool/journeys/build_timetable.dart "$GTFS_ABS" "$TT" "$(TZ=Europe/Rome date +%Y%m%d)" 8 \
-    "${WALKING[@]}"); then
-    rm -f "$TT/walking.csv.gz"
-    gzip -9 "$TT"/*.bin
-    if [ -n "${SUPABASE_URL:-}" ]; then
-      for f in "$TT"/*.bin.gz; do
-        curl -fsS -X POST "$SUPABASE_URL/storage/v1/object/network/journeys/v$MD5/$(basename "$f")" \
-          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" -H "Content-Type: application/gzip" \
-          -H "Cache-Control: max-age=31536000" -H "x-upsert: true" --data-binary @"$f" > /dev/null \
-          || echo "::warning::Upload of $(basename "$f") failed: the planner misses that day for $MD5"
-      done
-    else
-      mkdir -p journeys && mv "$TT"/*.bin.gz journeys/
-    fi
-  else
-    echo "::warning::Journey timetables not built: the planner is unavailable for $MD5"
-  fi
-else
-  echo "Dart not found: journey timetables skipped"
-fi
+timetables
 
 psql -v md5="$MD5" -f swap.sql
 echo "Active: $MD5"
