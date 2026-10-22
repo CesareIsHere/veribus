@@ -508,5 +508,189 @@
     }
   },
   "tripDayNotTracked": "not tracked",
-  "tripDayCanceled": "canceled"
+  "tripDayCanceled": "canceled",
+  "journeysHome": "Go home",
+  "journeysSetHome": "Set home",
+  "journeysChangeHome": "Change home",
+  "journeysHomeTitle": "Where is home?",
+  "journeysHomeHint": "Move the map until the pin is on your home. It is saved only on this phone.",
+  "journeysRemoveHome": "Remove home",
+  "journeysHomeSaved": "Home saved",
+  "journeysNoHome": "You have not set your home yet",
+  "journeysNoHomeHint": "Set it once and Veribus tells you which bus to take to get back, from wherever you are.",
+  "journeysNeedPosition": "Your position is needed to find the way home",
+  "journeysAtHome": "You are already home",
+  "journeysNone": "No way home with at most two changes",
+  "journeysNoneHint": "At this hour the network may not reach your home. The last journey of the night, when there is one, is shown at the top.",
+  "journeysUnavailable": "Journeys are not available for today",
+  "journeysUnavailableHint": "The timetable for the planner has not been published yet. Arrivals at the stops still work.",
+  "journeysOpenGoogleMaps": "Open in Google Maps",
+  "journeysDirect": "Direct",
+  "journeysChanges": "{n, plural, =1{1 change} other{{n} changes}}",
+  "@journeysChanges": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysWalkOnly": "On foot",
+  "journeysTimes": "{depart} → {arrive}",
+  "@journeysTimes": {
+    "placeholders": {
+      "depart": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysFrom": "from {stop}",
+  "@journeysFrom": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysLeaveAt": "Leave at {time}",
+  "@journeysLeaveAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysWalkToStop": "Walk {minutes} min to {stop}",
+  "@journeysWalkToStop": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysWalkHome": "Walk {minutes} min home",
+  "@journeysWalkHome": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysWalkBetween": "Walk {minutes} min to {stop}",
+  "@journeysWalkBetween": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysBoard": "Get on at {stop}, {time}",
+  "@journeysBoard": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysAlight": "Get off at {stop}, {time} · {stops}",
+  "@journeysAlight": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "stops": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysStops": "{n, plural, =1{1 stop} other{{n} stops}}",
+  "@journeysStops": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysWait": "Wait {minutes} min",
+  "@journeysWait": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysArriveHome": "Home around {time}",
+  "@journeysArriveHome": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysIfMissed": "If you miss it: next {line} at {time}",
+  "@journeysIfMissed": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysIfMissedNone": "If you miss it there is no other {line} tonight",
+  "@journeysIfMissedNone": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysLast": "Last way home: leave by {time}",
+  "@journeysLast": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysLastHint": "After that there is no journey home with at most two changes.",
+  "journeysChangeRecord": "This change worked {made} times out of {days}",
+  "@journeysChangeRecord": {
+    "placeholders": {
+      "made": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysChangeNoRecord": "No history for this change yet",
+  "journeysLongWait": "A long wait",
+  "journeysMetro": "Metro {line}",
+  "@journeysMetro": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysNote": "Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.",
+  "journeysDetails": "Journey",
+  "journeysGone": "This journey is no longer available: go back to the list."
 }

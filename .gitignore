@@ -61,6 +61,7 @@ env/*.local.json
 # Backend local runs
 /backend/archive/
 /backend/static-import/network.json
+/backend/static-import/journeys/
 
 # Supabase CLI local state (linked project, versions)
 /supabase/.temp/

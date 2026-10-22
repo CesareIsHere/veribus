@@ -63,6 +63,15 @@ class MockTransitRepository implements ITransitRepository {
     ],
   ];
 
+  /// The demo stops (id, name, lat, lon, lines), shared with the mock journey planner.
+  static List<List<Object>> get demoStops => _stops;
+
+  /// Now, down to the minute.
+  static DateTime mockMinute() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, now.hour, now.minute);
+  }
+
   /// Edge cases on purpose: CAVOUR has stale realtime data (RF-60), MANIN no arrivals in the next hour.
   static const _staleStop = '74901';
   static const _emptyStop = '76301';
@@ -104,7 +113,8 @@ class MockTransitRepository implements ITransitRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final now = DateTime.now().toUtc();
     String at(int minutes) => now.add(Duration(minutes: minutes)).toIso8601String();
-    final local = DateTime.now();
+    // Slots on the minute: the mock journey timetable (MockJourneysRepository) puts its trips on the same minutes.
+    final local = mockMinute();
     final midnight = DateTime(local.year, local.month, local.day);
     // `noTime`: a located vehicle with no prediction, "N stops away" (RF-26). Negative minutes: overdue.
     Map<String, dynamic> arrival(

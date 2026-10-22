@@ -757,4 +757,168 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tripDayCanceled => 'cancellata';
+
+  @override
+  String get journeysHome => 'Torna a casa';
+
+  @override
+  String get journeysSetHome => 'Imposta casa';
+
+  @override
+  String get journeysChangeHome => 'Cambia casa';
+
+  @override
+  String get journeysHomeTitle => 'Dov\'è casa?';
+
+  @override
+  String get journeysHomeHint =>
+      'Sposta la mappa finché il segnaposto è su casa tua. Resta salvata solo su questo telefono.';
+
+  @override
+  String get journeysRemoveHome => 'Rimuovi casa';
+
+  @override
+  String get journeysHomeSaved => 'Casa salvata';
+
+  @override
+  String get journeysNoHome => 'Non hai ancora impostato casa';
+
+  @override
+  String get journeysNoHomeHint =>
+      'Impostala una volta e Veribus ti dice quale mezzo prendere per tornarci, da dove sei.';
+
+  @override
+  String get journeysNeedPosition => 'Serve la tua posizione per trovare la strada di casa';
+
+  @override
+  String get journeysAtHome => 'Sei già a casa';
+
+  @override
+  String get journeysNone => 'Nessun modo di tornare con al massimo due cambi';
+
+  @override
+  String get journeysNoneHint =>
+      'A quest\'ora la rete potrebbe non arrivare a casa tua. L\'ultimo percorso della notte, quando c\'è, è in cima.';
+
+  @override
+  String get journeysUnavailable => 'I percorsi di oggi non sono disponibili';
+
+  @override
+  String get journeysUnavailableHint =>
+      'L\'orario per il calcolo dei percorsi non è ancora stato pubblicato. Gli arrivi alle fermate funzionano lo stesso.';
+
+  @override
+  String get journeysOpenGoogleMaps => 'Apri in Google Maps';
+
+  @override
+  String get journeysDirect => 'Diretto';
+
+  @override
+  String journeysChanges(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n cambi', one: '1 cambio');
+    return '$_temp0';
+  }
+
+  @override
+  String get journeysWalkOnly => 'A piedi';
+
+  @override
+  String journeysTimes(String depart, String arrive) {
+    return '$depart → $arrive';
+  }
+
+  @override
+  String journeysFrom(String stop) {
+    return 'da $stop';
+  }
+
+  @override
+  String journeysLeaveAt(String time) {
+    return 'Esci alle $time';
+  }
+
+  @override
+  String journeysWalkToStop(int minutes, String stop) {
+    return 'A piedi $minutes min fino a $stop';
+  }
+
+  @override
+  String journeysWalkHome(int minutes) {
+    return 'A piedi $minutes min fino a casa';
+  }
+
+  @override
+  String journeysWalkBetween(int minutes, String stop) {
+    return 'A piedi $minutes min fino a $stop';
+  }
+
+  @override
+  String journeysBoard(String stop, String time) {
+    return 'Sali a $stop, $time';
+  }
+
+  @override
+  String journeysAlight(String stop, String time, String stops) {
+    return 'Scendi a $stop, $time · $stops';
+  }
+
+  @override
+  String journeysStops(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n fermate', one: '1 fermata');
+    return '$_temp0';
+  }
+
+  @override
+  String journeysWait(int minutes) {
+    return 'Attesa $minutes min';
+  }
+
+  @override
+  String journeysArriveHome(String time) {
+    return 'A casa verso le $time';
+  }
+
+  @override
+  String journeysIfMissed(String line, String time) {
+    return 'Se lo perdi: il prossimo $line alle $time';
+  }
+
+  @override
+  String journeysIfMissedNone(String line) {
+    return 'Se lo perdi, stanotte non ci sono altri $line';
+  }
+
+  @override
+  String journeysLast(String time) {
+    return 'Ultimo modo per tornare: esci entro le $time';
+  }
+
+  @override
+  String get journeysLastHint => 'Dopo non c\'è più un percorso per casa con al massimo due cambi.';
+
+  @override
+  String journeysChangeRecord(int made, int days) {
+    return 'Questa coincidenza ha funzionato $made volte su $days';
+  }
+
+  @override
+  String get journeysChangeNoRecord => 'Ancora nessuno storico per questa coincidenza';
+
+  @override
+  String get journeysLongWait => 'Un\'attesa lunga';
+
+  @override
+  String journeysMetro(String line) {
+    return 'Metro $line';
+  }
+
+  @override
+  String get journeysNote =>
+      'I tratti a piedi da te alla fermata e dalla fermata a casa sono stimati in linea d\'aria. Oltre la prossima ora gli orari sono quelli programmati.';
+
+  @override
+  String get journeysDetails => 'Percorso';
+
+  @override
+  String get journeysGone => 'Questo percorso non è più disponibile: torna all\'elenco.';
 }

@@ -25,7 +25,7 @@ abstract final class ArrivalText {
   static String reason(AppLocalizations l10n, Arrival a, {required bool lineWithoutRealtime}) => switch (a.status) {
     // Past its time with no bus seen passing: buses without data often pass anyway (`missed_grace_min`).
     _ when a.overdue && a.vehicle == null && a.time != null => l10n.overdue(DateFormat.Hm().format(a.time!.toLocal())),
-    ArrivalStatus.scheduled => lineWithoutRealtime ? l10n.lineWithoutRealtime : l10n.noRealtimeData,
+    ArrivalStatus.scheduled => noRealtime(l10n, lineWithoutRealtime: lineWithoutRealtime),
     ArrivalStatus.confirmed when a.approximate => l10n.approximateTime(a.minutes!),
     ArrivalStatus.confirmed => [
       if (a.vehicle?.label case final label?) l10n.vehicle(label),
@@ -33,6 +33,11 @@ abstract final class ArrivalText {
     ].join(' · '),
     _ => a.signal == null ? '' : signal(l10n, a.signal!, stopsAway: a.stopsAway),
   };
+
+  /// Why a trip shows its scheduled time: its line never transmits, or there are no realtime data for it (yet: the
+  /// journeys of the planner beyond the next hour).
+  static String noRealtime(AppLocalizations l10n, {required bool lineWithoutRealtime}) =>
+      lineWithoutRealtime ? l10n.lineWithoutRealtime : l10n.noRealtimeData;
 
   static String signal(AppLocalizations l10n, Signal s, {int? stopsAway}) => switch (s.code) {
     'S1' => l10n.signalCanceled,

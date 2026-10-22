@@ -13,6 +13,7 @@ import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/core/widgets/vehicles_layer.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/journeys/journeys_page.dart';
 import 'package:veribus/features/line/components/vehicle_route_sheet.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
@@ -71,13 +72,27 @@ class NearbyPage extends ConsumerWidget {
                       );
                     },
                   ),
-                  SegmentedButton<bool>(
-                    segments: [
-                      ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
-                      ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
+                  Row(
+                    spacing: Spacing.s,
+                    children: [
+                      Expanded(
+                        child: SegmentedButton<bool>(
+                          showSelectedIcon: false,
+                          segments: [
+                            ButtonSegment(value: true, icon: const Icon(Icons.map_outlined), label: Text(l10n.mapView)),
+                            ButtonSegment(value: false, icon: const Icon(Icons.list), label: Text(l10n.listView)),
+                          ],
+                          selected: {map},
+                          onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
+                        ),
+                      ),
+                      // Which bus to take to get home, from here (journey planner).
+                      FilledButton.tonalIcon(
+                        onPressed: () => context.push(JourneysPage.route),
+                        icon: const Icon(Icons.home_outlined),
+                        label: Text(l10n.journeysHome),
+                      ),
                     ],
-                    selected: {map},
-                    onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
                   ),
                 ],
               ),

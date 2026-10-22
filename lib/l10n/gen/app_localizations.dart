@@ -1381,6 +1381,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'canceled'**
   String get tripDayCanceled;
+
+  /// No description provided for @journeysHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go home'**
+  String get journeysHome;
+
+  /// No description provided for @journeysSetHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Set home'**
+  String get journeysSetHome;
+
+  /// No description provided for @journeysChangeHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Change home'**
+  String get journeysChangeHome;
+
+  /// No description provided for @journeysHomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is home?'**
+  String get journeysHomeTitle;
+
+  /// No description provided for @journeysHomeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map until the pin is on your home. It is saved only on this phone.'**
+  String get journeysHomeHint;
+
+  /// No description provided for @journeysRemoveHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove home'**
+  String get journeysRemoveHome;
+
+  /// No description provided for @journeysHomeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Home saved'**
+  String get journeysHomeSaved;
+
+  /// No description provided for @journeysNoHome.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not set your home yet'**
+  String get journeysNoHome;
+
+  /// No description provided for @journeysNoHomeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set it once and Veribus tells you which bus to take to get back, from wherever you are.'**
+  String get journeysNoHomeHint;
+
+  /// No description provided for @journeysNeedPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Your position is needed to find the way home'**
+  String get journeysNeedPosition;
+
+  /// No description provided for @journeysAtHome.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already home'**
+  String get journeysAtHome;
+
+  /// No description provided for @journeysNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No way home with at most two changes'**
+  String get journeysNone;
+
+  /// No description provided for @journeysNoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At this hour the network may not reach your home. The last journey of the night, when there is one, is shown at the top.'**
+  String get journeysNoneHint;
+
+  /// No description provided for @journeysUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Journeys are not available for today'**
+  String get journeysUnavailable;
+
+  /// No description provided for @journeysUnavailableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The timetable for the planner has not been published yet. Arrivals at the stops still work.'**
+  String get journeysUnavailableHint;
+
+  /// No description provided for @journeysOpenGoogleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Google Maps'**
+  String get journeysOpenGoogleMaps;
+
+  /// No description provided for @journeysDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get journeysDirect;
+
+  /// No description provided for @journeysChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 change} other{{n} changes}}'**
+  String journeysChanges(int n);
+
+  /// No description provided for @journeysWalkOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'On foot'**
+  String get journeysWalkOnly;
+
+  /// No description provided for @journeysTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'{depart} → {arrive}'**
+  String journeysTimes(String depart, String arrive);
+
+  /// No description provided for @journeysFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from {stop}'**
+  String journeysFrom(String stop);
+
+  /// No description provided for @journeysLeaveAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave at {time}'**
+  String journeysLeaveAt(String time);
+
+  /// No description provided for @journeysWalkToStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk {minutes} min to {stop}'**
+  String journeysWalkToStop(int minutes, String stop);
+
+  /// No description provided for @journeysWalkHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk {minutes} min home'**
+  String journeysWalkHome(int minutes);
+
+  /// No description provided for @journeysWalkBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk {minutes} min to {stop}'**
+  String journeysWalkBetween(int minutes, String stop);
+
+  /// No description provided for @journeysBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Get on at {stop}, {time}'**
+  String journeysBoard(String stop, String time);
+
+  /// No description provided for @journeysAlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Get off at {stop}, {time} · {stops}'**
+  String journeysAlight(String stop, String time, String stops);
+
+  /// No description provided for @journeysStops.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 stop} other{{n} stops}}'**
+  String journeysStops(int n);
+
+  /// No description provided for @journeysWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait {minutes} min'**
+  String journeysWait(int minutes);
+
+  /// No description provided for @journeysArriveHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home around {time}'**
+  String journeysArriveHome(String time);
+
+  /// No description provided for @journeysIfMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'If you miss it: next {line} at {time}'**
+  String journeysIfMissed(String line, String time);
+
+  /// No description provided for @journeysIfMissedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'If you miss it there is no other {line} tonight'**
+  String journeysIfMissedNone(String line);
+
+  /// No description provided for @journeysLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last way home: leave by {time}'**
+  String journeysLast(String time);
+
+  /// No description provided for @journeysLastHint.
+  ///
+  /// In en, this message translates to:
+  /// **'After that there is no journey home with at most two changes.'**
+  String get journeysLastHint;
+
+  /// No description provided for @journeysChangeRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'This change worked {made} times out of {days}'**
+  String journeysChangeRecord(int made, int days);
+
+  /// No description provided for @journeysChangeNoRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'No history for this change yet'**
+  String get journeysChangeNoRecord;
+
+  /// No description provided for @journeysLongWait.
+  ///
+  /// In en, this message translates to:
+  /// **'A long wait'**
+  String get journeysLongWait;
+
+  /// No description provided for @journeysMetro.
+  ///
+  /// In en, this message translates to:
+  /// **'Metro {line}'**
+  String journeysMetro(String line);
+
+  /// No description provided for @journeysNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.'**
+  String get journeysNote;
+
+  /// No description provided for @journeysDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey'**
+  String get journeysDetails;
+
+  /// No description provided for @journeysGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This journey is no longer available: go back to the list.'**
+  String get journeysGone;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
