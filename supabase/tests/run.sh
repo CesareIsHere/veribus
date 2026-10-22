@@ -17,8 +17,14 @@ psql -U supabase_admin -d postgres -qc "grant all on storage.buckets, storage.ob
 for f in supabase/migrations/*.sql; do psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done
 
 # One route, three stops, trips T1..T5 departing from stop A at now + 10, 15, 20, 25, 30 minutes.
+# The clock is the database's (the tests compare with now()), read once. In the hour after midnight the trips belong to
+# yesterday's service day, with times past 24:00 as in a real feed: the tests move trips up to 50 minutes back, and a
+# scheduled time is never before the service day's midnight.
 G=$(mktemp -d)
-now=$(( $(TZ=Europe/Rome date +%-H) * 3600 + $(TZ=Europe/Rome date +%-M) * 60 ))
+epoch=$(psql "$DB_URL" -Atc "select extract(epoch from now())::bigint")
+day=$(TZ=Europe/Rome date -d "@$((epoch - 3600))" +%Y%m%d)
+read -r h m today <<< "$(TZ=Europe/Rome date -d "@$epoch" '+%-H %-M %Y%m%d')"
+now=$((h * 3600 + m * 60 + (today == day ? 0 : 86400)))
 hms() { printf '%02d:%02d:00' $(($1 / 3600)) $(($1 % 3600 / 60)); }
 echo "stop_id,stop_name,stop_lat,stop_lon" > "$G/stops.txt"
 printf 'A,Alfa,41.90,12.50\nB,Beta,41.91,12.50\nC,Gamma,41.92,12.50\n' >> "$G/stops.txt"
@@ -26,8 +32,9 @@ printf 'route_id,agency_id,route_short_name,route_type\nR1,OP1,64,3\nM1,OP1,MA,1
 echo "shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence" > "$G/shapes.txt"
 printf 'S1,41.90,12.50,1\nS1,41.92,12.50,2\n' >> "$G/shapes.txt"
 echo "service_id,date,exception_type" > "$G/calendar_dates.txt"
-echo "WK,$(TZ=Europe/Rome date +%Y%m%d),1" >> "$G/calendar_dates.txt"
-echo "LATER,$(TZ=Europe/Rome date -d "@$(($(date +%s) + 20 * 86400))" +%Y%m%d),1" >> "$G/calendar_dates.txt"
+echo "WK,$day,1" >> "$G/calendar_dates.txt"
+[ "$today" = "$day" ] || echo "WK,$today,1" >> "$G/calendar_dates.txt"  # the import wants service today
+echo "LATER,$(TZ=Europe/Rome date -d "@$((epoch + 20 * 86400))" +%Y%m%d),1" >> "$G/calendar_dates.txt"
 echo "route_id,service_id,trip_id,trip_headsign,direction_id,shape_id" > "$G/trips.txt"
 echo "trip_id,arrival_time,departure_time,stop_id,stop_sequence" > "$G/stop_times.txt"
 for i in 1 2 3 4 5; do
