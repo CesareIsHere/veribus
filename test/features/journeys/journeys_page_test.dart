@@ -14,11 +14,11 @@ import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/providers/shared_preferences_provider.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
-import 'package:veribus/features/journeys/home_place_page.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
 import 'package:veribus/features/journeys/journeys_page.dart';
 import 'package:veribus/features/journeys/place_search_page.dart';
 import 'package:veribus/features/journeys/providers/journeys_providers.dart';
+import 'package:veribus/features/journeys/save_place_page.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/journeys/place.dart';
@@ -69,14 +69,24 @@ Future<void> _open(
   final router = GoRouter(
     initialLocation: location ?? JourneysPage.route,
     routes: [
-      GoRoute(path: JourneysPage.route, builder: (_, _) => const JourneysPage()),
+      GoRoute(
+        path: JourneysPage.route,
+        builder: (_, state) => JourneysPage(args: state.extra is JourneysArgs ? state.extra! as JourneysArgs : null),
+      ),
       GoRoute(
         path: PlaceSearchPage.route,
         builder: (_, state) => PlaceSearchPage(
-          purpose: state.extra is PlaceSearchFor ? state.extra! as PlaceSearchFor : PlaceSearchFor.destination,
+          args: state.extra is PlaceSearchArgs ? state.extra! as PlaceSearchArgs : const PlaceSearchArgs(),
         ),
       ),
-      GoRoute(path: HomePlacePage.route, builder: (_, _) => const HomePlacePage()),
+      GoRoute(
+        path: SavePlacePage.route,
+        builder: (_, state) => SavePlacePage(
+          args: state.extra is SavePlaceArgs
+              ? state.extra! as SavePlaceArgs
+              : const SavePlaceArgs(type: PlaceType.home),
+        ),
+      ),
       GoRoute(
         path: JourneyPage.route,
         builder: (_, state) => JourneyPage(args: state.extra is JourneyArgs ? state.extra! as JourneyArgs : null),
@@ -116,10 +126,10 @@ Future<void> _open(
 Future<void> _close(WidgetTester tester) => tester.pumpWidget(const SizedBox());
 
 void main() {
-  testWidgets('without a home: set it first', (tester) async {
+  testWidgets('without a home or a destination: asks where to', (tester) async {
     await _open(tester, home: null);
-    expect(find.text('You have not set your home yet'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Set home'), findsOneWidget);
+    expect(find.text('Where to?'), findsWidgets);
+    expect(find.widgetWithText(FilledButton, 'Search for an address'), findsOneWidget);
     await _close(tester);
   });
 
@@ -134,6 +144,7 @@ void main() {
     expect(find.byType(JourneyCard), findsWidgets);
     expect(find.textContaining('Direct'), findsWidgets);
     expect(find.text('Open in Google Maps'), findsOneWidget);
+    expect(find.text('Your location'), findsOneWidget);
     // The demo 40 from Termini is canceled and the 170 suppressed: never proposed from there.
     for (final card in tester.widgetList<JourneyCard>(find.byType(JourneyCard))) {
       final first = card.journey.rides.first;
@@ -147,25 +158,24 @@ void main() {
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 500));
     }
-    expect(find.text('Journey'), findsOneWidget);
-    expect(find.textContaining('Get on at'), findsWidgets);
-    expect(find.textContaining('Home around'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
+    expect(find.textContaining('get off'), findsWidgets);
     await _close(tester);
   });
 
   testWidgets('any destination: searched by address, then its journeys', (tester) async {
     final search = _Search();
     await _open(tester, home: null, search: search);
-    await tester.tap(find.text('Where to?'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Search for an address'));
     await tester.pumpAndSettle();
-    expect(find.text('Set home'), findsOneWidget); // home comes first, to set when missing
+    expect(find.text('Set home'), findsOneWidget); // saved places come first, to set when missing
 
-    await tester.enterText(find.byType(TextField), 'pia');
-    await tester.enterText(find.byType(TextField), 'piazza ven');
+    await tester.enterText(find.byType(TextField).last, 'pia');
+    await tester.enterText(find.byType(TextField).last, 'piazza ven');
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
     expect(search.asked, ['piazza ven']); // once, after the typing stopped
-    await tester.tap(find.text('Piazza Venezia'));
+    await tester.tap(find.text('Piazza Venezia').first);
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 500));
     }
@@ -176,45 +186,55 @@ void main() {
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 500));
     }
-    expect(find.textContaining('There around'), findsOneWidget);
-    expect(find.textContaining('Home around'), findsNothing);
+    expect(find.text('Start'), findsOneWidget);
+    expect(find.textContaining('Piazza Venezia'), findsWidgets);
     await _close(tester);
   });
 
-  testWidgets('home by address: the map goes there, the user saves', (tester) async {
-    await _open(tester, home: null);
-    await tester.tap(find.widgetWithText(FilledButton, 'Set home'));
+  testWidgets('the options leave the metro out and say so on the chip', (tester) async {
+    await _open(tester, home: _venezia);
+    await tester.tap(find.widgetWithText(ActionChip, 'Options'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Search for an address'));
-    await tester.pumpAndSettle();
-    expect(find.text('Set home'), findsNothing); // searching for home itself
-    await tester.enterText(find.byType(TextField), 'piazza venezia');
-    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('When and how'), findsOneWidget);
+    await tester.tap(find.text('Use the metro'));
     await tester.pump();
-    await tester.tap(find.text('Piazza Venezia'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-    final container = ProviderScope.containerOf(tester.element(find.byType(JourneysPage)));
-    final home = container.read(homePlaceProvider)!;
-    expect(const Distance()(home, _venezia), lessThan(1));
-    // Back on the journeys page, now planning home: let it finish.
+    await tester.tap(find.text('Show journeys'));
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 500));
     }
+    expect(find.byType(JourneyCard), findsWidgets);
+    expect(find.byType(Badge), findsWidgets);
     await _close(tester);
   });
 
   testWidgets('at the chosen destination: nothing to plan', (tester) async {
     await _open(tester, home: null, from: _venezia);
-    await tester.tap(find.text('Where to?'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Search for an address'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'venezia');
+    await tester.enterText(find.byType(TextField).last, 'venezia');
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    await tester.tap(find.text('Piazza Venezia'));
+    await tester.tap(find.text('Piazza Venezia').first);
     await tester.pumpAndSettle();
     expect(find.text('You are already there'), findsOneWidget);
+    await _close(tester);
+  });
+
+  testWidgets('home by address: the map goes there, the user saves', (tester) async {
+    await _open(tester, home: null, location: SavePlacePage.route);
+    await tester.tap(find.text('Search for an address'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'piazza venezia');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    await tester.tap(find.text('Piazza Venezia').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Piazza Venezia'), findsOneWidget); // the address under the pin
+    await tester.tap(find.widgetWithText(FilledButton, 'Save home'));
+    await tester.pump();
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    final home = container.read(homePlaceProvider)!;
+    expect(const Distance()(home, _venezia), lessThan(1));
     await _close(tester);
   });
 

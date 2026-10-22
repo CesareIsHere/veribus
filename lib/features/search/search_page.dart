@@ -13,7 +13,8 @@ import 'package:veribus/models/transit/network.dart';
 import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
-/// One bar for lines and stops, searched on the phone while typing (RF-10, RF-11).
+/// Lines: every line of the network by kind of vehicle, and one bar for lines and stops, searched on the phone while
+/// typing (RF-10, RF-11).
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
@@ -39,7 +40,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Padding(
               padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.s),
               child: SearchBar(
-                hintText: l10n.searchHint,
+                hintText: l10n.linesSearchHint,
                 leading: const Icon(Icons.search),
                 trailing: const [SettingsButton()],
                 onChanged: (q) => setState(() => _query = q),
@@ -49,9 +50,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               child: switch (network) {
                 AsyncValue(:final value?) => Builder(
                   builder: (context) {
-                    if (_query.trim().isEmpty) {
-                      return MessageView(icon: Icons.search, title: l10n.searchEmpty);
-                    }
+                    if (_query.trim().isEmpty) return _AllLines(network: value, noRealtime: noRealtime);
                     final r = value.search(_query);
                     if (r.lines.isEmpty && r.stops.isEmpty) {
                       return MessageView(icon: Icons.search_off, title: l10n.searchNoResults);
@@ -73,6 +72,56 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Every line of the network, bus then tram then night buses, each with where it goes.
+class _AllLines extends StatelessWidget {
+  const _AllLines({required this.network, required this.noRealtime});
+
+  final Network network;
+  final Set<String> noRealtime;
+
+  /// "2" before "10" before "8BUS" before "n1": numbers by value, then by letters.
+  static int _compare(Line a, Line b) {
+    final (x, y) = (int.tryParse(a.name), int.tryParse(b.name));
+    if (x != null && y != null) return x.compareTo(y);
+    if (x != null) return -1;
+    if (y != null) return 1;
+    return a.name.compareTo(b.name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final groups = [
+      (l10n.linesBus, TransitKind.bus),
+      (l10n.linesTram, TransitKind.tram),
+      (l10n.linesNight, TransitKind.night),
+    ];
+    final items = <Object>[
+      for (final (title, kind) in groups) ...[
+        ...() {
+          final lines = network.lines.values.where((l) => TransitKind.ofLine(l) == kind).toList()..sort(_compare);
+          return lines.isEmpty ? const <Object>[] : <Object>[title, ...lines];
+        }(),
+      ],
+    ];
+    return ListView.builder(
+      padding: context.listPadding(),
+      itemCount: items.length,
+      itemBuilder: (context, i) => switch (items[i]) {
+        final String title => SectionHeader(title),
+        final Line line => ListTile(
+          leading: LineBadge(line.name, kind: TransitKind.ofLine(line), withoutRealtime: noRealtime.contains(line.id)),
+          title: Text(line.ends, maxLines: 2, overflow: TextOverflow.ellipsis),
+          subtitle: noRealtime.contains(line.id) ? Text(l10n.withoutRealtime) : null,
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(LinePage.route(line.id)),
+        ),
+        _ => const SizedBox.shrink(),
+      },
     );
   }
 }

@@ -198,4 +198,35 @@ void main() {
     );
     expect(late.single.arrive, _hm('10:15'), reason: 'the 10:00 now arrives at 10:20: the 10:05 overtakes it');
   });
+
+  test('the metro and the night buses can be left out: the planner takes the slower way that is left', () async {
+    final trips = [
+      _trip('M', ['A', 'D'], ['10:00', '10:10']),
+      _trip('N', ['A', 'D'], ['10:00', '10:15']),
+      _trip('B', ['A', 'D'], ['10:02', '10:30']),
+    ];
+    final timetable = buildTimetable(
+      date: 20261020,
+      stops: _stops,
+      trips: trips,
+      lines: {
+        'M': (name: 'A', type: Timetable.metro),
+        'N': (name: 'n1', type: Timetable.bus),
+        'B': (name: '40', type: Timetable.bus),
+      },
+    );
+    final planner = JourneyPlanner(timetable, _realtime(const {}));
+    Future<String> fastest(JourneyFilter filter) async {
+      final plan = await planner.plan(from: _near('A'), to: _near('D'), at: _at('09:55'), options: 1, filter: filter);
+      return _describe(timetable, plan.first);
+    }
+
+    expect(await fastest(allTransport), 'A@00');
+    expect(await fastest((metro: false, night: true)), 'n1@00');
+    expect(await fastest((metro: false, night: false)), '40@02');
+    expect(
+      planner.lastJourney(from: _near('A'), to: _near('D'), at: _at('09:55'), filter: (metro: false, night: false)),
+      isNotNull,
+    );
+  });
 }

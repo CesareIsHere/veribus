@@ -230,10 +230,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get appUpdatesBody => 'Scarica l\'ultima versione dalle release di GitHub';
 
   @override
-  String get nearby => 'Vicino a me';
+  String get nearby => 'Esplora';
 
   @override
-  String get search => 'Cerca';
+  String get search => 'Linee';
 
   @override
   String get favorites => 'Preferiti';
@@ -961,4 +961,184 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get journeysGone => 'Questo percorso non è più disponibile: torna all\'elenco.';
+
+  @override
+  String get journeysYourPosition => 'La tua posizione';
+
+  @override
+  String get journeysSwap => 'Inverti partenza e arrivo';
+
+  @override
+  String get journeysNow => 'Parti ora';
+
+  @override
+  String journeysDepartAt(String time) {
+    return 'Parti alle $time';
+  }
+
+  @override
+  String get journeysOptions => 'Opzioni';
+
+  @override
+  String get journeysOptionsTitle => 'Quando e come';
+
+  @override
+  String get journeysWhen => 'Quando';
+
+  @override
+  String get journeysDay => 'Giorno';
+
+  @override
+  String get journeysTime => 'Ora';
+
+  @override
+  String get journeysToday => 'Oggi';
+
+  @override
+  String get journeysTomorrow => 'Domani';
+
+  @override
+  String get journeysUseMetro => 'Usa la metro';
+
+  @override
+  String get journeysUseNight => 'Includi i notturni';
+
+  @override
+  String get journeysReset => 'Ripristina';
+
+  @override
+  String get journeysShow => 'Mostra percorsi';
+
+  @override
+  String journeysWalkTotal(int minutes) {
+    return '$minutes min a piedi';
+  }
+
+  @override
+  String journeysDurationHm(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String get journeysRemind => 'Ricordamelo';
+
+  @override
+  String journeysWalkMinutes(int minutes) {
+    return 'Cammina $minutes min';
+  }
+
+  @override
+  String get journeysGetOff => 'scendi';
+
+  @override
+  String journeysChangeAt(String stop) {
+    return 'Cambio a $stop';
+  }
+
+  @override
+  String journeysChangeTimes(int walk, int wait) {
+    return '$walk min a piedi · $wait min di attesa';
+  }
+
+  @override
+  String get journeysStart => 'Avvia';
+
+  @override
+  String journeysIntermediate(String stops, int minutes) {
+    return '$stops · $minutes min';
+  }
+
+  @override
+  String journeysStartFrom(String line, String when, String stop) {
+    return '$line $when da $stop';
+  }
+
+  @override
+  String journeysInMinutes(int minutes) {
+    return 'fra $minutes min';
+  }
+
+  @override
+  String get journeysLeaveAtLabel => 'Parti alle';
+
+  @override
+  String get journeysWorkPlace => 'Lavoro';
+
+  @override
+  String get journeysSetWork => 'Imposta lavoro';
+
+  @override
+  String get journeysPlacesSection => 'Indirizzi e luoghi';
+
+  @override
+  String get journeysStopsSection => 'Fermate';
+
+  @override
+  String get journeysFromLabel => 'Da';
+
+  @override
+  String get journeysToLabel => 'A';
+
+  @override
+  String get journeysSavedSection => 'Luoghi salvati';
+
+  @override
+  String get journeysSaveAs => 'Salva come';
+
+  @override
+  String get journeysSaveHome => 'Salva Casa';
+
+  @override
+  String get journeysSaveWork => 'Salva Lavoro';
+
+  @override
+  String get journeysSaveHint =>
+      'Trascina la mappa se il segnaposto non è sul portone. Resta salvato solo su questo telefono.';
+
+  @override
+  String get journeysWorkSaved => 'Lavoro salvato';
+
+  @override
+  String get journeysRemoveWork => 'Rimuovi Lavoro';
+
+  @override
+  String get journeysPinPlace => 'Posizione sulla mappa';
+
+  @override
+  String get journeysAddPlace => 'Aggiungi un luogo';
+
+  @override
+  String get exploreNearYou => 'Vicino a te';
+
+  @override
+  String exploreWalk(int minutes, int meters) {
+    return '$minutes min a piedi · $meters m';
+  }
+
+  @override
+  String get exploreAll => 'Tutti';
+
+  @override
+  String get exploreBus => 'Bus';
+
+  @override
+  String get exploreTram => 'Tram';
+
+  @override
+  String get exploreProfile => 'Profilo e impostazioni';
+
+  @override
+  String get linesTitle => 'Linee';
+
+  @override
+  String get linesBus => 'Bus';
+
+  @override
+  String get linesTram => 'Tram';
+
+  @override
+  String get linesNight => 'Notturni';
+
+  @override
+  String get linesSearchHint => 'Cerca una linea o una palina';
 }

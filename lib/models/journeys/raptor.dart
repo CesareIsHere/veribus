@@ -90,6 +90,8 @@ class Raptor {
   /// The origins and destinations are stops with the walk to or from the place: usually those within a few hundred
   /// metres.
   ///
+  /// Routes in [blockedRoutes] are never boarded (the traveller does not want the metro, or the night buses).
+  ///
   /// With [realtime], removed trips are never taken and delayed ones run at their delayed times. Delays can make a
   /// trip overtake another one of its route: the routes they touch are scanned trip by trip instead of searched.
   List<Journey> search({
@@ -98,6 +100,7 @@ class Raptor {
     required int departure,
     int maxRides = 3,
     Realtime realtime = const Realtime(),
+    Set<int> blockedRoutes = const {},
   }) {
     final tt = timetable;
     final n = tt.stopCount;
@@ -178,6 +181,10 @@ class Raptor {
 
       final rode = <int>[];
       for (final r in touched) {
+        if (blockedRoutes.contains(r)) {
+          routeFrom[r] = -1;
+          continue;
+        }
         var trip = -1;
         var boardPos = 0;
         final length = tt.routeLength(r);

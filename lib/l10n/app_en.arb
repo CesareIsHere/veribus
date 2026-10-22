@@ -1,5 +1,4 @@
 {
-  "@@locale": "en",
   "about": "About",
   "account": "Account",
   "appTitle": "Veribus",
@@ -73,8 +72,8 @@
   "version": "Version",
   "appUpdates": "App updates",
   "appUpdatesBody": "Download the latest version from the GitHub releases",
-  "nearby": "Nearby",
-  "search": "Search",
+  "nearby": "Explore",
+  "search": "Lines",
   "favorites": "Favorites",
   "alerts": "Alerts",
   "mapView": "Map",
@@ -718,5 +717,146 @@
   },
   "journeysNote": "Walking from you to the first stop and from the last stop to the destination is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.",
   "journeysDetails": "Journey",
-  "journeysGone": "This journey is no longer available: go back to the list."
+  "journeysGone": "This journey is no longer available: go back to the list.",
+  "journeysYourPosition": "Your location",
+  "journeysSwap": "Swap start and destination",
+  "journeysNow": "Leave now",
+  "journeysDepartAt": "Leave at {time}",
+  "@journeysDepartAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysOptions": "Options",
+  "journeysOptionsTitle": "When and how",
+  "journeysWhen": "When",
+  "journeysDay": "Day",
+  "journeysTime": "Time",
+  "journeysToday": "Today",
+  "journeysTomorrow": "Tomorrow",
+  "journeysUseMetro": "Use the metro",
+  "journeysUseNight": "Include night buses",
+  "journeysReset": "Reset",
+  "journeysShow": "Show journeys",
+  "journeysWalkTotal": "{minutes} min on foot",
+  "@journeysWalkTotal": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysDurationHm": "{hours} h {minutes} min",
+  "@journeysDurationHm": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysRemind": "Remind me",
+  "journeysWalkMinutes": "Walk {minutes} min",
+  "@journeysWalkMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysGetOff": "get off",
+  "journeysChangeAt": "Change at {stop}",
+  "@journeysChangeAt": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysChangeTimes": "{walk} min on foot · {wait} min wait",
+  "@journeysChangeTimes": {
+    "placeholders": {
+      "walk": {
+        "type": "int"
+      },
+      "wait": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysStart": "Start",
+  "journeysIntermediate": "{stops} · {minutes} min",
+  "@journeysIntermediate": {
+    "placeholders": {
+      "stops": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysStartFrom": "{line} {when} from {stop}",
+  "@journeysStartFrom": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "journeysInMinutes": "in {minutes} min",
+  "@journeysInMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "journeysLeaveAtLabel": "Leave at",
+  "journeysWorkPlace": "Work",
+  "journeysSetWork": "Set work",
+  "journeysPlacesSection": "Addresses and places",
+  "journeysStopsSection": "Stops",
+  "journeysFromLabel": "From",
+  "journeysToLabel": "To",
+  "journeysSavedSection": "Saved places",
+  "journeysSaveAs": "Save as",
+  "journeysSaveHome": "Save home",
+  "journeysSaveWork": "Save work",
+  "journeysSaveHint": "Drag the map if the pin is not on the door. It is saved only on this phone.",
+  "journeysWorkSaved": "Work saved",
+  "journeysRemoveWork": "Remove work",
+  "journeysPinPlace": "Place on the map",
+  "journeysAddPlace": "Add a place",
+  "exploreNearYou": "Near you",
+  "exploreWalk": "{minutes} min on foot · {meters} m",
+  "@exploreWalk": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreAll": "All",
+  "exploreBus": "Bus",
+  "exploreTram": "Tram",
+  "exploreProfile": "Profile and settings",
+  "linesTitle": "Lines",
+  "linesBus": "Buses",
+  "linesTram": "Trams",
+  "linesNight": "Night buses",
+  "linesSearchHint": "Search for a line or a stop"
 }

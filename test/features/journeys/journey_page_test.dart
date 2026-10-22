@@ -80,8 +80,8 @@ void main() {
             args: JourneyArgs(
               planner: planner,
               journey: journey,
-              from: from,
-              to: const Place(name: 'Home', point: to, isHome: true),
+              from: const Place(name: 'Your location', point: from),
+              to: const Place(name: 'Home', point: to, type: PlaceType.home),
             ),
           ),
         ),
@@ -89,14 +89,17 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('1 change'), findsNothing); // the header joins duration and changes
-    expect(find.textContaining('1 change'), findsOneWidget);
-    expect(find.text('Get on at STOP A, 10:00'), findsOneWidget);
-    expect(find.text('Get off at STOP B, 10:10 · 1 stop'), findsOneWidget);
-    expect(find.text('Wait 5 min'), findsOneWidget);
+    expect(find.textContaining('1 change'), findsOneWidget); // the header joins duration and changes
+    // Each ride boards and alights at its stops, on the rail.
+    expect(find.text('STOP A'), findsOneWidget);
+    expect(find.textContaining('STOP B'), findsWidgets);
+    expect(find.textContaining('get off'), findsWidgets);
+    // The change card: the wait, how often it worked, what to take if it is missed.
+    expect(find.text('Change at STOP B'), findsOneWidget);
+    expect(find.textContaining('5 min wait'), findsOneWidget);
     // The mock history has the same delays for both trips: with five minutes to spare, every tracked day worked.
     expect(find.text('This change worked 10 times out of 10'), findsOneWidget);
     expect(find.text('If you miss it: next Y at 10:30'), findsOneWidget);
-    expect(find.textContaining('Home around'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
   });
 }
