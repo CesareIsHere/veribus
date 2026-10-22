@@ -230,10 +230,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get appUpdatesBody => 'Scarica l\'ultima versione dalle release di GitHub';
 
   @override
-  String get nearby => 'Vicino a me';
+  String get nearby => 'Esplora';
 
   @override
-  String get search => 'Cerca';
+  String get search => 'Linee';
 
   @override
   String get favorites => 'Preferiti';
@@ -442,12 +442,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get searchHint => 'Linea o palina';
-
-  @override
-  String get searchEmpty => 'La ricerca lavora sul telefono: i risultati compaiono mentre scrivi.';
-
-  @override
   String get searchNoResults => 'Nessun risultato. Controlla il codice scritto sulla palina.';
 
   @override
@@ -464,9 +458,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get backToMyPosition => 'Torna sulla mia posizione';
-
-  @override
-  String get zoomInForStops => 'Avvicinati per vedere le fermate';
 
   @override
   String get noStopsNearby => 'Nessuna fermata entro 1 km';
@@ -762,16 +753,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tripDayCanceled => 'cancellata';
 
   @override
-  String get journeysTitle => 'Percorsi';
-
-  @override
   String get journeysHomePlace => 'Casa';
 
   @override
   String get journeysWhereTo => 'Dove vai?';
-
-  @override
-  String get journeysChangeDestination => 'Cambia';
 
   @override
   String get journeysAlreadyThere => 'Sei già arrivato';
@@ -783,9 +768,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journeysSearchAddress => 'Cerca un indirizzo';
 
   @override
-  String get journeysSearchEmpty => 'Scrivi un indirizzo o il nome di un luogo';
-
-  @override
   String get journeysSearchNone => 'Nessun indirizzo trovato a Roma';
 
   @override
@@ -795,23 +777,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journeysSetHome => 'Imposta casa';
 
   @override
-  String get journeysChangeHome => 'Cambia casa';
-
-  @override
-  String get journeysHomeTitle => 'Dov\'è casa?';
-
-  @override
-  String get journeysHomeHint =>
-      'Cerca l\'indirizzo, oppure sposta la mappa finché il segnaposto è su casa tua. Resta salvata solo su questo telefono.';
-
-  @override
   String get journeysRemoveHome => 'Rimuovi casa';
 
   @override
   String get journeysHomeSaved => 'Casa salvata';
-
-  @override
-  String get journeysNoHome => 'Non hai ancora impostato casa';
 
   @override
   String get journeysNoHomeHint =>
@@ -863,49 +832,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String journeysLeaveAt(String time) {
-    return 'Esci alle $time';
-  }
-
-  @override
-  String journeysWalkToStop(int minutes, String stop) {
-    return 'A piedi $minutes min fino a $stop';
-  }
-
-  @override
-  String journeysWalkHome(int minutes) {
-    return 'A piedi $minutes min fino a casa';
-  }
-
-  @override
-  String journeysWalkToDestination(int minutes) {
-    return 'A piedi $minutes min fino alla destinazione';
-  }
-
-  @override
-  String journeysWalkBetween(int minutes, String stop) {
-    return 'A piedi $minutes min fino a $stop';
-  }
-
-  @override
-  String journeysBoard(String stop, String time) {
-    return 'Sali a $stop, $time';
-  }
-
-  @override
-  String journeysAlight(String stop, String time, String stops) {
-    return 'Scendi a $stop, $time · $stops';
-  }
-
-  @override
   String journeysStops(int n) {
     String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n fermate', one: '1 fermata');
     return '$_temp0';
-  }
-
-  @override
-  String journeysWait(int minutes) {
-    return 'Attesa $minutes min';
   }
 
   @override
@@ -961,4 +890,237 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get journeysGone => 'Questo percorso non è più disponibile: torna all\'elenco.';
+
+  @override
+  String get journeysYourPosition => 'La tua posizione';
+
+  @override
+  String get journeysSwap => 'Inverti partenza e arrivo';
+
+  @override
+  String get journeysNow => 'Parti ora';
+
+  @override
+  String journeysDepartAt(String time) {
+    return 'Parti alle $time';
+  }
+
+  @override
+  String get journeysOptions => 'Opzioni';
+
+  @override
+  String get journeysOptionsTitle => 'Quando e come';
+
+  @override
+  String get journeysToday => 'Oggi';
+
+  @override
+  String get journeysTomorrow => 'Domani';
+
+  @override
+  String get journeysUseMetro => 'Usa la metro';
+
+  @override
+  String get journeysUseNight => 'Includi i notturni';
+
+  @override
+  String get journeysReset => 'Ripristina';
+
+  @override
+  String get journeysShow => 'Mostra percorsi';
+
+  @override
+  String journeysWalkTotal(int minutes) {
+    return '$minutes min a piedi';
+  }
+
+  @override
+  String journeysDurationHm(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String get journeysRemind => 'Ricordamelo';
+
+  @override
+  String journeysWalkMinutes(int minutes) {
+    return 'Cammina $minutes min';
+  }
+
+  @override
+  String get journeysGetOff => 'scendi';
+
+  @override
+  String journeysChangeAt(String stop) {
+    return 'Cambio a $stop';
+  }
+
+  @override
+  String journeysChangeTimes(int walk, int wait) {
+    return '$walk min a piedi · $wait min di attesa';
+  }
+
+  @override
+  String get journeysStart => 'Avvia';
+
+  @override
+  String journeysIntermediate(String stops, int minutes) {
+    return '$stops · $minutes min';
+  }
+
+  @override
+  String journeysInMinutes(int minutes) {
+    return 'fra $minutes min';
+  }
+
+  @override
+  String get journeysLeaveAtLabel => 'Parti alle';
+
+  @override
+  String get journeysWorkPlace => 'Lavoro';
+
+  @override
+  String get journeysSetWork => 'Imposta lavoro';
+
+  @override
+  String get journeysPlacesSection => 'Indirizzi e luoghi';
+
+  @override
+  String get journeysStopsSection => 'Fermate';
+
+  @override
+  String get journeysFromLabel => 'Da';
+
+  @override
+  String get journeysToLabel => 'A';
+
+  @override
+  String get journeysSavedSection => 'Luoghi salvati';
+
+  @override
+  String get journeysSaveAs => 'Salva come';
+
+  @override
+  String get journeysSaveHome => 'Salva Casa';
+
+  @override
+  String get journeysSaveWork => 'Salva Lavoro';
+
+  @override
+  String get journeysSaveHint =>
+      'Trascina la mappa se il segnaposto non è sul portone. Resta salvato solo su questo telefono.';
+
+  @override
+  String get journeysWorkSaved => 'Lavoro salvato';
+
+  @override
+  String get journeysRemoveWork => 'Rimuovi Lavoro';
+
+  @override
+  String get journeysPinPlace => 'Posizione sulla mappa';
+
+  @override
+  String get exploreNearYou => 'Vicino a te';
+
+  @override
+  String exploreWalk(int minutes, int meters) {
+    return '$minutes min a piedi · $meters m';
+  }
+
+  @override
+  String get exploreAll => 'Tutti';
+
+  @override
+  String get exploreBus => 'Bus';
+
+  @override
+  String get exploreTram => 'Tram';
+
+  @override
+  String get exploreProfile => 'Profilo e impostazioni';
+
+  @override
+  String get linesBus => 'Bus';
+
+  @override
+  String get linesTram => 'Tram';
+
+  @override
+  String get linesNight => 'Notturni';
+
+  @override
+  String get linesSearchHint => 'Cerca una linea o una palina';
+
+  @override
+  String get lineYourStop => 'La tua fermata';
+
+  @override
+  String get stopDirectionsHere => 'Indicazioni fin qui';
+
+  @override
+  String tripWalkTo(String place) {
+    return 'Cammina fino a $place';
+  }
+
+  @override
+  String tripDistance(int meters, int minutes) {
+    return '$meters m · $minutes min';
+  }
+
+  @override
+  String tripYourLine(String line, String when) {
+    return 'Il tuo $line passa $when';
+  }
+
+  @override
+  String tripBoard(String line) {
+    return 'Sali sul $line';
+  }
+
+  @override
+  String tripWaitHere(String headsign) {
+    return '$headsign, in arrivo qui';
+  }
+
+  @override
+  String tripGetOffIn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n fermate', one: '1 fermata');
+    return 'Scendi fra $_temp0';
+  }
+
+  @override
+  String get tripGetOffNext => 'Scendi alla prossima';
+
+  @override
+  String tripGetOffAt(String stop, String time) {
+    return 'a $stop · $time';
+  }
+
+  @override
+  String tripThenNoWalk(String line, String time) {
+    return 'Poi $line alle $time';
+  }
+
+  @override
+  String get tripArrived => 'Sei arrivato';
+
+  @override
+  String get tripEnd => 'Termina';
+
+  @override
+  String get tripAllSteps => 'Tutti i passaggi';
+
+  @override
+  String get tripAlertHint => 'Il telefono vibra una fermata prima, con lo schermo acceso.';
+
+  @override
+  String get tripAlertTitle => 'Scendi alla prossima';
+
+  @override
+  String get tripNeedPosition => 'Serve la posizione per seguirti passo per passo';
+
+  @override
+  String tripAtTime(String time) {
+    return 'alle $time';
+  }
 }

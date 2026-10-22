@@ -8,14 +8,14 @@ part of 'journeys_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Home, saved only on the phone ("lat,lon"), like the favorites. Null until the user sets it.
+/// Home.
 
 @ProviderFor(HomePlace)
 final homePlaceProvider = HomePlaceProvider._();
 
-/// Home, saved only on the phone ("lat,lon"), like the favorites. Null until the user sets it.
+/// Home.
 final class HomePlaceProvider extends $NotifierProvider<HomePlace, LatLng?> {
-  /// Home, saved only on the phone ("lat,lon"), like the favorites. Null until the user sets it.
+  /// Home.
   HomePlaceProvider._()
     : super(
         from: null,
@@ -40,9 +40,9 @@ final class HomePlaceProvider extends $NotifierProvider<HomePlace, LatLng?> {
   }
 }
 
-String _$homePlaceHash() => r'1aa10d1afce1b89dbb8c54316f3fbd1de2e6cf81';
+String _$homePlaceHash() => r'2117842b1a0fa7b3034af1044a0a4343e526c365';
 
-/// Home, saved only on the phone ("lat,lon"), like the favorites. Null until the user sets it.
+/// Home.
 
 abstract class _$HomePlace extends $Notifier<LatLng?> {
   LatLng? build();
@@ -55,49 +55,49 @@ abstract class _$HomePlace extends $Notifier<LatLng?> {
   }
 }
 
-/// Where the journeys page plans to: null is home. Back to home every time the page is opened again.
+/// Work.
 
-@ProviderFor(JourneyDestination)
-final journeyDestinationProvider = JourneyDestinationProvider._();
+@ProviderFor(WorkPlace)
+final workPlaceProvider = WorkPlaceProvider._();
 
-/// Where the journeys page plans to: null is home. Back to home every time the page is opened again.
-final class JourneyDestinationProvider extends $NotifierProvider<JourneyDestination, Place?> {
-  /// Where the journeys page plans to: null is home. Back to home every time the page is opened again.
-  JourneyDestinationProvider._()
+/// Work.
+final class WorkPlaceProvider extends $NotifierProvider<WorkPlace, LatLng?> {
+  /// Work.
+  WorkPlaceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'journeyDestinationProvider',
-        isAutoDispose: true,
+        name: r'workPlaceProvider',
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$journeyDestinationHash();
+  String debugGetCreateSourceHash() => _$workPlaceHash();
 
   @$internal
   @override
-  JourneyDestination create() => JourneyDestination();
+  WorkPlace create() => WorkPlace();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Place? value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<Place?>(value));
+  Override overrideWithValue(LatLng? value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<LatLng?>(value));
   }
 }
 
-String _$journeyDestinationHash() => r'b6992f9d2ecc7ce427182856c58089ca518cd1c3';
+String _$workPlaceHash() => r'bb2fe63ef103e42f5577809f83a7d051ac2a2ed6';
 
-/// Where the journeys page plans to: null is home. Back to home every time the page is opened again.
+/// Work.
 
-abstract class _$JourneyDestination extends $Notifier<Place?> {
-  Place? build();
+abstract class _$WorkPlace extends $Notifier<LatLng?> {
+  LatLng? build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<Place?, Place?>;
-    final element = ref.element as $ClassProviderElement<AnyNotifier<Place?, Place?>, Place?, Object?, Object?>;
+    final ref = this.ref as $Ref<LatLng?, LatLng?>;
+    final element = ref.element as $ClassProviderElement<AnyNotifier<LatLng?, LatLng?>, LatLng?, Object?, Object?>;
     return element.handleCreate(ref, build);
   }
 }
@@ -134,7 +134,7 @@ final class RecentPlacesProvider extends $NotifierProvider<RecentPlaces, List<Pl
   }
 }
 
-String _$recentPlacesHash() => r'3173bdc8b532115362ad4afbf0fdec97e9b10647';
+String _$recentPlacesHash() => r'6b3068802499340474452aae9f033c0594e5ee33';
 
 /// The last places chosen as destination, newest first, saved only on the phone like home.
 
@@ -300,28 +300,30 @@ final class JourneyPlannerFamily extends $Family with $FunctionalFamilyOverride<
   String toString() => r'journeyPlannerProvider';
 }
 
-/// Recomputed every minute while the page is open: departures pass and the realtime changes. Null when the
-/// timetable of today is not available.
+/// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
+/// realtime changes. Null when the timetable of that day is not available.
 
 @ProviderFor(plannedTrip)
 final plannedTripProvider = PlannedTripFamily._();
 
-/// Recomputed every minute while the page is open: departures pass and the realtime changes. Null when the
-/// timetable of today is not available.
+/// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
+/// realtime changes. Null when the timetable of that day is not available.
 
 final class PlannedTripProvider
     extends $FunctionalProvider<AsyncValue<PlannedTrip?>, PlannedTrip?, FutureOr<PlannedTrip?>>
     with $FutureModifier<PlannedTrip?>, $FutureProvider<PlannedTrip?> {
-  /// Recomputed every minute while the page is open: departures pass and the realtime changes. Null when the
-  /// timetable of today is not available.
-  PlannedTripProvider._({required PlannedTripFamily super.from, required (LatLng, LatLng) super.argument})
-    : super(
-        retry: null,
-        name: r'plannedTripProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  /// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
+  /// realtime changes. Null when the timetable of that day is not available.
+  PlannedTripProvider._({
+    required PlannedTripFamily super.from,
+    required (LatLng, LatLng, DateTime?, JourneyFilter) super.argument,
+  }) : super(
+         retry: null,
+         name: r'plannedTripProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$plannedTripHash();
@@ -339,8 +341,8 @@ final class PlannedTripProvider
 
   @override
   FutureOr<PlannedTrip?> create(Ref ref) {
-    final argument = this.argument as (LatLng, LatLng);
-    return plannedTrip(ref, argument.$1, argument.$2);
+    final argument = this.argument as (LatLng, LatLng, DateTime?, JourneyFilter);
+    return plannedTrip(ref, argument.$1, argument.$2, argument.$3, argument.$4);
   }
 
   @override
@@ -354,12 +356,13 @@ final class PlannedTripProvider
   }
 }
 
-String _$plannedTripHash() => r'461de9a7be0ce498383690c62737afb1d7d6d93e';
+String _$plannedTripHash() => r'e99fbf099fc8dc42d226de59f1166d2949903e05';
 
-/// Recomputed every minute while the page is open: departures pass and the realtime changes. Null when the
-/// timetable of today is not available.
+/// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
+/// realtime changes. Null when the timetable of that day is not available.
 
-final class PlannedTripFamily extends $Family with $FunctionalFamilyOverride<FutureOr<PlannedTrip?>, (LatLng, LatLng)> {
+final class PlannedTripFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<PlannedTrip?>, (LatLng, LatLng, DateTime?, JourneyFilter)> {
   PlannedTripFamily._()
     : super(
         retry: null,
@@ -369,10 +372,11 @@ final class PlannedTripFamily extends $Family with $FunctionalFamilyOverride<Fut
         isAutoDispose: true,
       );
 
-  /// Recomputed every minute while the page is open: departures pass and the realtime changes. Null when the
-  /// timetable of today is not available.
+  /// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
+  /// realtime changes. Null when the timetable of that day is not available.
 
-  PlannedTripProvider call(LatLng from, LatLng to) => PlannedTripProvider._(argument: (from, to), from: this);
+  PlannedTripProvider call(LatLng from, LatLng to, DateTime? at, JourneyFilter filter) =>
+      PlannedTripProvider._(argument: (from, to, at, filter), from: this);
 
   @override
   String toString() => r'plannedTripProvider';

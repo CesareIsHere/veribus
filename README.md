@@ -71,16 +71,26 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
 - **Followed trips**: pick the exact trips you care about (say the 17:10 and 17:25 of line 64 at your stop), the weekdays
   they matter on, and up to three lead times (15, 10 and 5 minutes before). Veribus notifies you, even with the app closed,
   when the bus is about to pass, and when something happens to it: canceled, standing still, signal lost.
-- **Line detail**: every stop in order with the vehicles between them, or the whole route on a map.
+- **Line detail**: every stop in order on a rail in the color of the line, with the vehicles between them and the stop
+  you came from marked, or the whole route on a map.
 - **Daily timetable** by line, direction and day, from a stop or from a line (any stop along it).
-- **Search** for lines and stops, running entirely on the phone, from its tab or straight from Nearby.
-- **Journeys**: from where you are to the home saved on your phone (set on the map or by address) or to any address or
-  place searched by name, which bus (or metro) to take, with at most two changes. The last destinations stay on the
-  phone. Each journey says the state of its first bus in the same words as the stop page, canceled and suppressed
-  trips are left out, late ones run at their predicted time, and each change says how often it worked in the last
-  30 days and what to take if it is missed. When the service ends soon, the last journey comes first. The planner
-  (RAPTOR) runs on the phone over one day of the network, metro included (0.6–0.8 MB a day): see
-  [`tool/journeys`](tool/journeys/README.md).
+- **Lines**: every line by kind (bus, tram, night buses), and one search for lines and stops that runs entirely on the
+  phone.
+- **Explore**: the home is the map with "Where to?" on top, **Home** and **Work** one tap away (with how long the
+  fastest journey takes from here) and the arrivals of the stops around you in a sheet that rises over the map.
+- **Journeys**: from where you are (or any place) to home, work or any address or place searched by name, which bus,
+  tram or metro to take, with at most two changes, now or at a time you choose, with or without the metro and the night
+  buses. Addresses are found with Photon; home and work are placed on the map (or found by address) and saved only on
+  the phone, like the last destinations. Each journey says in one look how long it takes, with which lines, and the
+  state of its first bus in the same words as the stop page; canceled and suppressed trips are left out, late ones run
+  at their predicted time. The journey is drawn on the map along the streets of the lines and told leg by leg on a rail:
+  each change says how long to wait, how often it worked in the last 30 days and what to take if it is missed. When the
+  service ends soon, the last journey comes first, with a reminder. The planner (RAPTOR) runs on the phone over one day
+  of the network, metro included (0.6–0.8 MB a day): see [`tool/journeys`](tool/journeys/README.md).
+- **Follow a journey** ("Start"): one instruction at a time (walk to this stop, get on this bus, get off in 3 stops),
+  with the state of the bus. A stop before the one to get off at the phone vibrates and shows a notice. It works with
+  the app open and the screen on: it asks the position only while it is in front, so with the screen off it does not
+  track you (that would need a foreground service, not built).
 - **Favorites** for stops and lines (favorite stops first in the nearby list), and a dedicated **Alerts** section
   (severity is told by icon and text) filtered by line.
 - **Honest signals**: cancelled trips, vehicles that stopped transmitting, stuck vehicles, old GPS fixes, late data,

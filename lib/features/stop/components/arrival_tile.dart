@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:veribus/core/widgets/line_chip.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/transit/live.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// How an arrival is said: the only place that turns status, signal and time into words and style (wireframe
@@ -70,35 +72,25 @@ List<Arrival> firstPerLine(List<Arrival> arrivals) {
   ];
 }
 
-/// Line number in a rounded box; muted when the line never transmits positions (RF-35).
+/// A line in a list: its chip. Muted when the line never transmits positions (RF-35) or its trip is gone.
 class LineBadge extends StatelessWidget {
-  const LineBadge(this.name, {this.withoutRealtime = false, this.muted = false, super.key});
+  const LineBadge(
+    this.name, {
+    this.kind = TransitKind.bus,
+    this.withoutRealtime = false,
+    this.muted = false,
+    this.large = false,
+    super.key,
+  });
 
   final String name;
+  final TransitKind kind;
   final bool withoutRealtime;
   final bool muted;
+  final bool large;
 
   @override
-  Widget build(BuildContext context) {
-    final color = muted || withoutRealtime ? context.colors.onSurfaceVariant : context.colors.onSurface;
-    return Container(
-      constraints: const BoxConstraints(minWidth: Spacing.xxxl + Spacing.s, minHeight: Spacing.xxl),
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.s),
-      decoration: BoxDecoration(
-        border: Border.all(color: withoutRealtime ? context.colors.outlineVariant : color, width: 1.5),
-        borderRadius: BorderRadius.circular(Spacing.s),
-      ),
-      // widthFactor 1: as wide as the name (at least the min width), not the whole row.
-      child: Center(
-        widthFactor: 1,
-        heightFactor: 1,
-        child: Text(
-          name,
-          style: context.textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.w700),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => LineChip(name, kind: kind, muted: muted || withoutRealtime, large: large);
 }
 
 class StatusTag extends StatelessWidget {
@@ -110,7 +102,7 @@ class StatusTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final (bg, fg) = switch (status) {
-      ArrivalStatus.confirmed => (c.primary, c.onPrimary),
+      ArrivalStatus.confirmed => (context.appColors.successContainer, context.appColors.onSuccessContainer),
       ArrivalStatus.uncertain => (c.tertiaryContainer, c.onTertiaryContainer),
       ArrivalStatus.scheduled => (c.surfaceContainerHighest, c.onSurfaceVariant),
       ArrivalStatus.canceled || ArrivalStatus.suppressed => (c.errorContainer, c.onErrorContainer),
@@ -123,7 +115,8 @@ class StatusTag extends StatelessWidget {
   }
 }
 
-/// Time text styled by status: bold minutes when confirmed, dotted when uncertain, struck through when gone.
+/// Time text styled by status: bold green minutes with the live icon when confirmed, dotted when uncertain, struck
+/// through when gone. The color is never alone: the status tag and the reason say the same in words.
 class ArrivalTime extends StatelessWidget {
   const ArrivalTime(this.arrival, {this.large = true, super.key});
 
@@ -138,13 +131,14 @@ class ArrivalTime extends StatelessWidget {
     final base = !large
         ? context.textTheme.titleSmall
         : minutes
-        ? context.textTheme.titleLarge
+        ? context.textTheme.headlineSmall
         : context.textTheme.titleMedium;
+    final live = context.appColors.success;
     final style = switch (arrival.status) {
-      ArrivalStatus.confirmed => base?.copyWith(fontWeight: FontWeight.w700),
+      ArrivalStatus.confirmed => base?.copyWith(color: live, fontWeight: FontWeight.w800),
       ArrivalStatus.uncertain => base?.copyWith(
-        color: c.onSurfaceVariant,
-        fontWeight: FontWeight.w700,
+        color: c.tertiary,
+        fontWeight: FontWeight.w800,
         decoration: TextDecoration.underline,
         decorationStyle: TextDecorationStyle.dotted,
       ),
@@ -152,7 +146,16 @@ class ArrivalTime extends StatelessWidget {
       ArrivalStatus.canceled ||
       ArrivalStatus.suppressed => base?.copyWith(color: c.outline, decoration: TextDecoration.lineThrough),
     };
-    return Text(ArrivalText.time(context.l10n, arrival), style: style);
+    final text = Text(ArrivalText.time(context.l10n, arrival), style: style);
+    if (arrival.status != ArrivalStatus.confirmed) return text;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: Spacing.xs,
+      children: [
+        Icon(Icons.rss_feed, size: Spacing.l, color: live),
+        text,
+      ],
+    );
   }
 }
 
@@ -162,12 +165,14 @@ class ArrivalTile extends StatelessWidget {
     required this.arrival,
     required this.lineName,
     required this.lineWithoutRealtime,
+    this.kind = TransitKind.bus,
     this.onTap,
     super.key,
   });
 
   final Arrival arrival;
   final String lineName;
+  final TransitKind kind;
   final bool lineWithoutRealtime;
   final VoidCallback? onTap;
 
@@ -176,34 +181,26 @@ class ArrivalTile extends StatelessWidget {
     final gone = arrival.status == ArrivalStatus.canceled || arrival.status == ArrivalStatus.suppressed;
     final reason = ArrivalText.reason(context.l10n, arrival, lineWithoutRealtime: lineWithoutRealtime);
     final headsign = context.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w600,
       color: gone ? context.colors.outline : null,
       decoration: gone ? TextDecoration.lineThrough : null,
     );
-    // Wireframe "Fermata": destination and time on the first row, status and reason below at full width,
-    // so long destinations are not squeezed by the time.
+    // Chip, destination with its status and reason below at full width, and the time on the right: the minutes are
+    // what is read walking to the stop.
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: Spacing.l, vertical: Spacing.m),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: Spacing.l,
+          spacing: Spacing.m,
           children: [
-            LineBadge(lineName, withoutRealtime: lineWithoutRealtime, muted: gone),
+            LineBadge(lineName, kind: kind, withoutRealtime: lineWithoutRealtime, muted: gone),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: Spacing.xs,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    spacing: Spacing.s,
-                    children: [
-                      Expanded(child: Text('→ ${arrival.headsign}', maxLines: 2, style: headsign)),
-                      ArrivalTime(arrival),
-                    ],
-                  ),
+                  Text('→ ${arrival.headsign}', maxLines: 2, overflow: TextOverflow.ellipsis, style: headsign),
                   Wrap(
                     spacing: Spacing.s,
                     runSpacing: Spacing.xs,
@@ -220,6 +217,7 @@ class ArrivalTile extends StatelessWidget {
                 ],
               ),
             ),
+            ArrivalTime(arrival),
           ],
         ),
       ),

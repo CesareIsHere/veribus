@@ -60,5 +60,10 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
 - Journeys (home or any address, searched with Photon in `services/place_search_service.dart`): `models/journeys` (timetable format, RAPTOR, planner: pure Dart, tested against a brute
   force), `repositories/journeys`, `features/journeys`; the timetables are built by `tool/journeys/build_timetable.dart`
   in the nightly import. A format change bumps `Timetable._version`. Realtime comes from `api.arrivals`, matched by slot.
+- Lines are told by `LineChip` (`core/widgets/line_chip.dart`): the color and icon of the `TransitKind` (bus, tram,
+  metro A/B/C, night). Line colors live in `AppColors`, shapes (cards 24, sheets 28, chips 8) in `app_theme.dart`.
+  Realtime status colors: green with the live icon when confirmed (`ArrivalTime`), tertiary when uncertain.
+- Following a journey: `models/journeys/trip_progress.dart` (`followTrip`, pure and tested) decides the phase from the
+  position; `features/journeys/trip_page.dart` only shows it. The alert one stop before uses `IPushService.showNow`.
 - Reference pattern for new data: `repositories/transit` (interface + mock + supabase + provider), `models/transit`,
   `features/stop`. Status/signal/time wording lives only in `features/stop/components/arrival_tile.dart`.

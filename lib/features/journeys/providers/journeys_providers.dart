@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:veribus/core/providers/auto_refresh.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/shared_preferences_provider.dart';
@@ -15,22 +16,30 @@ import 'package:veribus/services/place_search_service.dart';
 
 part 'journeys_providers.g.dart';
 
-/// Home, saved only on the phone ("lat,lon"), like the favorites. Null until the user sets it.
-@Riverpod(keepAlive: true)
-class HomePlace extends _$HomePlace {
-  static const _key = 'home_place';
-
-  @override
-  LatLng? build() {
-    final saved = ref.watch(sharedPreferencesProvider).getString(_key)?.split(',');
+/// A place saved only on the phone ("lat,lon"), like the favorites. Null until the user sets it.
+abstract final class _SavedPlace {
+  static LatLng? read(SharedPreferencesWithCache prefs, String key) {
+    final saved = prefs.getString(key)?.split(',');
     if (saved == null || saved.length != 2) return null;
     final (lat, lon) = (double.tryParse(saved[0]), double.tryParse(saved[1]));
     return lat == null || lon == null ? null : LatLng(lat, lon);
   }
 
+  static Future<void> write(SharedPreferencesWithCache prefs, String key, LatLng place) =>
+      prefs.setString(key, '${place.latitude},${place.longitude}');
+}
+
+/// Home.
+@Riverpod(keepAlive: true)
+class HomePlace extends _$HomePlace {
+  static const _key = 'home_place';
+
+  @override
+  LatLng? build() => _SavedPlace.read(ref.watch(sharedPreferencesProvider), _key);
+
   Future<void> set(LatLng place) async {
     state = place;
-    await ref.read(sharedPreferencesProvider).setString(_key, '${place.latitude},${place.longitude}');
+    await _SavedPlace.write(ref.read(sharedPreferencesProvider), _key, place);
   }
 
   Future<void> clear() async {
@@ -39,13 +48,23 @@ class HomePlace extends _$HomePlace {
   }
 }
 
-/// Where the journeys page plans to: null is home. Back to home every time the page is opened again.
-@riverpod
-class JourneyDestination extends _$JourneyDestination {
-  @override
-  Place? build() => null;
+/// Work.
+@Riverpod(keepAlive: true)
+class WorkPlace extends _$WorkPlace {
+  static const _key = 'work_place';
 
-  void set(Place place) => state = place.isHome ? null : place;
+  @override
+  LatLng? build() => _SavedPlace.read(ref.watch(sharedPreferencesProvider), _key);
+
+  Future<void> set(LatLng place) async {
+    state = place;
+    await _SavedPlace.write(ref.read(sharedPreferencesProvider), _key, place);
+  }
+
+  Future<void> clear() async {
+    state = null;
+    await ref.read(sharedPreferencesProvider).remove(_key);
+  }
 }
 
 /// The last places chosen as destination, newest first, saved only on the phone like home.
@@ -69,7 +88,7 @@ class RecentPlaces extends _$RecentPlaces {
   }
 
   Future<void> add(Place place) async {
-    if (place.isHome) return;
+    if (place.isSaved) return;
     state = [
       place,
       ...state.where((p) => p.name != place.name && const Distance()(p.point, place.point) > _sameMeters),
@@ -95,19 +114,23 @@ Future<JourneyPlanner?> journeyPlanner(Ref ref, int date) async {
   return JourneyPlanner(timetable, (stops, lines) => transit.arrivals(stops, lineIds: lines));
 }
 
-/// The journeys from one place to another leaving now, and the last one of the night when the service ends soon.
+/// The journeys from one place to another, and the last one of the night when the service ends soon.
 typedef PlannedTrip = ({JourneyPlanner planner, List<PlannedJourney> journeys, PlannedJourney? last});
 
-/// Recomputed every minute while the page is open: departures pass and the realtime changes. Null when the
-/// timetable of today is not available.
+/// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
+/// realtime changes. Null when the timetable of that day is not available.
 @riverpod
-Future<PlannedTrip?> plannedTrip(Ref ref, LatLng from, LatLng to) async {
-  final now = DateTime.now();
-  final planner = await ref.watch(journeyPlannerProvider(now.year * 10000 + now.month * 100 + now.day).future);
+Future<PlannedTrip?> plannedTrip(Ref ref, LatLng from, LatLng to, DateTime? at, JourneyFilter filter) async {
+  final start = at ?? DateTime.now();
+  final planner = await ref.watch(journeyPlannerProvider(start.year * 10000 + start.month * 100 + start.day).future);
   if (planner == null) return null;
-  ref.refreshEvery(const Duration(minutes: 1));
-  final journeys = await planner.plan(from: from, to: to, at: now);
-  return (planner: planner, journeys: journeys, last: planner.lastJourney(from: from, to: to, at: now));
+  if (at == null) ref.refreshEvery(const Duration(minutes: 1));
+  final journeys = await planner.plan(from: from, to: to, at: start, filter: filter);
+  return (
+    planner: planner,
+    journeys: journeys,
+    last: planner.lastJourney(from: from, to: to, at: start, filter: filter),
+  );
 }
 
 /// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.

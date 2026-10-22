@@ -3,19 +3,19 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:veribus/core/config.dart'; // feature:push
 import 'package:veribus/core/providers/network_provider.dart';
+import 'package:veribus/core/widgets/line_chip.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/journeys/components/journey_timeline.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
-import 'package:veribus/features/journeys/providers/journeys_providers.dart';
-import 'package:veribus/features/stop/stop_page.dart';
+import 'package:veribus/features/journeys/trip_page.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
 import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/journeys/raptor.dart';
-import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/styles/app_spacing.dart';
+import 'package:veribus/styles/app_theme.dart';
 
 /// What the detail page shows: a journey of a plan, with its planner, where the user was and where they go.
 class JourneyArgs {
@@ -23,12 +23,13 @@ class JourneyArgs {
 
   final JourneyPlanner planner;
   final PlannedJourney journey;
-  final LatLng from;
+  final Place from;
   final Place to;
 }
 
-/// One journey leg by leg: where to walk, which bus to take and its state, where to get off, how a change went in the
-/// last weeks and what comes next if it is missed. The map shows the rides (solid) and the walks (dotted).
+/// One journey on the map and, in a sheet that rises over it, leg by leg: where to walk, which bus to take and its
+/// state, where to get off, how a change went in the last weeks and what comes next if it is missed. The map shows the
+/// rides in the color of their line and the walks dotted. "Start" follows the journey step by step.
 class JourneyPage extends ConsumerWidget {
   const JourneyPage({required this.args, super.key});
 
@@ -37,8 +38,8 @@ class JourneyPage extends ConsumerWidget {
   /// Null when the page is opened without its journey (restored after the app was killed): back to the list.
   final JourneyArgs? args;
 
-  /// A wait longer than this at a change is said aloud: at night it means standing at a stop for a while.
-  static const int _longWait = 20 * 60;
+  /// The sheet starts at this fraction of the screen, high enough for the times and the first legs.
+  static const _sheetStart = 0.5;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,244 +56,136 @@ class JourneyPage extends ConsumerWidget {
     final journey = args.journey.journey;
     final noRealtime = ref.watch(networkInfoProvider).value?.noRealtime ?? const {};
     final legs = journey.legs;
-    final muted = context.textTheme.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant);
+    final height = MediaQuery.sizeOf(context).height;
 
     LatLng stop(int s) => LatLng(tt.stopLat[s] / 1e6, tt.stopLon[s] / 1e6);
     LatLng endOf(int? s, LatLng place) => s == null ? place : stop(s);
-    bool metro(RideLeg r) => tt.lineTypes[tt.routeLine[r.route]] == Timetable.metro;
-    // The stop page knows the bus and tram stops only: the metro is in the planner's timetable alone.
-    VoidCallback? openStop(int s, RideLeg r) => metro(r) ? null : () => context.push(StopPage.route(tt.stopIds[s]));
-    // Along the line's streets; the metro, not in the network the paths come from, from station to station.
-    List<LatLng> rideLine(RideLeg r) {
-      final stops = [for (var i = 0; i <= r.alight; i++) stop(tt.routeStop(r.route, i))];
-      if (metro(r)) return stops.sublist(r.board);
-      final shape = ref.watch(lineShapeProvider(tt.lineIds[tt.routeLine[r.route]], tt.routeDirection[r.route]));
-      return alongShape(shape.value ?? const [], stops, r.board, r.alight);
-    }
-
-    final rides = [for (final r in legs.whereType<RideLeg>()) rideLine(r)];
+    final rides = [
+      for (final r in legs.whereType<RideLeg>()) (line: rideRoute(ref, planner, r), color: _color(context, planner, r)),
+    ];
     final walks = [
       for (final w in legs.whereType<WalkLeg>())
-        if (w.end > w.start) [endOf(w.from, args.from), endOf(w.to, args.to.point)],
+        if (w.end > w.start) [endOf(w.from, args.from.point), endOf(w.to, args.to.point)],
     ];
-
-    final steps = <Widget>[];
-    RideLeg? previous;
-    for (final (i, leg) in legs.indexed) {
-      switch (leg) {
-        case WalkLeg(:final from, :final to) when leg.end > leg.start:
-          final minutes = journeyMinutes(leg.end - leg.start);
-          steps.add(
-            _Step(
-              icon: Icons.directions_walk,
-              title: to == null
-                  ? (args.to.isHome ? l10n.journeysWalkHome(minutes) : l10n.journeysWalkToDestination(minutes))
-                  : from == null
-                  ? l10n.journeysWalkToStop(minutes, tt.stopNames[to])
-                  : l10n.journeysWalkBetween(minutes, tt.stopNames[to]),
-              subtitle: Text(journeyClock(planner, leg.start), style: muted),
-            ),
-          );
-        case WalkLeg():
-          break;
-        case RideLeg():
-          final before = i > 0 ? legs[i - 1] : null;
-          final walk = before is WalkLeg && before.from != null ? before.end - before.start : 0;
-          if (previous != null) {
-            final wait = leg.start - previous.end - walk;
-            steps.add(
-              _ChangeInfo(slots: changeSlots(planner, previous, leg, walk), wait: wait, longWait: wait > _longWait),
-            );
-          }
-          final next = previous == null ? null : planner.nextDeparture(leg);
-          final line = tt.lineNames[tt.routeLine[leg.route]];
-          steps.add(
-            _Step(
-              leading: RideBadge(planner: planner, ride: leg, noRealtime: noRealtime),
-              title: '→ ${tt.routeHeadsign[leg.route]}',
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: Spacing.xs,
-                children: [
-                  InkWell(
-                    onTap: openStop(leg.fromStop, leg),
-                    child: Text(l10n.journeysBoard(tt.stopNames[leg.fromStop], journeyClock(planner, leg.start))),
-                  ),
-                  RideStatus(planner: planner, journey: args.journey, ride: leg, noRealtime: noRealtime),
-                  Text(
-                    l10n.journeysAlight(
-                      tt.stopNames[leg.toStop],
-                      journeyClock(planner, leg.end),
-                      l10n.journeysStops(leg.alight - leg.board),
-                    ),
-                  ),
-                  // feature:push:start
-                  if (Features.push)
-                    if (followRouteOf(planner, leg) case final route?)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () => context.push(route),
-                          icon: const Icon(Icons.notifications_outlined),
-                          label: Text(l10n.followTrip),
-                        ),
-                      ),
-                  // feature:push:end
-                  // Missing a change is what goes wrong: what to take then.
-                  if (previous != null)
-                    Text(
-                      next == null
-                          ? l10n.journeysIfMissedNone(line)
-                          : l10n.journeysIfMissed(line, journeyClock(planner, next)),
-                      style: muted,
-                    ),
-                ],
-              ),
-            ),
-          );
-          previous = leg;
-      }
-    }
-    final arrive = journeyClock(planner, journey.arrive);
-    steps.add(
-      args.to.isHome
-          ? _Step(icon: Icons.home_outlined, title: l10n.journeysArriveHome(arrive))
-          : _Step(
-              icon: Icons.place_outlined,
-              title: l10n.journeysArriveDestination(arrive),
-              subtitle: Text(args.to.name),
-            ),
-    );
-
     final changes = journey.rides - 1;
+    final scheme = context.colors;
+
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.journeysDetails)),
-      body: ListView(
-        padding: context.pagePadding(),
+      body: Stack(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(Spacing.m),
-            child: SizedBox(
-              height: 220,
-              child: TransitMap(
-                fit: [args.from, args.to.point, for (final r in rides) ...r],
-                children: [
-                  PolylineLayer(
-                    polylines: [
-                      for (final w in walks)
-                        Polyline(
-                          points: w,
-                          strokeWidth: 3,
-                          color: context.colors.outline,
-                          pattern: const StrokePattern.dotted(),
-                        ),
-                      for (final r in rides) Polyline(points: r, strokeWidth: 5, color: context.colors.primary),
-                    ],
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      for (final r in legs.whereType<RideLeg>()) ...[
-                        for (final s in [r.fromStop, r.toStop])
-                          StopMarker(point: stop(s), label: tt.stopNames[s], onTap: openStop(s, r) ?? () {}),
-                      ],
-                    ],
-                  ),
-                ],
+          Positioned.fill(
+            child: TransitMap(
+              fit: [args.from.point, args.to.point, for (final r in rides) ...r.line],
+              fitPadding: EdgeInsets.fromLTRB(
+                Spacing.xxxl,
+                Spacing.xxxl * 2,
+                Spacing.xxxl,
+                height * _sheetStart + Spacing.l,
               ),
-            ),
-          ),
-          const SizedBox(height: Spacing.l),
-          Text(
-            l10n.journeysTimes(journeyClock(planner, journey.depart), journeyClock(planner, journey.arrive)),
-            style: context.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            [
-              l10n.minutes(journeyMinutes(journey.arrive - journey.depart)),
-              if (journey.rides == 0)
-                l10n.journeysWalkOnly
-              else if (changes == 0)
-                l10n.journeysDirect
-              else
-                l10n.journeysChanges(changes),
-            ].join(' · '),
-            style: muted,
-          ),
-          const SizedBox(height: Spacing.l),
-          ...steps,
-          const SizedBox(height: Spacing.xl),
-          Text(l10n.journeysNote, style: context.textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-/// One step of the journey: an icon or a badge, what to do, and its details.
-class _Step extends StatelessWidget {
-  const _Step({required this.title, this.icon, this.leading, this.subtitle});
-
-  final IconData? icon;
-  final Widget? leading;
-  final String title;
-  final Widget? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.m),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: Spacing.l,
-        children: [
-          SizedBox(
-            width: Spacing.xxxl + Spacing.xl,
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: leading ?? Icon(icon, color: context.colors.onSurfaceVariant),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: Spacing.xs,
+              locateButton: false,
               children: [
-                Text(title, style: context.textTheme.titleSmall),
-                ?subtitle,
+                PolylineLayer(
+                  polylines: [
+                    for (final w in walks)
+                      Polyline(points: w, strokeWidth: 3, color: scheme.outline, pattern: const StrokePattern.dotted()),
+                    for (final r in rides) Polyline(points: r.line, strokeWidth: 6, color: r.color),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    for (final r in legs.whereType<RideLeg>())
+                      for (final s in [r.fromStop, r.toStop])
+                        StopMarker(point: stop(s), label: tt.stopNames[s], onTap: () {}),
+                    Marker(
+                      point: args.to.point,
+                      width: Spacing.xxxl,
+                      height: Spacing.xxxl,
+                      child: Icon(Icons.location_on, size: Spacing.xxxl, color: scheme.error),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(context.pageMargin),
+              child: IconButton.filledTonal(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+              ),
+            ),
+          ),
+          DraggableScrollableSheet(
+            minChildSize: 0.28,
+            maxChildSize: 0.94,
+            snap: true,
+            snapSizes: const [0.28, _sheetStart, 0.94],
+            builder: (context, controller) => Material(
+              color: scheme.surface,
+              elevation: 3,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.sheetRadius)),
+              clipBehavior: Clip.antiAlias,
+              child: ListView(
+                controller: controller,
+                padding: EdgeInsets.fromLTRB(context.pageMargin, 0, context.pageMargin, Spacing.xxxl * 2 + Spacing.xl),
+                children: [
+                  Center(
+                    child: Container(
+                      width: Spacing.xxl,
+                      height: Spacing.xs,
+                      margin: const EdgeInsets.symmetric(vertical: Spacing.m),
+                      decoration: BoxDecoration(color: scheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  Text(
+                    l10n.journeysTimes(journeyClock(planner, journey.depart), journeyClock(planner, journey.arrive)),
+                    style: context.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    [
+                      journeyDuration(l10n, journey.arrive - journey.depart),
+                      if (journey.rides == 0)
+                        l10n.journeysWalkOnly
+                      else if (changes == 0)
+                        l10n.journeysDirect
+                      else
+                        l10n.journeysChanges(changes),
+                      if (journeyMinutes(walkingSeconds(journey)) > 0 && journey.rides > 0)
+                        l10n.journeysWalkTotal(journeyMinutes(walkingSeconds(journey))),
+                    ].join(' · '),
+                    style: context.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: Spacing.l),
+                  JourneyTimeline(
+                    planner: planner,
+                    journey: args.journey,
+                    from: args.from,
+                    to: args.to,
+                    noRealtime: noRealtime,
+                  ),
+                  const SizedBox(height: Spacing.l),
+                  Text(l10n.journeysNote, style: context.textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
+      floatingActionButton: journey.rides == 0
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => context.push(TripPage.route, extra: args),
+              icon: const Icon(Icons.navigation),
+              label: Text(l10n.journeysStart),
+            ),
     );
   }
-}
 
-/// A change: the wait, and how often it worked in the history of both trips.
-class _ChangeInfo extends ConsumerWidget {
-  const _ChangeInfo({required this.slots, required this.wait, required this.longWait});
-
-  final ChangeSlots slots;
-  final int wait;
-  final bool longWait;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final record = ref.watch(changeReliabilityProvider(slots));
-    final style = context.textTheme.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant);
-    return _Step(
-      icon: Icons.sync_alt,
-      title: [l10n.journeysWait(journeyMinutes(wait)), if (longWait) l10n.journeysLongWait].join(' · '),
-      subtitle: switch (record) {
-        AsyncValue(value: (:final made, :final days)?) when days > 0 => Text(
-          l10n.journeysChangeRecord(made, days),
-          style: style,
-        ),
-        // The history is a bonus: an error or no data says the same.
-        AsyncValue(hasValue: true) || AsyncValue(hasError: true) => Text(l10n.journeysChangeNoRecord, style: style),
-        _ => const LinearProgressIndicator(),
-      },
-    );
+  static Color _color(BuildContext context, JourneyPlanner planner, RideLeg ride) {
+    final tt = planner.timetable;
+    return LineChip.colorOf(context, rideKind(planner, ride), tt.lineNames[tt.routeLine[ride.route]]);
   }
 }

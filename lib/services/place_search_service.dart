@@ -22,6 +22,20 @@ class PlaceSearchService {
   /// The area the network serves (lon, lat, lon, lat): a Via Appia in another town is never the one meant.
   static const _bbox = '12.20,41.60,12.90,42.15';
 
+  /// The address under [point] (the pin of the map), or null when there is none or the service does not answer: the
+  /// caller then shows no address, never an error.
+  Future<Place?> reverse(LatLng point) async {
+    final uri = Uri.parse('${_url}reverse')
+        .replace(queryParameters: {'lat': '${point.latitude}', 'lon': '${point.longitude}', 'limit': '1'});
+    try {
+      final response = await _client.get(uri, headers: {'User-Agent': 'Veribus'}).timeout(const Duration(seconds: 6));
+      if (response.statusCode != 200) return null;
+      return parsePhoton(jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>).firstOrNull;
+    } on Exception {
+      return null;
+    }
+  }
+
   Future<List<Place>> search(String query) async {
     final uri = Uri.parse(_url).replace(
       queryParameters: {
