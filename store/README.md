@@ -75,7 +75,7 @@ Upload the files from `metadata/android/it-IT`, then *Manage translations › En
 | Advertising ID | **No** (the merged manifest has no `AD_ID` permission) |
 | Government app / Financial features / Health | No / none / none |
 | Account deletion | Users can create accounts → URL `https://veribus-f329e.web.app/privacy.html#delete-account`. Deletes all data; nothing is kept. |
-| Permissions | Nothing to declare: location is foreground only, the photo picker needs no permission, and the unused geolocator foreground service is removed from the manifest. |
+| Permissions | Location is read in the background only while a journey is followed ("Start"): geolocator's foreground service of type `location`, with an ongoing notification, started by the user and stopped when the journey ends. Play asks for the foreground service declaration (type location) and a video of the feature; no background location permission is needed. The photo picker needs no permission. |
 
 ### Data safety
 

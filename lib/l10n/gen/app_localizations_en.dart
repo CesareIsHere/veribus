@@ -1122,4 +1122,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String tripAtTime(String time) {
     return 'at $time';
   }
+
+  @override
+  String get tripChannelName => 'Journey in progress';
 }

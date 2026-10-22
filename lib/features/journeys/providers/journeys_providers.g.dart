@@ -382,6 +382,84 @@ final class PlannedTripFamily extends $Family
   String toString() => r'plannedTripProvider';
 }
 
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
+/// the session: a journey is looked at again and again.
+
+@ProviderFor(walkRoute)
+final walkRouteProvider = WalkRouteFamily._();
+
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
+/// the session: a journey is looked at again and again.
+
+final class WalkRouteProvider
+    extends $FunctionalProvider<AsyncValue<List<LatLng>>, List<LatLng>, FutureOr<List<LatLng>>>
+    with $FutureModifier<List<LatLng>>, $FutureProvider<List<LatLng>> {
+  /// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
+  /// the session: a journey is looked at again and again.
+  WalkRouteProvider._({required WalkRouteFamily super.from, required (LatLng, LatLng) super.argument})
+    : super(
+        retry: null,
+        name: r'walkRouteProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$walkRouteHash();
+
+  @override
+  String toString() {
+    return r'walkRouteProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<LatLng>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<LatLng>> create(Ref ref) {
+    final argument = this.argument as (LatLng, LatLng);
+    return walkRoute(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is WalkRouteProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$walkRouteHash() => r'a0fbb130e7db4ecfd467206b7ca12c7eb5a24bc5';
+
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
+/// the session: a journey is looked at again and again.
+
+final class WalkRouteFamily extends $Family with $FunctionalFamilyOverride<FutureOr<List<LatLng>>, (LatLng, LatLng)> {
+  WalkRouteFamily._()
+    : super(
+        retry: null,
+        name: r'walkRouteProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
+
+  /// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
+  /// the session: a journey is looked at again and again.
+
+  WalkRouteProvider call(LatLng from, LatLng to) => WalkRouteProvider._(argument: (from, to), from: this);
+
+  @override
+  String toString() => r'walkRouteProvider';
+}
+
 /// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
 
 @ProviderFor(lineShape)

@@ -88,9 +88,9 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
   service ends soon, the last journey comes first, with a reminder. The planner (RAPTOR) runs on the phone over one day
   of the network, metro included (0.6–0.8 MB a day): see [`tool/journeys`](tool/journeys/README.md).
 - **Follow a journey** ("Start"): one instruction at a time (walk to this stop, get on this bus, get off in 3 stops),
-  with the state of the bus. A stop before the one to get off at the phone vibrates and shows a notice. It works with
-  the app open and the screen on: it asks the position only while it is in front, so with the screen off it does not
-  track you (that would need a foreground service, not built).
+  with the state of the bus, and the walks drawn along the streets. While it lasts there is an ongoing notification
+  with the next step, kept alive by a foreground service that reads the position with the screen off (Android); it
+  stops when you arrive or end the journey. A stop before the one to get off at the phone vibrates and shows a notice.
 - **Favorites** for stops and lines (favorite stops first in the nearby list), and a dedicated **Alerts** section
   (severity is told by icon and text) filtered by line.
 - **Honest signals**: cancelled trips, vehicles that stopped transmitting, stuck vehicles, old GPS fixes, late data,
@@ -469,7 +469,8 @@ with a throwaway debug key that changes on every build (it installs, but it cann
   the tiles. `vector_map_tiles` is on its 9.x beta line, the one compatible with flutter_map 8.
 - Address search (journeys): the public [Photon](https://photon.komoot.io) instance, free and keyless but with fair
   use and no guarantee (`lib/services/place_search_service.dart`). For real traffic host Photon or move to a paid
-  geocoder: only that service changes.
+  geocoder: only that service changes. The same goes for the walking routes drawn on the map: the foot profile of the
+  FOSSGIS OSRM server (`lib/services/walking_route_service.dart`).
 - Terms for the RSM data and the attribution text. Privacy policy and terms are `web/privacy.html` and
   `web/terms.html`, published with the web app (`PRIVACY_URL`, `TERMS_URL` in `env/prod.json`).
 - A per-client rate limit on the API.
@@ -501,7 +502,7 @@ Look at the screen, not only at the code, when you change the UI: the app runs i
   exhaustive: road variability and malfunctions can make it inaccurate, and the app says so.
 - Base map: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, © [OpenMapTiles](https://openmaptiles.org),
   served by [OpenFreeMap](https://openfreemap.org). The attribution is shown on every map.
-- Address search: [Photon](https://photon.komoot.io) by komoot, on OpenStreetMap data.
+- Address search: [Photon](https://photon.komoot.io) by komoot, and walking routes: OSRM by [FOSSGIS](https://routing.openstreetmap.de), both on OpenStreetMap data.
 
 ## License
 

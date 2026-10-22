@@ -1981,6 +1981,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'at {time}'**
   String tripAtTime(String time);
+
+  /// No description provided for @tripChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey in progress'**
+  String get tripChannelName;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

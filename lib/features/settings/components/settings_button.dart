@@ -30,7 +30,11 @@ class SettingsButton extends ConsumerWidget {
         radius: Spacing.l,
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        child: Text(initials, style: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+        child: Text(
+          initials,
+          // The color is the avatar's own: the theme's label color is for text on a surface, not on the primary.
+          style: context.textTheme.labelLarge?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w800),
+        ),
       ),
       onPressed: () => context.push(SettingsPage.route),
     );

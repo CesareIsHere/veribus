@@ -7,6 +7,9 @@ Map<String, dynamic> minimalMapStyle(Brightness brightness) {
   final p = brightness == Brightness.dark ? _Palette.dark : _Palette.light;
   return {
     'version': 8,
+    // The renderer tells themes apart by their `id` (without one every theme is "default"): the layer then keeps the
+    // tiles it drew with the first one when the app goes from dark to light.
+    'id': 'veribus-minimal-${brightness.name}',
     'name': 'veribus-minimal-${brightness.name}',
     'sources': {
       'openmaptiles': {'type': 'vector'},

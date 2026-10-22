@@ -13,6 +13,7 @@ import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/repositories/journeys/journeys_repository_provider.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
 import 'package:veribus/services/place_search_service.dart';
+import 'package:veribus/services/walking_route_service.dart';
 
 part 'journeys_providers.g.dart';
 
@@ -132,6 +133,17 @@ Future<PlannedTrip?> plannedTrip(Ref ref, LatLng from, LatLng to, DateTime? at, 
     last: planner.lastJourney(from: from, to: to, at: start, filter: filter),
   );
 }
+
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
+/// the session: a journey is looked at again and again.
+@Riverpod(keepAlive: true)
+Future<List<LatLng>> walkRoute(Ref ref, LatLng from, LatLng to) =>
+    ref.watch(walkingRouteServiceProvider).route(from, to);
+
+/// The line of a walk: the streets with the exact start and end drawn at both ends, or the straight line when there
+/// is no route.
+List<LatLng> walkLine(LatLng from, LatLng to, List<LatLng>? route) =>
+    route == null || route.length < 2 ? [from, to] : [from, ...route, to];
 
 /// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
 @riverpod

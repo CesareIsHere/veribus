@@ -12,15 +12,19 @@ import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/line_chip.dart';
 import 'package:veribus/core/widgets/states/message_view.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
+import 'package:veribus/core/widgets/vehicle_route.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
+import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/line/components/timeline.dart';
 import 'package:veribus/features/nearby/nearby_page.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
+import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/models/journeys/trip_progress.dart';
 import 'package:veribus/models/transit/live.dart';
+import 'package:veribus/services/location_service.dart';
 import 'package:veribus/services/push_notifications_service.dart'; // feature:push
 import 'package:veribus/styles/app_spacing.dart';
 import 'package:veribus/styles/app_theme.dart';
@@ -48,6 +52,14 @@ class _TripPageState extends ConsumerState<TripPage> {
   late TripView _view;
   final _alerted = <int>{};
 
+  /// The fixes of the foreground service, listened to for as long as the journey goes on. Cancelled when it ends, which
+  /// stops the service and takes the notification away.
+  StreamSubscription<LatLng>? _fixes;
+
+  /// What the notification says changes with this: a new text means listening again.
+  (TripPhase, int, int?)? _noticeKey;
+  var _started = false;
+
   List<RideLeg> get _rides => widget.args!.journey.rides;
 
   @override
@@ -55,6 +67,35 @@ class _TripPageState extends ConsumerState<TripPage> {
     super.initState();
     if (widget.args != null) _advance(ref.read(positionProvider).value);
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.args == null || _started) return;
+    _started = true;
+    _syncNotification();
+    // feature:push:start
+    unawaited(_askNotifications());
+    // feature:push:end
+  }
+
+  @override
+  void dispose() {
+    unawaited(_fixes?.cancel());
+    super.dispose();
+  }
+
+  // feature:push:start
+  /// The notification of the journey needs the permission of the notices (Android 13+): asked once, when it starts.
+  Future<void> _askNotifications() async {
+    final push = ref.read(pushServiceProvider);
+    try {
+      if (await push.permission() == PushPermission.notDetermined) await push.requestPermission();
+    } on Object {
+      // This build has no notices (no Firebase configuration): the journey goes on without the permission.
+    }
+  }
+  // feature:push:end
 
   void _advance(LatLng? position) {
     final args = widget.args!;
@@ -82,6 +123,29 @@ class _TripPageState extends ConsumerState<TripPage> {
     }
     _state = view.state;
     _view = view;
+    if (_started) _syncNotification();
+  }
+
+  /// The ongoing notification says the next step, and the foreground service behind it keeps the position coming with
+  /// the screen off. When the step changes the service starts again with the new text; when the journey ends it stops.
+  void _syncNotification() {
+    final view = _view;
+    final key = (view.phase, view.state.ride, view.stopsLeft);
+    if (key == _noticeKey) return;
+    _noticeKey = key;
+    unawaited(_fixes?.cancel());
+    if (view.phase == TripPhase.arrived) {
+      _fixes = null;
+      return;
+    }
+    final l10n = context.l10n;
+    final notice = tripNotice(l10n, widget.args!, view);
+    _fixes = ref
+        .read(locationServiceProvider)
+        .followFixes(title: notice.title, text: notice.text, channelName: l10n.tripChannelName)
+        .listen((p) {
+          if (mounted) setState(() => _advance(p));
+        }, onError: (Object _) {});
   }
 
   @override
@@ -94,7 +158,7 @@ class _TripPageState extends ConsumerState<TripPage> {
         body: MessageView(icon: Icons.route, title: l10n.journeysGone),
       );
     }
-    // Every new fix moves the journey on.
+    // Every new fix moves the journey on, from the foreground service or from the live position of the map.
     ref.listen(positionProvider, (_, next) => setState(() => _advance(next.value)));
     final position = ref.watch(positionProvider).value;
     final view = _view;
@@ -107,6 +171,33 @@ class _TripPageState extends ConsumerState<TripPage> {
       },
     );
   }
+}
+
+/// What the ongoing notification says for [view]: the step and its stable details (the clock times, not the metres,
+/// which would be wrong a moment later: the text only changes with the step).
+({String title, String text}) tripNotice(AppLocalizations l10n, JourneyArgs args, TripView view) {
+  final planner = args.planner;
+  final tt = planner.timetable;
+  final ride = view.ride;
+  final arrive = journeyClock(planner, args.journey.journey.arrive);
+  final end = args.to.isHome ? l10n.journeysArriveHome(arrive) : l10n.journeysArriveDestination(arrive);
+  if (ride == null) {
+    return view.phase == TripPhase.arrived
+        ? (title: l10n.tripArrived, text: args.to.name)
+        : (title: l10n.tripWalkTo(args.to.name), text: end);
+  }
+  final line = tt.lineNames[tt.routeLine[ride.route]];
+  return switch (view.phase) {
+    TripPhase.atStop => (title: l10n.tripBoard(line), text: l10n.tripWaitHere(tt.routeHeadsign[ride.route])),
+    TripPhase.onBoard => (
+      title: (view.stopsLeft ?? 2) <= 1 ? l10n.tripGetOffNext : l10n.tripGetOffIn(view.stopsLeft!),
+      text: l10n.tripGetOffAt(tt.stopNames[ride.toStop], journeyClock(planner, ride.end)),
+    ),
+    _ => (
+      title: l10n.tripWalkTo(tt.stopNames[ride.fromStop]),
+      text: l10n.tripYourLine(line, l10n.tripAtTime(journeyClock(planner, ride.start))),
+    ),
+  };
 }
 
 /// The instruction in a big card: what to do now, and the details under it.
@@ -213,8 +304,8 @@ class _BusStatus extends StatelessWidget {
 }
 
 /// Walking to a stop (or home) and waiting at the stop: the map, the instruction on top and the journey in short at the
-/// bottom.
-class _OnFoot extends ConsumerWidget {
+/// bottom. The way is drawn along the streets, from where the walk began, and asked again if the traveller leaves it.
+class _OnFoot extends ConsumerStatefulWidget {
   const _OnFoot({required this.args, required this.view, required this.position, required this.noRealtime});
 
   final JourneyArgs args;
@@ -223,8 +314,22 @@ class _OnFoot extends ConsumerWidget {
   final Set<String> noRealtime;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OnFoot> createState() => _OnFootState();
+}
+
+class _OnFootState extends ConsumerState<_OnFoot> {
+  /// Farther than this from the way drawn, the traveller took another street: a new way is asked from where they are.
+  static const _lostMeters = 80.0;
+
+  /// Where the way on the map starts: the position when the walk began, or where the traveller left the way.
+  LatLng? _from;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final args = widget.args;
+    final view = widget.view;
+    final position = widget.position;
     final planner = args.planner;
     final tt = planner.timetable;
     final scheme = context.colors;
@@ -237,7 +342,21 @@ class _OnFoot extends ConsumerWidget {
     final targetName = toDestination || ride == null ? args.to.name : tt.stopNames[ride.fromStop];
     final line = ride == null ? null : tt.lineNames[tt.routeLine[ride.route]];
     final meters = view.meters;
-    final route = ride == null ? const <LatLng>[] : rideRoute(ref, planner, ride);
+    final rideLine = ride == null ? const <LatLng>[] : rideRoute(ref, planner, ride);
+
+    if (position != null) _from ??= position;
+    final route = _from == null ? null : ref.watch(walkRouteProvider(_from!, target)).value;
+    var walkAhead = <LatLng>[?position, target];
+    if (position != null && route != null && route.length > 1) {
+      final (:behind, :ahead) = splitRoute(route, position);
+      if (const Distance()(position, behind.last) > _lostMeters) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _from = position);
+        });
+      } else {
+        walkAhead = [position, ...ahead, target];
+      }
+    }
     return Stack(
       children: [
         Positioned.fill(
@@ -250,14 +369,14 @@ class _OnFoot extends ConsumerWidget {
                 polylines: [
                   if (position != null)
                     Polyline(
-                      points: [position!, target],
+                      points: walkAhead,
                       strokeWidth: 4,
                       color: scheme.primary,
                       pattern: const StrokePattern.dotted(),
                     ),
-                  if (route.length > 1 && !toDestination && ride != null)
+                  if (rideLine.length > 1 && !toDestination && ride != null)
                     Polyline(
-                      points: route,
+                      points: rideLine,
                       strokeWidth: 6,
                       color: LineChip.colorOf(context, rideKind(planner, ride), line ?? ''),
                     ),
@@ -297,7 +416,7 @@ class _OnFoot extends ConsumerWidget {
                       : l10n.tripDistance(_round(meters), _walkMinutes(meters)),
                   footer: ride == null || toDestination
                       ? null
-                      : _BusStatus(args: args, ride: ride, noRealtime: noRealtime),
+                      : _BusStatus(args: args, ride: ride, noRealtime: widget.noRealtime),
                 ),
                 if (position == null)
                   Card(

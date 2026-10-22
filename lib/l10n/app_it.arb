@@ -314,5 +314,6 @@
   "tripAlertHint": "Il telefono vibra una fermata prima, con lo schermo acceso.",
   "tripAlertTitle": "Scendi alla prossima",
   "tripNeedPosition": "Serve la posizione per seguirti passo per passo",
-  "tripAtTime": "alle {time}"
+  "tripAtTime": "alle {time}",
+  "tripChannelName": "Percorso in corso"
 }

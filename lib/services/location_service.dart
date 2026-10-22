@@ -45,6 +45,28 @@ class LocationService {
   Stream<LatLng> fixes() =>
       Geolocator.getPositionStream(locationSettings: _settings).map((p) => LatLng(p.latitude, p.longitude));
 
+  /// Live fixes for a journey followed step by step. On Android the GPS runs as a foreground service with a persistent
+  /// notification ([title], [text]) that keeps the app alive and the fixes coming with the screen off, until the
+  /// listener cancels. Changing the text means listening again. Elsewhere it is [fixes].
+  Stream<LatLng> followFixes({required String title, required String text, required String channelName}) {
+    if (mock case final fixed?) return Stream.value(fixed);
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return fixes();
+    return Geolocator.getPositionStream(
+      locationSettings: AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+        intervalDuration: const Duration(seconds: 3),
+        foregroundNotificationConfig: ForegroundNotificationConfig(
+          notificationTitle: title,
+          notificationText: text,
+          notificationChannelName: channelName,
+          enableWakeLock: true,
+          setOngoing: true,
+        ),
+      ),
+    ).map((p) => LatLng(p.latitude, p.longitude));
+  }
+
   /// True / false each time the user turns the location service on / off. Never fires where the platform has no such
   /// event (web): the tracker also looks again by itself.
   Stream<bool> serviceEnabled() {

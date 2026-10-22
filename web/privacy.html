@@ -47,7 +47,11 @@ che quindi riceve il tuo indirizzo IP e la zona mostrata. <b>Preferiti</b>, <b>r
 <b>destinazioni recenti</b> restano sul telefono. Quando cerchi un indirizzo, il testo che scrivi viene inviato a Photon
 (komoot), che quindi riceve il testo e il tuo indirizzo IP, ma non la tua posizione. Quando imposti Casa o Lavoro sulla
 mappa, le coordinate del segnaposto vengono inviate a Photon per leggere l'indirizzo: sono le coordinate del luogo che
-scegli, non quelle del telefono.</p>
+scegli, non quelle del telefono. Per disegnare a piedi il tratto del percorso lungo le strade, l'app invia il punto di
+partenza e quello di arrivo (arrotondati a circa 11 metri) al servizio di percorsi di OpenStreetMap Germania (FOSSGIS),
+che quindi riceve anche il tuo indirizzo IP. Quando premi <b>Avvia</b> su un percorso, la posizione viene letta anche con
+lo schermo spento, finché il percorso dura e con una notifica sempre visibile che dice il passo successivo; si ferma
+quando arrivi o termini. Non viene inviata ai nostri server.</p>
 
 <h2>Perché (base giuridica)</h2>
 <p>Trattiamo questi dati per fornirti il servizio che hai richiesto (art. 6.1.b GDPR) e, per i dati tecnici, per il
@@ -60,6 +64,7 @@ tracciamento, e non vendiamo né cediamo dati a terzi.</p>
   <li><b>Google Firebase Cloud Messaging</b>: invio delle notifiche.</li>
   <li><b>OpenFreeMap</b>: tessere della mappa.</li>
   <li><b>Photon (komoot)</b>: ricerca degli indirizzi.</li>
+  <li><b>OpenStreetMap Germania (FOSSGIS)</b>: percorsi a piedi lungo le strade.</li>
 </ul>
 <p>Alcuni fornitori possono trattare dati fuori dall'Unione europea; in quel caso il trasferimento si basa su decisioni
 di adeguatezza o sulle clausole contrattuali standard della Commissione europea.</p>
@@ -119,7 +124,11 @@ receives your IP address and the area shown. <b>Favorites</b>, <b>searches</b>, 
 destinations</b> stay on the phone. When you search for an address, the text you type is sent to Photon (komoot), which
 therefore receives the text and your IP address, but not your location. When you place Home or Work on the map, the
 coordinates of the pin are sent to Photon to read the address: they are the coordinates of the place you choose, not
-those of the phone.</p>
+those of the phone. To draw the walking parts of a journey along the streets, the app sends their start and end points
+(rounded to about 11 meters) to the routing service of OpenStreetMap Germany (FOSSGIS), which therefore also receives
+your IP address. When you press <b>Start</b> on a journey, the location is also read with the screen off, for as long as
+the journey lasts and with a persistent notification that says the next step; it stops when you arrive or end it. It is
+not sent to our servers.</p>
 
 <h2>Why (legal basis)</h2>
 <p>We process this data to provide the service you asked for (Art. 6(1)(b) GDPR) and, for technical data, for our
@@ -132,6 +141,7 @@ and we do not sell or share data with third parties.</p>
   <li><b>Google Firebase Cloud Messaging</b>: sending notifications.</li>
   <li><b>OpenFreeMap</b>: map tiles.</li>
   <li><b>Photon (komoot)</b>: address search.</li>
+  <li><b>OpenStreetMap Germany (FOSSGIS)</b>: walking routes along the streets.</li>
 </ul>
 <p>Some providers may process data outside the European Union; such transfers rely on adequacy decisions or the
 European Commission's standard contractual clauses.</p>
