@@ -7,11 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
+import 'package:veribus/features/journeys/place_search_page.dart';
 import 'package:veribus/features/journeys/providers/journeys_providers.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
-/// Where home is: the pin stays in the middle and the map moves under it (the map's own button brings it to the
-/// user). A create/edit screen: full-screen dialog, close + Save. Home is saved only on the phone.
+/// Where home is: found by address, then the pin stays in the middle and the map moves under it (the map's own
+/// button brings it to the user). A create/edit screen: full-screen dialog, close + Save. Home is saved only on the phone.
 class HomePlacePage extends ConsumerStatefulWidget {
   const HomePlacePage({super.key});
 
@@ -38,6 +40,12 @@ class _HomePlacePageState extends ConsumerState<HomePlacePage> {
       ..pop();
   }
 
+  /// The address brings the map there; the user still checks the pin, then saves.
+  Future<void> _search() async {
+    final place = await context.push<Place>(PlaceSearchPage.route, extra: PlaceSearchFor.home);
+    if (place != null) _controller.move(place.point, 18);
+  }
+
   Future<void> _remove() async {
     await ref.read(homePlaceProvider.notifier).clear();
     if (mounted) context.pop();
@@ -61,6 +69,18 @@ class _HomePlacePageState extends ConsumerState<HomePlacePage> {
           Padding(
             padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.m),
             child: Text(l10n.journeysHomeHint, style: context.textTheme.bodyMedium),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(context.pageMargin, 0, context.pageMargin, Spacing.m),
+            child: Card.outlined(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: const Icon(Icons.search),
+                title: Text(l10n.journeysSearchAddress),
+                onTap: () => unawaited(_search()),
+              ),
+            ),
           ),
           Expanded(
             child: Stack(

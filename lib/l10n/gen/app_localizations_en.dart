@@ -551,6 +551,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
+  String get clear => 'Clear';
+
+  @override
   String get followedTrips => 'Followed trips';
 
   @override
@@ -759,7 +762,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tripDayCanceled => 'canceled';
 
   @override
-  String get journeysHome => 'Go home';
+  String get journeysTitle => 'Journeys';
+
+  @override
+  String get journeysHomePlace => 'Home';
+
+  @override
+  String get journeysWhereTo => 'Where to?';
+
+  @override
+  String get journeysChangeDestination => 'Change';
+
+  @override
+  String get journeysAlreadyThere => 'You are already there';
+
+  @override
+  String get journeysSearchHint => 'Address or place';
+
+  @override
+  String get journeysSearchAddress => 'Search for an address';
+
+  @override
+  String get journeysSearchEmpty => 'Type an address or the name of a place';
+
+  @override
+  String get journeysSearchNone => 'No address found in Rome';
+
+  @override
+  String get journeysRecent => 'Recent';
 
   @override
   String get journeysSetHome => 'Set home';
@@ -771,7 +801,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeysHomeTitle => 'Where is home?';
 
   @override
-  String get journeysHomeHint => 'Move the map until the pin is on your home. It is saved only on this phone.';
+  String get journeysHomeHint =>
+      'Search for the address, or move the map until the pin is on your home. It is saved only on this phone.';
 
   @override
   String get journeysRemoveHome => 'Remove home';
@@ -784,20 +815,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journeysNoHomeHint =>
-      'Set it once and Veribus tells you which bus to take to get back, from wherever you are.';
+      'Set it once and Veribus tells you which bus to take to get back, from wherever you are. Or search for any destination above.';
 
   @override
-  String get journeysNeedPosition => 'Your position is needed to find the way home';
+  String get journeysNeedPosition => 'Your position is needed to plan the journey';
 
   @override
   String get journeysAtHome => 'You are already home';
 
   @override
-  String get journeysNone => 'No way home with at most two changes';
+  String get journeysNone => 'No journey with at most two changes';
 
   @override
   String get journeysNoneHint =>
-      'At this hour the network may not reach your home. The last journey of the night, when there is one, is shown at the top.';
+      'At this hour the network may not get there. The last journey of the night, when there is one, is shown at the top.';
 
   @override
   String get journeysUnavailable => 'Journeys are not available for today';
@@ -847,6 +878,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String journeysWalkToDestination(int minutes) {
+    return 'Walk $minutes min to the destination';
+  }
+
+  @override
   String journeysWalkBetween(int minutes, String stop) {
     return 'Walk $minutes min to $stop';
   }
@@ -878,6 +914,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String journeysArriveDestination(String time) {
+    return 'There around $time';
+  }
+
+  @override
   String journeysIfMissed(String line, String time) {
     return 'If you miss it: next $line at $time';
   }
@@ -889,11 +930,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String journeysLast(String time) {
-    return 'Last way home: leave by $time';
+    return 'Last journey: leave by $time';
   }
 
   @override
-  String get journeysLastHint => 'After that there is no journey home with at most two changes.';
+  String get journeysLastHint => 'After that there is no journey with at most two changes.';
 
   @override
   String journeysChangeRecord(int made, int days) {
@@ -913,7 +954,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journeysNote =>
-      'Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.';
+      'Walking from you to the first stop and from the last stop to the destination is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.';
 
   @override
   String get journeysDetails => 'Journey';

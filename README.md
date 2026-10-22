@@ -74,10 +74,11 @@ in words, never told by color alone, and a one-line **reason** underneath. A sch
 - **Line detail**: every stop in order with the vehicles between them, or the whole route on a map.
 - **Daily timetable** by line, direction and day, from a stop or from a line (any stop along it).
 - **Search** for lines and stops, running entirely on the phone, from its tab or straight from Nearby.
-- **Go home**: from where you are to the home saved on your phone, which bus (or metro) to take, with at most two
-  changes. Each journey says the state of its first bus in the same words as the stop page, canceled and suppressed
+- **Journeys**: from where you are to the home saved on your phone (set on the map or by address) or to any address or
+  place searched by name, which bus (or metro) to take, with at most two changes. The last destinations stay on the
+  phone. Each journey says the state of its first bus in the same words as the stop page, canceled and suppressed
   trips are left out, late ones run at their predicted time, and each change says how often it worked in the last
-  30 days and what to take if it is missed. When the service ends soon, the last way home comes first. The planner
+  30 days and what to take if it is missed. When the service ends soon, the last journey comes first. The planner
   (RAPTOR) runs on the phone over one day of the network, metro included (0.6–0.8 MB a day): see
   [`tool/journeys`](tool/journeys/README.md).
 - **Favorites** for stops and lines (favorite stops first in the nearby list), and a dedicated **Alerts** section
@@ -456,6 +457,9 @@ with a throwaway debug key that changes on every build (it installs, but it cann
 - Map tiles: the app draws OpenFreeMap vector tiles with its own style (no key needed, see
   `lib/styles/minimal_map_style.dart`). Check OpenFreeMap's terms of use for your expected traffic and consider hosting
   the tiles. `vector_map_tiles` is on its 9.x beta line, the one compatible with flutter_map 8.
+- Address search (journeys): the public [Photon](https://photon.komoot.io) instance, free and keyless but with fair
+  use and no guarantee (`lib/services/place_search_service.dart`). For real traffic host Photon or move to a paid
+  geocoder: only that service changes.
 - Terms for the RSM data and the attribution text. Privacy policy and terms are `web/privacy.html` and
   `web/terms.html`, published with the web app (`PRIVACY_URL`, `TERMS_URL` in `env/prod.json`).
 - A per-client rate limit on the API.
@@ -487,6 +491,7 @@ Look at the screen, not only at the code, when you change the UI: the app runs i
   exhaustive: road variability and malfunctions can make it inaccurate, and the app says so.
 - Base map: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, © [OpenMapTiles](https://openmaptiles.org),
   served by [OpenFreeMap](https://openfreemap.org). The attribution is shown on every map.
+- Address search: [Photon](https://photon.komoot.io) by komoot, on OpenStreetMap data.
 
 ## License
 

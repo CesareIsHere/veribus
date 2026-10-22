@@ -1,4 +1,4 @@
-# Journeys ("Go home")
+# Journeys ("Go home" and any destination)
 
 The journey planner runs on the phone: RAPTOR over one day of the network, metro included. The analysis behind it
 (the problem, the options weighed, the measurements and the limits) is in Notion, *App Bus Roma → Percorsi "Torna a
@@ -12,7 +12,8 @@ casa": analisi, misure e RAPTOR*.
 | `lib/models/journeys/journey_planner.dart` | Plans with the realtime of `api.arrivals`, filters, options, last journey, next trip |
 | `lib/models/journeys/change_reliability.dart` | How often a change worked, from the history of both trips |
 | `lib/repositories/journeys/` | Downloads and caches the day's timetable; the mock builds one around Termini |
-| `lib/features/journeys/` | Home on the phone, the "Go home" list and the journey page |
+| `lib/features/journeys/` | Home and recent destinations on the phone, the address search, the journeys list and the journey page |
+| `lib/services/place_search_service.dart` | Addresses and places by name (Photon, OpenStreetMap): only the typed text is sent |
 | `tool/journeys/build_timetable.dart` | GTFS → one file per day, run by `backend/static-import/import.sh` |
 | `tool/journeys/walking.py`, `walking.sh` | Distances on foot between nearby stops (OpenStreetMap + OSRM), weekly in `.github/workflows/walking.yml` |
 | `tool/journeys/bench.dart` | Times the search on a real timetable and prints the coverage |
@@ -55,9 +56,13 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
 
 ## Known limits
 
+- On the journey map a ride follows its line's main path (`api.route`), cut between its stops matched in order;
+  a trip off the main path (a variant), and the metro, are drawn from stop to stop.
 - Walking from the user to the first stop and from the last stop home is still the straight line × 1.3 (measured on
   the phone, where there is no street graph).
 - Walking links are not chained (A→B→C on foot), as RAPTOR assumes them transitively closed: nearly true at 250 m.
 - A delay moves the whole trip by the delay predicted at the boarding stop; beyond the next hour times are scheduled.
 - No rail (FL, Roma-Lido, Roma-Viterbo): it is not in the RSM feed. The metro has no realtime.
-- The "Go home" page needs a timetable for today: without it (import failed) it says so and offers Google Maps.
+- The address search uses the public Photon instance: fair use, no guarantee, Italian names only as OpenStreetMap
+  has them (its `lang` does not take `it`).
+- The journeys page needs a timetable for today: without it (import failed) it says so and offers Google Maps.

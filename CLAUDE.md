@@ -57,7 +57,7 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
 - Supabase: schema changes are new files in `supabase/migrations` (`supabase migration new <name>`), every table
   with RLS on and policies using `(select auth.uid())`. Demo-only SQL goes in files listed under `demo`.
 - Server-side logic: Cloud Functions following `docs/FIREBASE_FUNCTIONS.md` (Supabase: Edge Functions or SQL).
-- Journeys ("Go home"): `models/journeys` (timetable format, RAPTOR, planner: pure Dart, tested against a brute
+- Journeys (home or any address, searched with Photon in `services/place_search_service.dart`): `models/journeys` (timetable format, RAPTOR, planner: pure Dart, tested against a brute
   force), `repositories/journeys`, `features/journeys`; the timetables are built by `tool/journeys/build_timetable.dart`
   in the nightly import. A format change bumps `Timetable._version`. Realtime comes from `api.arrivals`, matched by slot.
 - Reference pattern for new data: `repositories/transit` (interface + mock + supabase + provider), `models/transit`,

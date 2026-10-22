@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:veribus/core/providers/auto_refresh.dart';
@@ -5,9 +7,11 @@ import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/shared_preferences_provider.dart';
 import 'package:veribus/models/journeys/change_reliability.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/repositories/journeys/journeys_repository_provider.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
+import 'package:veribus/services/place_search_service.dart';
 
 part 'journeys_providers.g.dart';
 
@@ -34,6 +38,49 @@ class HomePlace extends _$HomePlace {
     await ref.read(sharedPreferencesProvider).remove(_key);
   }
 }
+
+/// Where the journeys page plans to: null is home. Back to home every time the page is opened again.
+@riverpod
+class JourneyDestination extends _$JourneyDestination {
+  @override
+  Place? build() => null;
+
+  void set(Place place) => state = place.isHome ? null : place;
+}
+
+/// The last places chosen as destination, newest first, saved only on the phone like home.
+@Riverpod(keepAlive: true)
+class RecentPlaces extends _$RecentPlaces {
+  static const _key = 'recent_places';
+  static const _max = 5;
+
+  /// Closer than this, two places are the same one found twice.
+  static const _sameMeters = 50.0;
+
+  @override
+  List<Place> build() {
+    final saved = ref.watch(sharedPreferencesProvider).getString(_key);
+    if (saved == null) return const [];
+    try {
+      return [for (final p in jsonDecode(saved) as List) Place.fromJson(p as Map<String, dynamic>)];
+    } on Object {
+      return const []; // an older or broken list is forgotten, not a crash
+    }
+  }
+
+  Future<void> add(Place place) async {
+    if (place.isHome) return;
+    state = [
+      place,
+      ...state.where((p) => p.name != place.name && const Distance()(p.point, place.point) > _sameMeters),
+    ].take(_max).toList();
+    await ref.read(sharedPreferencesProvider).setString(_key, jsonEncode([for (final p in state) p.toJson()]));
+  }
+}
+
+/// Addresses and places matching [query], from the place search service.
+@riverpod
+Future<List<Place>> placeSearch(Ref ref, String query) => ref.watch(placeSearchServiceProvider).search(query);
 
 /// The planner on the timetable of [date] (yyyymmdd), kept for the session. Null when the nightly import did not
 /// build that day's timetable.
@@ -62,6 +109,11 @@ Future<PlannedTrip?> plannedTrip(Ref ref, LatLng from, LatLng to) async {
   final journeys = await planner.plan(from: from, to: to, at: now);
   return (planner: planner, journeys: journeys, last: planner.lastJourney(from: from, to: to, at: now));
 }
+
+/// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+@riverpod
+Future<List<LatLng>> lineShape(Ref ref, String lineId, int directionId) async =>
+    (await ref.watch(transitRepositoryProvider).line(lineId, directionId))?.shape ?? const [];
 
 /// A change between two rides of a journey, named by the slots of the history.
 typedef ChangeSlots = ({

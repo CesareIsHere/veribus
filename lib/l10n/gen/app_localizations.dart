@@ -1058,6 +1058,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get close;
 
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
   /// No description provided for @followedTrips.
   ///
   /// In en, this message translates to:
@@ -1382,11 +1388,65 @@ abstract class AppLocalizations {
   /// **'canceled'**
   String get tripDayCanceled;
 
-  /// No description provided for @journeysHome.
+  /// No description provided for @journeysTitle.
   ///
   /// In en, this message translates to:
-  /// **'Go home'**
-  String get journeysHome;
+  /// **'Journeys'**
+  String get journeysTitle;
+
+  /// No description provided for @journeysHomePlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get journeysHomePlace;
+
+  /// No description provided for @journeysWhereTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to?'**
+  String get journeysWhereTo;
+
+  /// No description provided for @journeysChangeDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get journeysChangeDestination;
+
+  /// No description provided for @journeysAlreadyThere.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already there'**
+  String get journeysAlreadyThere;
+
+  /// No description provided for @journeysSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Address or place'**
+  String get journeysSearchHint;
+
+  /// No description provided for @journeysSearchAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for an address'**
+  String get journeysSearchAddress;
+
+  /// No description provided for @journeysSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an address or the name of a place'**
+  String get journeysSearchEmpty;
+
+  /// No description provided for @journeysSearchNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No address found in Rome'**
+  String get journeysSearchNone;
+
+  /// No description provided for @journeysRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get journeysRecent;
 
   /// No description provided for @journeysSetHome.
   ///
@@ -1409,7 +1469,7 @@ abstract class AppLocalizations {
   /// No description provided for @journeysHomeHint.
   ///
   /// In en, this message translates to:
-  /// **'Move the map until the pin is on your home. It is saved only on this phone.'**
+  /// **'Search for the address, or move the map until the pin is on your home. It is saved only on this phone.'**
   String get journeysHomeHint;
 
   /// No description provided for @journeysRemoveHome.
@@ -1433,13 +1493,13 @@ abstract class AppLocalizations {
   /// No description provided for @journeysNoHomeHint.
   ///
   /// In en, this message translates to:
-  /// **'Set it once and Veribus tells you which bus to take to get back, from wherever you are.'**
+  /// **'Set it once and Veribus tells you which bus to take to get back, from wherever you are. Or search for any destination above.'**
   String get journeysNoHomeHint;
 
   /// No description provided for @journeysNeedPosition.
   ///
   /// In en, this message translates to:
-  /// **'Your position is needed to find the way home'**
+  /// **'Your position is needed to plan the journey'**
   String get journeysNeedPosition;
 
   /// No description provided for @journeysAtHome.
@@ -1451,13 +1511,13 @@ abstract class AppLocalizations {
   /// No description provided for @journeysNone.
   ///
   /// In en, this message translates to:
-  /// **'No way home with at most two changes'**
+  /// **'No journey with at most two changes'**
   String get journeysNone;
 
   /// No description provided for @journeysNoneHint.
   ///
   /// In en, this message translates to:
-  /// **'At this hour the network may not reach your home. The last journey of the night, when there is one, is shown at the top.'**
+  /// **'At this hour the network may not get there. The last journey of the night, when there is one, is shown at the top.'**
   String get journeysNoneHint;
 
   /// No description provided for @journeysUnavailable.
@@ -1526,6 +1586,12 @@ abstract class AppLocalizations {
   /// **'Walk {minutes} min home'**
   String journeysWalkHome(int minutes);
 
+  /// No description provided for @journeysWalkToDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk {minutes} min to the destination'**
+  String journeysWalkToDestination(int minutes);
+
   /// No description provided for @journeysWalkBetween.
   ///
   /// In en, this message translates to:
@@ -1562,6 +1628,12 @@ abstract class AppLocalizations {
   /// **'Home around {time}'**
   String journeysArriveHome(String time);
 
+  /// No description provided for @journeysArriveDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'There around {time}'**
+  String journeysArriveDestination(String time);
+
   /// No description provided for @journeysIfMissed.
   ///
   /// In en, this message translates to:
@@ -1577,13 +1649,13 @@ abstract class AppLocalizations {
   /// No description provided for @journeysLast.
   ///
   /// In en, this message translates to:
-  /// **'Last way home: leave by {time}'**
+  /// **'Last journey: leave by {time}'**
   String journeysLast(String time);
 
   /// No description provided for @journeysLastHint.
   ///
   /// In en, this message translates to:
-  /// **'After that there is no journey home with at most two changes.'**
+  /// **'After that there is no journey with at most two changes.'**
   String get journeysLastHint;
 
   /// No description provided for @journeysChangeRecord.
@@ -1613,7 +1685,7 @@ abstract class AppLocalizations {
   /// No description provided for @journeysNote.
   ///
   /// In en, this message translates to:
-  /// **'Walking to and from the stops is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.'**
+  /// **'Walking from you to the first stop and from the last stop to the destination is estimated as the crow flies. Beyond the next hour, times are the scheduled ones.'**
   String get journeysNote;
 
   /// No description provided for @journeysDetails.

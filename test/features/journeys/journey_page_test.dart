@@ -13,6 +13,7 @@ import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/journeys/timetable_builder.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/repositories/transit/mock_transit_repository.dart';
@@ -76,7 +77,12 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: JourneyPage(
-            args: JourneyArgs(planner: planner, journey: journey, from: from, to: to),
+            args: JourneyArgs(
+              planner: planner,
+              journey: journey,
+              from: from,
+              to: const Place(name: 'Home', point: to, isHome: true),
+            ),
           ),
         ),
       ),

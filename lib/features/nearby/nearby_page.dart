@@ -86,11 +86,11 @@ class NearbyPage extends ConsumerWidget {
                           onSelectionChanged: (s) => ref.read(nearbyMapViewProvider.notifier).set(map: s.first),
                         ),
                       ),
-                      // Which bus to take to get home, from here (journey planner).
+                      // Which bus to take to get home, or anywhere else, from here (journey planner).
                       FilledButton.tonalIcon(
                         onPressed: () => context.push(JourneysPage.route),
-                        icon: const Icon(Icons.home_outlined),
-                        label: Text(l10n.journeysHome),
+                        icon: const Icon(Icons.directions_outlined),
+                        label: Text(l10n.journeysTitle),
                       ),
                     ],
                   ),

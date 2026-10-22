@@ -7,26 +7,60 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:veribus/core/providers/locale_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
+import 'package:veribus/core/providers/shared_preferences_provider.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
+import 'package:veribus/features/journeys/home_place_page.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
 import 'package:veribus/features/journeys/journeys_page.dart';
+import 'package:veribus/features/journeys/place_search_page.dart';
 import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/repositories/journeys/journeys_repository_provider.dart';
 import 'package:veribus/repositories/journeys/mock_journeys_repository.dart';
 import 'package:veribus/repositories/transit/mock_transit_repository.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
 import 'package:veribus/services/map_tile_service.dart';
+import 'package:veribus/services/place_search_service.dart';
 
 const _termini = LatLng(41.9010, 12.5003);
 const _venezia = LatLng(41.8963, 12.4825);
 
-Future<void> _open(WidgetTester tester, {required LatLng? home, LatLng from = _termini, String? location}) async {
+/// Photon, answering every search with Piazza Venezia.
+class _Search extends PlaceSearchService {
+  final asked = <String>[];
+
+  @override
+  Future<List<Place>> search(String query) async {
+    asked.add(query);
+    return [const Place(name: 'Piazza Venezia', detail: 'Trevi', point: _venezia)];
+  }
+}
+
+/// The preferences in memory: only what the recent places use.
+class _Prefs extends Fake implements SharedPreferencesWithCache {
+  final values = <String, String>{};
+
+  @override
+  String? getString(String key) => values[key];
+
+  @override
+  Future<void> setString(String key, String value) async => values[key] = value;
+}
+
+Future<void> _open(
+  WidgetTester tester, {
+  required LatLng? home,
+  LatLng from = _termini,
+  String? location,
+  _Search? search,
+}) async {
   tester.view
     ..physicalSize = const Size(800, 2400)
     ..devicePixelRatio = 1;
@@ -36,6 +70,13 @@ Future<void> _open(WidgetTester tester, {required LatLng? home, LatLng from = _t
     initialLocation: location ?? JourneysPage.route,
     routes: [
       GoRoute(path: JourneysPage.route, builder: (_, _) => const JourneysPage()),
+      GoRoute(
+        path: PlaceSearchPage.route,
+        builder: (_, state) => PlaceSearchPage(
+          purpose: state.extra is PlaceSearchFor ? state.extra! as PlaceSearchFor : PlaceSearchFor.destination,
+        ),
+      ),
+      GoRoute(path: HomePlacePage.route, builder: (_, _) => const HomePlacePage()),
       GoRoute(
         path: JourneyPage.route,
         builder: (_, state) => JourneyPage(args: state.extra is JourneyArgs ? state.extra! as JourneyArgs : null),
@@ -54,6 +95,8 @@ Future<void> _open(WidgetTester tester, {required LatLng? home, LatLng from = _t
         // No tiles in tests: the maps are just the camera, the lines and the markers.
         mapTilesProvider.overrideWith((ref) => Completer<TileProviders>().future),
         positionProvider.overrideWith((ref) => Stream.value(from)),
+        placeSearchServiceProvider.overrideWithValue(search ?? _Search()),
+        sharedPreferencesProvider.overrideWithValue(_Prefs()),
       ],
       child: MaterialApp.router(
         locale: const Locale('en'),
@@ -107,6 +150,71 @@ void main() {
     expect(find.text('Journey'), findsOneWidget);
     expect(find.textContaining('Get on at'), findsWidgets);
     expect(find.textContaining('Home around'), findsOneWidget);
+    await _close(tester);
+  });
+
+  testWidgets('any destination: searched by address, then its journeys', (tester) async {
+    final search = _Search();
+    await _open(tester, home: null, search: search);
+    await tester.tap(find.text('Where to?'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set home'), findsOneWidget); // home comes first, to set when missing
+
+    await tester.enterText(find.byType(TextField), 'pia');
+    await tester.enterText(find.byType(TextField), 'piazza ven');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    expect(search.asked, ['piazza ven']); // once, after the typing stopped
+    await tester.tap(find.text('Piazza Venezia'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    expect(find.text('Piazza Venezia'), findsOneWidget); // the destination, on top of its journeys
+    expect(find.byType(JourneyCard), findsWidgets);
+
+    await tester.tap(find.byType(JourneyCard).first);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    expect(find.textContaining('There around'), findsOneWidget);
+    expect(find.textContaining('Home around'), findsNothing);
+    await _close(tester);
+  });
+
+  testWidgets('home by address: the map goes there, the user saves', (tester) async {
+    await _open(tester, home: null);
+    await tester.tap(find.widgetWithText(FilledButton, 'Set home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Search for an address'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set home'), findsNothing); // searching for home itself
+    await tester.enterText(find.byType(TextField), 'piazza venezia');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    await tester.tap(find.text('Piazza Venezia'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    final container = ProviderScope.containerOf(tester.element(find.byType(JourneysPage)));
+    final home = container.read(homePlaceProvider)!;
+    expect(const Distance()(home, _venezia), lessThan(1));
+    // Back on the journeys page, now planning home: let it finish.
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    await _close(tester);
+  });
+
+  testWidgets('at the chosen destination: nothing to plan', (tester) async {
+    await _open(tester, home: null, from: _venezia);
+    await tester.tap(find.text('Where to?'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'venezia');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    await tester.tap(find.text('Piazza Venezia'));
+    await tester.pumpAndSettle();
+    expect(find.text('You are already there'), findsOneWidget);
     await _close(tester);
   });
 

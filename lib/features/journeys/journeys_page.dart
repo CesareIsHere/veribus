@@ -13,32 +13,37 @@ import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
 import 'package:veribus/features/journeys/home_place_page.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
+import 'package:veribus/features/journeys/place_search_page.dart';
 import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
-/// "Go home": from where the user is to the home saved on the phone, now. Each journey says the state of its first
-/// bus in the words of the stop page; the last journey of the night comes first when the service ends soon.
+/// Journeys from where the user is to home (the default, the problem the page was made for) or to any address or
+/// place, now. Each journey says the state of its first bus in the words of the stop page; the last journey of the
+/// night comes first when the service ends soon.
 class JourneysPage extends ConsumerWidget {
   const JourneysPage({super.key});
 
   static const route = '/journeys';
 
-  /// Closer than this, the user is home: no journey to plan.
-  static const _homeMeters = 300.0;
+  /// Closer than this, the user is there: no journey to plan.
+  static const _arrivedMeters = 300.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final home = ref.watch(homePlaceProvider);
+    final chosen = ref.watch(journeyDestinationProvider);
+    final to = chosen ?? (home == null ? null : Place(name: l10n.journeysHomePlace, point: home, isHome: true));
     // The position, renewed only after 100 m: riding a bus must not replan at every GPS fix.
     final origin = ref.watch(nearbyOriginProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.journeysHome),
+        title: Text(l10n.journeysTitle),
         actions: [
-          if (home != null)
+          if (to != null && to.isHome)
             IconButton(
               tooltip: l10n.journeysChangeHome,
               icon: const Icon(Icons.edit_location_alt_outlined),
@@ -46,31 +51,92 @@ class JourneysPage extends ConsumerWidget {
             ),
         ],
       ),
-      body: switch (origin) {
-        _ when home == null => MessageView(
-          icon: Icons.home_outlined,
-          title: l10n.journeysNoHome,
-          description: l10n.journeysNoHomeHint,
-          action: FilledButton.icon(
-            onPressed: () => context.push(HomePlacePage.route),
-            icon: const Icon(Icons.add_location_alt_outlined),
-            label: Text(l10n.journeysSetHome),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.s),
+            child: _Destination(to: to),
           ),
-        ),
-        AsyncValue(:final error?) => MessageView.error(context, error, onRetry: () => ref.invalidate(positionProvider)),
-        AsyncValue(hasValue: false) => const Center(child: CircularProgressIndicator()),
-        AsyncValue(value: null) => MessageView(
-          icon: Icons.location_disabled,
-          title: l10n.journeysNeedPosition,
-          action: FilledButton.tonal(
-            onPressed: () => ref.read(locationTrackerProvider).enable(),
-            child: Text(l10n.enableLocation),
+          Expanded(
+            child: switch (origin) {
+              _ when to == null => MessageView(
+                icon: Icons.home_outlined,
+                title: l10n.journeysNoHome,
+                description: l10n.journeysNoHomeHint,
+                action: FilledButton.icon(
+                  onPressed: () => context.push(HomePlacePage.route),
+                  icon: const Icon(Icons.add_location_alt_outlined),
+                  label: Text(l10n.journeysSetHome),
+                ),
+              ),
+              AsyncValue(:final error?) => MessageView.error(
+                context,
+                error,
+                onRetry: () => ref.invalidate(positionProvider),
+              ),
+              AsyncValue(hasValue: false) => const Center(child: CircularProgressIndicator()),
+              AsyncValue(value: null) => MessageView(
+                icon: Icons.location_disabled,
+                title: l10n.journeysNeedPosition,
+                action: FilledButton.tonal(
+                  onPressed: () => ref.read(locationTrackerProvider).enable(),
+                  child: Text(l10n.enableLocation),
+                ),
+              ),
+              AsyncValue(hasValue: true, :final value)
+                  when value != null && const Distance()(value, to.point) < _arrivedMeters =>
+                MessageView(
+                  icon: to.isHome ? Icons.home : Icons.where_to_vote_outlined,
+                  title: to.isHome ? l10n.journeysAtHome : l10n.journeysAlreadyThere,
+                ),
+              AsyncValue(hasValue: true, :final value) => _Journeys(from: value!, to: to),
+            },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Where the journeys go: home or the chosen place; a tap searches another one.
+class _Destination extends ConsumerWidget {
+  const _Destination({required this.to});
+
+  final Place? to;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final to = this.to;
+    Future<void> choose() async {
+      final place = await context.push<Place>(PlaceSearchPage.route);
+      if (place != null) ref.read(journeyDestinationProvider.notifier).set(place);
+    }
+
+    return Card.outlined(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        onTap: () => unawaited(choose()),
+        leading: Icon(
+          to == null
+              ? Icons.search
+              : to.isHome
+              ? Icons.home_outlined
+              : Icons.place_outlined,
         ),
-        AsyncValue(hasValue: true, :final value) when value != null && const Distance()(value, home) < _homeMeters =>
-          MessageView(icon: Icons.home, title: l10n.journeysAtHome),
-        AsyncValue(hasValue: true, :final value) => _Journeys(from: value!, to: home),
-      },
+        title: Text(to?.name ?? l10n.journeysWhereTo),
+        subtitle: to == null || to.detail.isEmpty
+            ? null
+            : Text(to.detail, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: to == null
+            ? null
+            : Text(
+                l10n.journeysChangeDestination,
+                style: context.textTheme.labelLarge?.copyWith(color: context.colors.primary),
+              ),
+      ),
     );
   }
 }
@@ -79,14 +145,14 @@ class _Journeys extends ConsumerWidget {
   const _Journeys({required this.from, required this.to});
 
   final LatLng from;
-  final LatLng to;
+  final Place to;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final trip = ref.watch(plannedTripProvider(from, to));
+    final trip = ref.watch(plannedTripProvider(from, to.point));
     final google = OutlinedButton.icon(
-      onPressed: () => unawaited(openInGoogleMaps(from, to)),
+      onPressed: () => unawaited(openInGoogleMaps(from, to.point)),
       icon: const Icon(Icons.open_in_new),
       label: Text(l10n.journeysOpenGoogleMaps),
     );
@@ -94,7 +160,7 @@ class _Journeys extends ConsumerWidget {
       AsyncValue(hasValue: false, :final error?) => MessageView.error(
         context,
         error,
-        onRetry: () => ref.invalidate(plannedTripProvider(from, to)),
+        onRetry: () => ref.invalidate(plannedTripProvider(from, to.point)),
       ),
       AsyncValue(hasValue: false) => const Center(child: CircularProgressIndicator()),
       AsyncValue(hasValue: true, :final value) when value == null => MessageView(
@@ -104,7 +170,7 @@ class _Journeys extends ConsumerWidget {
         action: google,
       ),
       AsyncValue(hasValue: true, :final value) => RefreshIndicator(
-        onRefresh: () => ref.refresh(plannedTripProvider(from, to).future),
+        onRefresh: () => ref.refresh(plannedTripProvider(from, to.point).future),
         child: _List(trip: value!, from: from, to: to, google: google),
       ),
     };
@@ -116,7 +182,7 @@ class _List extends ConsumerWidget {
 
   final PlannedTrip trip;
   final LatLng from;
-  final LatLng to;
+  final Place to;
   final Widget google;
 
   @override
