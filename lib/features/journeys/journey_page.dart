@@ -62,10 +62,15 @@ class JourneyPage extends ConsumerWidget {
     bool metro(RideLeg r) => tt.lineTypes[tt.routeLine[r.route]] == Timetable.metro;
     // The stop page knows the bus and tram stops only: the metro is in the planner's timetable alone.
     VoidCallback? openStop(int s, RideLeg r) => metro(r) ? null : () => context.push(StopPage.route(tt.stopIds[s]));
-    final rides = [
-      for (final r in legs.whereType<RideLeg>())
-        [for (var i = r.board; i <= r.alight; i++) stop(tt.routeStop(r.route, i))],
-    ];
+    // Along the line's streets; the metro, not in the network the paths come from, from station to station.
+    List<LatLng> rideLine(RideLeg r) {
+      final stops = [for (var i = 0; i <= r.alight; i++) stop(tt.routeStop(r.route, i))];
+      if (metro(r)) return stops.sublist(r.board);
+      final shape = ref.watch(lineShapeProvider(tt.lineIds[tt.routeLine[r.route]], tt.routeDirection[r.route]));
+      return alongShape(shape.value ?? const [], stops, r.board, r.alight);
+    }
+
+    final rides = [for (final r in legs.whereType<RideLeg>()) rideLine(r)];
     final walks = [
       for (final w in legs.whereType<WalkLeg>())
         if (w.end > w.start) [endOf(w.from, args.from), endOf(w.to, args.to.point)],

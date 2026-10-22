@@ -56,6 +56,8 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
 
 ## Known limits
 
+- On the journey map a ride follows its line's main path (`api.route`), cut between its stops matched in order;
+  a trip off the main path (a variant), and the metro, are drawn from stop to stop.
 - Walking from the user to the first stop and from the last stop home is still the straight line × 1.3 (measured on
   the phone, where there is no street graph).
 - Walking links are not chained (A→B→C on foot), as RAPTOR assumes them transitively closed: nearly true at 250 m.

@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
 import 'package:veribus/features/stop/components/arrival_tile.dart';
@@ -14,6 +17,65 @@ String journeyClock(JourneyPlanner planner, int seconds) => DateFormat.Hm().form
 
 /// Whole minutes, at least one: a 40-second walk is "1 min", never "0 min".
 int journeyMinutes(int seconds) => seconds <= 0 ? 0 : (seconds + 59) ~/ 60;
+
+/// A stop further than this from the line's path is not on it: that trip takes a variant, or the path is wrong.
+const _offPathMeters = 100.0;
+
+/// The streets of a ride from its [board]-th to its [alight]-th stop: [shape] (the line's main path) cut there. [stops]
+/// are all the stops of the trip from its first, matched in order along the path, so a loop line that passes twice
+/// on the same street is cut on the right pass. The stops joined straight when the line has no path or a stop is
+/// not on it (a variant), so the map never draws a street the bus does not take.
+List<LatLng> alongShape(List<LatLng> shape, List<LatLng> stops, int board, int alight) {
+  final straight = stops.sublist(board, alight + 1);
+  if (shape.length < 2) return straight;
+  final scale = math.cos(stops.first.latitudeInRad);
+  // Where a stop falls on segment [i] of the path, not before the fraction [after]: the fraction along it and the
+  // distance in metres.
+  ({double t, double metres}) onSegment(LatLng p, int i, [double after = 0]) {
+    final a = shape[i];
+    final dx = (shape[i + 1].longitude - a.longitude) * scale;
+    final dy = shape[i + 1].latitude - a.latitude;
+    final px = (p.longitude - a.longitude) * scale;
+    final py = p.latitude - a.latitude;
+    final length2 = dx * dx + dy * dy;
+    final t = length2 == 0 ? after : ((px * dx + py * dy) / length2).clamp(after, 1.0);
+    return (t: t, metres: math.sqrt(math.pow(px - t * dx, 2) + math.pow(py - t * dy, 2)) * 111195);
+  }
+
+  // Each stop on the first stretch of path near it after the previous stop, at the closest point of that stretch.
+  final at = <({int segment, double t})>[];
+  var segment = 0;
+  var t = 0.0;
+  for (var s = 0; s <= alight; s++) {
+    // Never behind the previous stop: on its segment, only the part after it counts.
+    ({double t, double metres}) near(int i) => onSegment(stops[s], i, i == segment ? t : 0);
+    var i = segment;
+    while (i < shape.length - 1 && near(i).metres > _offPathMeters) {
+      i++;
+    }
+    if (i == shape.length - 1) return straight;
+    var best = near(i);
+    while (i + 1 < shape.length - 1 && onSegment(stops[s], i + 1).metres < best.metres) {
+      i++;
+      best = onSegment(stops[s], i);
+    }
+    (segment, t) = (i, best.t);
+    at.add((segment: i, t: best.t));
+  }
+
+  LatLng point(({int segment, double t}) p) {
+    final a = shape[p.segment];
+    final b = shape[p.segment + 1];
+    return LatLng(a.latitude + (b.latitude - a.latitude) * p.t, a.longitude + (b.longitude - a.longitude) * p.t);
+  }
+
+  final (from, to) = (at[board], at[alight]);
+  final piece = [point(from), ...shape.sublist(from.segment + 1, to.segment + 1), point(to)];
+  // Matched on the wrong pass of a loop (a trip starting halfway, after midnight): far longer than the stops.
+  double length(List<LatLng> line) =>
+      [for (var i = 1; i < line.length; i++) const Distance()(line[i - 1], line[i])].fold(0, (a, b) => a + b);
+  return length(piece) > 2 * length(straight) + 500 ? straight : piece;
+}
 
 /// The line of a ride: its badge, after a metro or tram icon (the badge alone would read as a bus).
 class RideBadge extends StatelessWidget {

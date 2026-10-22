@@ -110,6 +110,11 @@ Future<PlannedTrip?> plannedTrip(Ref ref, LatLng from, LatLng to) async {
   return (planner: planner, journeys: journeys, last: planner.lastJourney(from: from, to: to, at: now));
 }
 
+/// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+@riverpod
+Future<List<LatLng>> lineShape(Ref ref, String lineId, int directionId) async =>
+    (await ref.watch(transitRepositoryProvider).line(lineId, directionId))?.shape ?? const [];
+
 /// A change between two rides of a journey, named by the slots of the history.
 typedef ChangeSlots = ({
   String arriveStop,

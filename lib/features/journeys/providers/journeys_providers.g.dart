@@ -378,6 +378,80 @@ final class PlannedTripFamily extends $Family with $FunctionalFamilyOverride<Fut
   String toString() => r'plannedTripProvider';
 }
 
+/// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+
+@ProviderFor(lineShape)
+final lineShapeProvider = LineShapeFamily._();
+
+/// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+
+final class LineShapeProvider
+    extends $FunctionalProvider<AsyncValue<List<LatLng>>, List<LatLng>, FutureOr<List<LatLng>>>
+    with $FutureModifier<List<LatLng>>, $FutureProvider<List<LatLng>> {
+  /// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+  LineShapeProvider._({required LineShapeFamily super.from, required (String, int) super.argument})
+    : super(
+        retry: null,
+        name: r'lineShapeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lineShapeHash();
+
+  @override
+  String toString() {
+    return r'lineShapeProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<LatLng>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<LatLng>> create(Ref ref) {
+    final argument = this.argument as (String, int);
+    return lineShape(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LineShapeProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$lineShapeHash() => r'12889d0bcc23d2fd908e80e0f9a45099c6ec13a5';
+
+/// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+
+final class LineShapeFamily extends $Family with $FunctionalFamilyOverride<FutureOr<List<LatLng>>, (String, int)> {
+  LineShapeFamily._()
+    : super(
+        retry: null,
+        name: r'lineShapeProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.
+
+  LineShapeProvider call(String lineId, int directionId) =>
+      LineShapeProvider._(argument: (lineId, directionId), from: this);
+
+  @override
+  String toString() => r'lineShapeProvider';
+}
+
 /// How often the change worked in the last 30 days of the same kind, from the history of both trips.
 
 @ProviderFor(changeReliability)
