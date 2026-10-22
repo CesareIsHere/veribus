@@ -10,12 +10,10 @@ import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/journeys/components/journey_timeline.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
-import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/journeys/trip_page.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
 import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/journeys/raptor.dart';
-import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 import 'package:veribus/styles/app_theme.dart';
 
@@ -62,15 +60,9 @@ class JourneyPage extends ConsumerWidget {
 
     LatLng stop(int s) => LatLng(tt.stopLat[s] / 1e6, tt.stopLon[s] / 1e6);
     LatLng endOf(int? s, LatLng place) => s == null ? place : stop(s);
-    // Along the line's streets; the metro, not in the network the paths come from, from station to station.
-    List<LatLng> rideLine(RideLeg r) {
-      final stops = [for (var i = 0; i <= r.alight; i++) stop(tt.routeStop(r.route, i))];
-      if (rideKind(planner, r) == TransitKind.metro) return stops.sublist(r.board);
-      final shape = ref.watch(lineShapeProvider(tt.lineIds[tt.routeLine[r.route]], tt.routeDirection[r.route]));
-      return alongShape(shape.value ?? const [], stops, r.board, r.alight);
-    }
-
-    final rides = [for (final r in legs.whereType<RideLeg>()) (line: rideLine(r), color: _color(context, planner, r))];
+    final rides = [
+      for (final r in legs.whereType<RideLeg>()) (line: rideRoute(ref, planner, r), color: _color(context, planner, r)),
+    ];
     final walks = [
       for (final w in legs.whereType<WalkLeg>())
         if (w.end > w.start) [endOf(w.from, args.from.point), endOf(w.to, args.to.point)],

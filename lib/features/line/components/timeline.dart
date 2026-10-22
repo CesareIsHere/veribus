@@ -11,15 +11,28 @@ import 'package:veribus/styles/app_spacing.dart';
 const double _lineHeight = Spacing.xxxl;
 const double _nodeBox = Spacing.xl + Spacing.xs;
 
+/// The rail is the line itself: thick, in the color of its chip.
+const double _railWidth = 6;
+
 /// One row of the route: a node on the vertical rail (the line's path), content on the right. The rail runs through
 /// every row, so stops and vehicles read as one path with the vehicles sitting between the stops they are heading to.
 class TimelineRow extends StatelessWidget {
-  const TimelineRow({required this.node, required this.child, this.first = false, this.last = false, super.key});
+  const TimelineRow({
+    required this.node,
+    required this.child,
+    this.railColor,
+    this.first = false,
+    this.last = false,
+    super.key,
+  });
 
   final Widget node;
   final Widget child;
   final bool first;
   final bool last;
+
+  /// The color of the line the rail draws; muted when null.
+  final Color? railColor;
 
   @override
   Widget build(BuildContext context) {
@@ -29,12 +42,12 @@ class TimelineRow extends StatelessWidget {
         children: [
           if (!(first && last))
             Positioned(
-              left: Spacing.xxxl / 2 - 1,
-              width: 2,
+              left: Spacing.xxxl / 2 - _railWidth / 2,
+              width: _railWidth,
               top: first ? _lineHeight / 2 : 0,
               bottom: last ? null : 0,
               height: last ? _lineHeight / 2 : null,
-              child: ColoredBox(color: context.colors.outlineVariant),
+              child: ColoredBox(color: railColor ?? context.colors.outlineVariant),
             ),
           Positioned(
             top: (_lineHeight - _nodeBox) / 2,
@@ -61,11 +74,22 @@ class TimelineRow extends StatelessWidget {
 
 /// A stop of the route. The terminals are filled and bolder: where the trip starts and ends.
 class TimelineStop extends StatelessWidget {
-  const TimelineStop({required this.name, required this.terminus, required this.onTap, super.key});
+  const TimelineStop({
+    required this.name,
+    required this.terminus,
+    required this.onTap,
+    this.badge,
+    this.highlight = false,
+    super.key,
+  });
 
   final String name;
   final bool terminus;
   final VoidCallback onTap;
+
+  /// "Your stop", on the stop the page was opened from.
+  final String? badge;
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +102,23 @@ class TimelineStop extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Row(
           children: [
-            Expanded(child: Text(name, style: terminus ? context.textTheme.titleSmall : context.textTheme.bodyLarge)),
-            if (terminus)
+            Expanded(
+              child: Text(
+                name,
+                style: terminus || highlight
+                    ? context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)
+                    : context.textTheme.bodyLarge,
+              ),
+            ),
+            if (badge != null)
+              Chip(
+                label: Text(badge!),
+                backgroundColor: colors.primaryContainer,
+                labelStyle: context.textTheme.labelMedium?.copyWith(color: colors.onPrimaryContainer),
+                side: BorderSide.none,
+                visualDensity: VisualDensity.compact,
+              )
+            else if (terminus)
               Text(
                 context.l10n.terminus,
                 style: context.textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
@@ -91,7 +130,7 @@ class TimelineStop extends StatelessWidget {
   }
 
   /// The node on the rail for a stop.
-  static Widget node(BuildContext context, {required bool terminus}) {
+  static Widget node(BuildContext context, {required bool terminus, required Color color}) {
     final colors = context.colors;
     final size = terminus ? Spacing.l : Spacing.m;
     return Container(
@@ -99,8 +138,8 @@ class TimelineStop extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: terminus ? colors.primary : colors.surface,
-        border: Border.all(color: colors.primary, width: 2),
+        color: terminus ? color : colors.surface,
+        border: Border.all(color: color, width: 3),
       ),
     );
   }
@@ -116,13 +155,16 @@ class TimelineVehicle extends StatelessWidget {
   final VoidCallback? onTap;
 
   /// The node on the rail for a vehicle: the accent color, so it stands out from the stops.
-  static Widget node(BuildContext context, LineKind? kind) {
-    final colors = context.colors;
+  static Widget node(BuildContext context, LineKind? kind, {required Color color}) {
     return DecoratedBox(
-      decoration: BoxDecoration(shape: BoxShape.circle, color: colors.primary),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(color: context.colors.surface, width: 3),
+      ),
       child: SizedBox.square(
         dimension: _nodeBox,
-        child: Icon(vehicleIcon(kind), size: Spacing.l + Spacing.xs, color: colors.onPrimary),
+        child: Icon(vehicleIcon(kind), size: Spacing.l, color: context.appColors.onTransit),
       ),
     );
   }

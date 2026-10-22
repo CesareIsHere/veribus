@@ -2017,6 +2017,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search for a line or a stop'**
   String get linesSearchHint;
+
+  /// No description provided for @lineYourStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Your stop'**
+  String get lineYourStop;
+
+  /// No description provided for @stopDirectionsHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Directions here'**
+  String get stopDirectionsHere;
+
+  /// No description provided for @tripWalkTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk to {place}'**
+  String tripWalkTo(String place);
+
+  /// No description provided for @tripDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{meters} m · {minutes} min'**
+  String tripDistance(int meters, int minutes);
+
+  /// No description provided for @tripYourLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {line} comes {when}'**
+  String tripYourLine(String line, String when);
+
+  /// No description provided for @tripBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Get on the {line}'**
+  String tripBoard(String line);
+
+  /// No description provided for @tripWaitHere.
+  ///
+  /// In en, this message translates to:
+  /// **'{headsign}, arriving here'**
+  String tripWaitHere(String headsign);
+
+  /// No description provided for @tripGetOffIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Get off in {n, plural, =1{1 stop} other{{n} stops}}'**
+  String tripGetOffIn(int n);
+
+  /// No description provided for @tripGetOffNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Get off at the next stop'**
+  String get tripGetOffNext;
+
+  /// No description provided for @tripGetOffAt.
+  ///
+  /// In en, this message translates to:
+  /// **'at {stop} · {time}'**
+  String tripGetOffAt(String stop, String time);
+
+  /// No description provided for @tripChangeAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Change at {stop}'**
+  String tripChangeAt(String stop);
+
+  /// No description provided for @tripThen.
+  ///
+  /// In en, this message translates to:
+  /// **'Then {line} at {time}, {walk} min on foot'**
+  String tripThen(String line, String time, int walk);
+
+  /// No description provided for @tripThenNoWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Then {line} at {time}'**
+  String tripThenNoWalk(String line, String time);
+
+  /// No description provided for @tripArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'You have arrived'**
+  String get tripArrived;
+
+  /// No description provided for @tripEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get tripEnd;
+
+  /// No description provided for @tripAllSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'All steps'**
+  String get tripAllSteps;
+
+  /// No description provided for @tripAlertHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone vibrates one stop before, with the screen on.'**
+  String get tripAlertHint;
+
+  /// No description provided for @tripAlertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get off at the next stop'**
+  String get tripAlertTitle;
+
+  /// No description provided for @tripNeedPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Your position is needed to follow you step by step'**
+  String get tripNeedPosition;
+
+  /// No description provided for @tripRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{stops} to go'**
+  String tripRemaining(String stops);
+
+  /// No description provided for @tripNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get tripNow;
+
+  /// No description provided for @tripFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey in progress'**
+  String get tripFollowing;
+
+  /// No description provided for @tripAtTime.
+  ///
+  /// In en, this message translates to:
+  /// **'at {time}'**
+  String tripAtTime(String time);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

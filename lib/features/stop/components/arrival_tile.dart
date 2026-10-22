@@ -181,18 +181,18 @@ class ArrivalTile extends StatelessWidget {
     final gone = arrival.status == ArrivalStatus.canceled || arrival.status == ArrivalStatus.suppressed;
     final reason = ArrivalText.reason(context.l10n, arrival, lineWithoutRealtime: lineWithoutRealtime);
     final headsign = context.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w600,
       color: gone ? context.colors.outline : null,
       decoration: gone ? TextDecoration.lineThrough : null,
     );
-    // Wireframe "Fermata": destination and time on the first row, status and reason below at full width,
-    // so long destinations are not squeezed by the time.
+    // Chip, destination with its status and reason below at full width, and the time on the right: the minutes are
+    // what is read walking to the stop.
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: Spacing.l, vertical: Spacing.m),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: Spacing.l,
+          spacing: Spacing.m,
           children: [
             LineBadge(lineName, kind: kind, withoutRealtime: lineWithoutRealtime, muted: gone),
             Expanded(
@@ -200,15 +200,7 @@ class ArrivalTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: Spacing.xs,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    spacing: Spacing.s,
-                    children: [
-                      Expanded(child: Text('→ ${arrival.headsign}', maxLines: 2, style: headsign)),
-                      ArrivalTime(arrival),
-                    ],
-                  ),
+                  Text('→ ${arrival.headsign}', maxLines: 2, overflow: TextOverflow.ellipsis, style: headsign),
                   Wrap(
                     spacing: Spacing.s,
                     runSpacing: Spacing.xs,
@@ -225,6 +217,7 @@ class ArrivalTile extends StatelessWidget {
                 ],
               ),
             ),
+            ArrivalTime(arrival),
           ],
         ),
       ),

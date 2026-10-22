@@ -858,5 +858,130 @@
   "linesBus": "Buses",
   "linesTram": "Trams",
   "linesNight": "Night buses",
-  "linesSearchHint": "Search for a line or a stop"
+  "linesSearchHint": "Search for a line or a stop",
+  "lineYourStop": "Your stop",
+  "stopDirectionsHere": "Directions here",
+  "tripWalkTo": "Walk to {place}",
+  "@tripWalkTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "tripDistance": "{meters} m · {minutes} min",
+  "@tripDistance": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "tripYourLine": "Your {line} comes {when}",
+  "@tripYourLine": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "tripBoard": "Get on the {line}",
+  "@tripBoard": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "tripWaitHere": "{headsign}, arriving here",
+  "@tripWaitHere": {
+    "placeholders": {
+      "headsign": {
+        "type": "String"
+      }
+    }
+  },
+  "tripGetOffIn": "Get off in {n, plural, =1{1 stop} other{{n} stops}}",
+  "@tripGetOffIn": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tripGetOffNext": "Get off at the next stop",
+  "tripGetOffAt": "at {stop} · {time}",
+  "@tripGetOffAt": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tripChangeAt": "Change at {stop}",
+  "@tripChangeAt": {
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "tripThen": "Then {line} at {time}, {walk} min on foot",
+  "@tripThen": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "walk": {
+        "type": "int"
+      }
+    }
+  },
+  "tripThenNoWalk": "Then {line} at {time}",
+  "@tripThenNoWalk": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tripArrived": "You have arrived",
+  "tripEnd": "End",
+  "tripAllSteps": "All steps",
+  "tripAlertHint": "The phone vibrates one stop before, with the screen on.",
+  "tripAlertTitle": "Get off at the next stop",
+  "tripNeedPosition": "Your position is needed to follow you step by step",
+  "tripRemaining": "{stops} to go",
+  "@tripRemaining": {
+    "placeholders": {
+      "stops": {
+        "type": "String"
+      }
+    }
+  },
+  "tripNow": "now",
+  "tripFollowing": "Journey in progress",
+  "tripAtTime": "at {time}",
+  "@tripAtTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

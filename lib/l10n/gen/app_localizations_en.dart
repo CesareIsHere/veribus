@@ -1140,4 +1140,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linesSearchHint => 'Search for a line or a stop';
+
+  @override
+  String get lineYourStop => 'Your stop';
+
+  @override
+  String get stopDirectionsHere => 'Directions here';
+
+  @override
+  String tripWalkTo(String place) {
+    return 'Walk to $place';
+  }
+
+  @override
+  String tripDistance(int meters, int minutes) {
+    return '$meters m · $minutes min';
+  }
+
+  @override
+  String tripYourLine(String line, String when) {
+    return 'Your $line comes $when';
+  }
+
+  @override
+  String tripBoard(String line) {
+    return 'Get on the $line';
+  }
+
+  @override
+  String tripWaitHere(String headsign) {
+    return '$headsign, arriving here';
+  }
+
+  @override
+  String tripGetOffIn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n stops', one: '1 stop');
+    return 'Get off in $_temp0';
+  }
+
+  @override
+  String get tripGetOffNext => 'Get off at the next stop';
+
+  @override
+  String tripGetOffAt(String stop, String time) {
+    return 'at $stop · $time';
+  }
+
+  @override
+  String tripChangeAt(String stop) {
+    return 'Change at $stop';
+  }
+
+  @override
+  String tripThen(String line, String time, int walk) {
+    return 'Then $line at $time, $walk min on foot';
+  }
+
+  @override
+  String tripThenNoWalk(String line, String time) {
+    return 'Then $line at $time';
+  }
+
+  @override
+  String get tripArrived => 'You have arrived';
+
+  @override
+  String get tripEnd => 'End';
+
+  @override
+  String get tripAllSteps => 'All steps';
+
+  @override
+  String get tripAlertHint => 'The phone vibrates one stop before, with the screen on.';
+
+  @override
+  String get tripAlertTitle => 'Get off at the next stop';
+
+  @override
+  String get tripNeedPosition => 'Your position is needed to follow you step by step';
+
+  @override
+  String tripRemaining(String stops) {
+    return '$stops to go';
+  }
+
+  @override
+  String get tripNow => 'now';
+
+  @override
+  String get tripFollowing => 'Journey in progress';
+
+  @override
+  String tripAtTime(String time) {
+    return 'at $time';
+  }
 }

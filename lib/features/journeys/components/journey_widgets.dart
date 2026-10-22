@@ -99,6 +99,17 @@ TransitKind rideKind(JourneyPlanner planner, RideLeg ride) {
   );
 }
 
+/// The streets of [ride] on the map: the line's path cut between its stops, or from stop to stop for the metro and
+/// when the line has no path (`alongShape`). Watches the path of the line, which the first call loads.
+List<LatLng> rideRoute(WidgetRef ref, JourneyPlanner planner, RideLeg ride) {
+  final tt = planner.timetable;
+  LatLng stop(int s) => LatLng(tt.stopLat[s] / 1e6, tt.stopLon[s] / 1e6);
+  final stops = [for (var i = 0; i <= ride.alight; i++) stop(tt.routeStop(ride.route, i))];
+  if (rideKind(planner, ride) == TransitKind.metro) return stops.sublist(ride.board);
+  final shape = ref.watch(lineShapeProvider(tt.lineIds[tt.routeLine[ride.route]], tt.routeDirection[ride.route]));
+  return alongShape(shape.value ?? const [], stops, ride.board, ride.alight);
+}
+
 /// The line of a ride: its chip with the color and the icon of its kind (the metro and the tram are told apart from
 /// the bus by the icon, not by color alone). Muted when the line never transmits positions; not for the metro, whose
 /// colors are what riders look for.

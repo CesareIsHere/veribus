@@ -1141,4 +1141,98 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get linesSearchHint => 'Cerca una linea o una palina';
+
+  @override
+  String get lineYourStop => 'La tua fermata';
+
+  @override
+  String get stopDirectionsHere => 'Indicazioni fin qui';
+
+  @override
+  String tripWalkTo(String place) {
+    return 'Cammina fino a $place';
+  }
+
+  @override
+  String tripDistance(int meters, int minutes) {
+    return '$meters m · $minutes min';
+  }
+
+  @override
+  String tripYourLine(String line, String when) {
+    return 'Il tuo $line passa $when';
+  }
+
+  @override
+  String tripBoard(String line) {
+    return 'Sali sul $line';
+  }
+
+  @override
+  String tripWaitHere(String headsign) {
+    return '$headsign, in arrivo qui';
+  }
+
+  @override
+  String tripGetOffIn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(n, locale: localeName, other: '$n fermate', one: '1 fermata');
+    return 'Scendi fra $_temp0';
+  }
+
+  @override
+  String get tripGetOffNext => 'Scendi alla prossima';
+
+  @override
+  String tripGetOffAt(String stop, String time) {
+    return 'a $stop · $time';
+  }
+
+  @override
+  String tripChangeAt(String stop) {
+    return 'Cambia a $stop';
+  }
+
+  @override
+  String tripThen(String line, String time, int walk) {
+    return 'Poi $line alle $time, $walk min a piedi';
+  }
+
+  @override
+  String tripThenNoWalk(String line, String time) {
+    return 'Poi $line alle $time';
+  }
+
+  @override
+  String get tripArrived => 'Sei arrivato';
+
+  @override
+  String get tripEnd => 'Termina';
+
+  @override
+  String get tripAllSteps => 'Tutti i passaggi';
+
+  @override
+  String get tripAlertHint => 'Il telefono vibra una fermata prima, con lo schermo acceso.';
+
+  @override
+  String get tripAlertTitle => 'Scendi alla prossima';
+
+  @override
+  String get tripNeedPosition => 'Serve la posizione per seguirti passo per passo';
+
+  @override
+  String tripRemaining(String stops) {
+    return 'Mancano $stops';
+  }
+
+  @override
+  String get tripNow => 'ora';
+
+  @override
+  String get tripFollowing => 'Percorso in corso';
+
+  @override
+  String tripAtTime(String time) {
+    return 'alle $time';
+  }
 }

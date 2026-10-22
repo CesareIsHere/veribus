@@ -37,6 +37,10 @@ abstract interface class IPushService {
 
   /// The route of the notice that launched the app, once.
   Future<String?> launchLink();
+
+  /// Shows a notice on this phone now, without a server: the journey being followed says to get off. False when this
+  /// build cannot show notices (the same conditions as [init]) or the user did not allow them.
+  Future<bool> showNow({required int id, required String title, required String body, String? link});
 }
 
 /// Android channel of the notices: the server names it in every message (`backend/adapters/fcm.ts`).
@@ -145,6 +149,28 @@ class FirebasePushService implements IPushService {
     final m = await FirebaseMessaging.instance.getInitialMessage();
     return m == null ? null : _link(m);
   }
+
+  @override
+  Future<bool> showNow({required int id, required String title, required String body, String? link}) async {
+    if (!_ready || await permission() != PushPermission.granted) return false;
+    await _local.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          noticeChannelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: link ?? defaultNoticeLink,
+    );
+    return true;
+  }
 }
 
 /// Always available and already allowed: the mock backend has no server to push, the UI can still be tried.
@@ -169,6 +195,9 @@ class MockPushService implements IPushService {
 
   @override
   Future<String?> launchLink() async => null;
+
+  @override
+  Future<bool> showNow({required int id, required String title, required String body, String? link}) async => true;
 }
 
 @Riverpod(keepAlive: true)
