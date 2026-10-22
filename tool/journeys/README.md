@@ -64,8 +64,10 @@ python3 -I tool/journeys/network_stats.py gtfs 20261020
 - Walking links are not chained (A→B→C on foot), as RAPTOR assumes them transitively closed: nearly true at 250 m.
 - A delay moves the whole trip by the delay predicted at the boarding stop; beyond the next hour times are scheduled.
 - No rail (FL, Roma-Lido, Roma-Viterbo): it is not in the RSM feed. The metro has no realtime.
-- Following a journey works in the foreground only: the position is asked while the app is in front. With the screen off
-  there is no tracking (a foreground service with a persistent notification would be needed).
+- Following a journey keeps the position with the screen off through a foreground service (Android) with an ongoing
+  notification; the text of the notification changes with the step, not with the metres (the service starts again with
+  the new text). Not tested on a device yet. Elsewhere (iOS, web) it follows only while the app is in front.
+- The walks are drawn along the streets from the FOSSGIS OSRM foot profile; the minutes shown are still the planner's.
 - "Arrive by" and the sort by fewer changes or less walking are not offered: the planner searches forward in time and
   keeps one journey per number of rides.
 - The address search uses the public Photon instance: fair use, no guarantee, Italian names only as OpenStreetMap

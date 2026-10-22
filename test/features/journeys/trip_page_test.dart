@@ -19,7 +19,22 @@ import 'package:veribus/models/journeys/timetable_builder.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/repositories/transit/mock_transit_repository.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
+import 'package:veribus/services/location_service.dart';
 import 'package:veribus/services/map_tile_service.dart';
+
+/// The foreground service of the journey: what it was started with, each time.
+class _Location extends LocationService {
+  final started = <({String title, String text})>[];
+  final cancelled = <int>[];
+
+  @override
+  Stream<LatLng> followFixes({required String title, required String text, required String channelName}) {
+    started.add((title: title, text: text));
+    final n = started.length;
+    final controller = StreamController<LatLng>(onCancel: () => cancelled.add(n));
+    return controller.stream;
+  }
+}
 
 int _hm(String hhmm) => int.parse(hhmm.substring(0, 2)) * 3600 + int.parse(hhmm.substring(3)) * 60;
 
@@ -70,6 +85,7 @@ void main() {
     final position = StreamController<LatLng?>();
     addTearDown(position.close);
     final transit = MockTransitRepository();
+    final location = _Location();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -78,6 +94,7 @@ void main() {
           localeProvider.overrideWithBuild((ref, notifier) => null),
           mapTilesProvider.overrideWith((ref) => Completer<TileProviders>().future),
           positionProvider.overrideWith((ref) => position.stream),
+          locationServiceProvider.overrideWithValue(location),
         ],
         child: MaterialApp(
           locale: const Locale('en'),
@@ -101,15 +118,25 @@ void main() {
     }
 
     await move(from);
+    // The ongoing notification starts with the step: walk to the stop, which bus.
+    expect(location.started.single.title, 'Walk to STOP A');
+    expect(location.started.single.text, 'Your X comes at 10:00');
     expect(find.text('Walk to STOP A'), findsOneWidget);
     expect(find.textContaining('min'), findsWidgets);
     expect(find.text('Your X comes at 10:00'), findsOneWidget);
 
     await move(_at('A', metres: 20));
     expect(find.text('Get on the X'), findsOneWidget);
+    expect(location.started.last.title, 'Get on the X');
+    // Moving along the same step does not restart the service: only a new step changes the notification.
+    final restarts = location.started.length;
+    await move(_at('A', metres: 25));
+    expect(location.started, hasLength(restarts));
 
     await move(_at('B', metres: 10));
     expect(find.text('Get off in 2 stops'), findsOneWidget);
+    expect(location.started.last.title, 'Get off in 2 stops');
+    expect(location.started.last.text, 'at STOP D · 10:30');
     expect(find.text('STOP D · get off'), findsOneWidget);
 
     await move(_at('C', metres: 10));
@@ -120,6 +147,8 @@ void main() {
 
     await move(to);
     expect(find.text('You have arrived'), findsOneWidget);
+    // Arrived: the last service is cancelled and no new one starts, so the notification goes away.
+    expect(location.cancelled, contains(location.started.length));
   });
 
   testWidgets('without its journey the page says to go back', (tester) async {

@@ -64,6 +64,8 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
   metro A/B/C, night). Line colors live in `AppColors`, shapes (cards 24, sheets 28, chips 8) in `app_theme.dart`.
   Realtime status colors: green with the live icon when confirmed (`ArrivalTime`), tertiary when uncertain.
 - Following a journey: `models/journeys/trip_progress.dart` (`followTrip`, pure and tested) decides the phase from the
-  position; `features/journeys/trip_page.dart` only shows it. The alert one stop before uses `IPushService.showNow`.
+  position; `features/journeys/trip_page.dart` shows it and keeps the foreground service (`LocationService.followFixes`,
+  its notification says the step). The alert one stop before uses `IPushService.showNow`. Walks along the streets:
+  `services/walking_route_service.dart`.
 - Reference pattern for new data: `repositories/transit` (interface + mock + supabase + provider), `models/transit`,
   `features/stop`. Status/signal/time wording lives only in `features/stop/components/arrival_tile.dart`.

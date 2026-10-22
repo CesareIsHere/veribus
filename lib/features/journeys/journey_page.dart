@@ -10,6 +10,7 @@ import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/journeys/components/journey_timeline.dart';
 import 'package:veribus/features/journeys/components/journey_widgets.dart';
+import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/journeys/trip_page.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
 import 'package:veribus/models/journeys/place.dart';
@@ -63,9 +64,15 @@ class JourneyPage extends ConsumerWidget {
     final rides = [
       for (final r in legs.whereType<RideLeg>()) (line: rideRoute(ref, planner, r), color: _color(context, planner, r)),
     ];
+    // On foot along the streets as soon as the routing service answers; the straight line until then.
     final walks = [
       for (final w in legs.whereType<WalkLeg>())
-        if (w.end > w.start) [endOf(w.from, args.from.point), endOf(w.to, args.to.point)],
+        if (w.end > w.start)
+          walkLine(
+            endOf(w.from, args.from.point),
+            endOf(w.to, args.to.point),
+            ref.watch(walkRouteProvider(endOf(w.from, args.from.point), endOf(w.to, args.to.point))).value,
+          ),
     ];
     final changes = journey.rides - 1;
     final scheme = context.colors;

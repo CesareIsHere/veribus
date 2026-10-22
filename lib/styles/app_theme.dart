@@ -55,6 +55,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.onSuccessContainer,
     required this.location,
     required this.onLocation,
+    required this.bus,
     required this.tram,
     required this.metroA,
     required this.metroB,
@@ -75,6 +76,7 @@ class AppColors extends ThemeExtension<AppColors> {
       location: const Color(0xFF1A73E8),
       onLocation: const Color(0xFFFFFFFF),
       // Line colors are the same in light and dark: riders know them from the signs. Each has 4.5:1 with white.
+      bus: ColorScheme.fromSeed(seedColor: AppConfig.seedColor).primary,
       tram: const Color(0xFF00796B),
       metroA: const Color(0xFFB34700),
       metroB: const Color(0xFF1E56A0),
@@ -93,8 +95,9 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color location;
   final Color onLocation;
 
-  /// The chips of the lines (the bus uses the scheme's primary): tram, the three metro lines and the night buses, with
-  /// the color of what is written on them.
+  /// The chips of the lines, with the color of what is written on them. The bus is the brand color of the light scheme in
+  /// both modes: the primary of the dark scheme is a pastel, and white on it cannot be read.
+  final Color bus;
   final Color tram;
   final Color metroA;
   final Color metroB;
@@ -110,6 +113,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? onSuccessContainer,
     Color? location,
     Color? onLocation,
+    Color? bus,
     Color? tram,
     Color? metroA,
     Color? metroB,
@@ -123,6 +127,7 @@ class AppColors extends ThemeExtension<AppColors> {
     onSuccessContainer: onSuccessContainer ?? this.onSuccessContainer,
     location: location ?? this.location,
     onLocation: onLocation ?? this.onLocation,
+    bus: bus ?? this.bus,
     tram: tram ?? this.tram,
     metroA: metroA ?? this.metroA,
     metroB: metroB ?? this.metroB,
@@ -141,6 +146,7 @@ class AppColors extends ThemeExtension<AppColors> {
           onSuccessContainer: Color.lerp(onSuccessContainer, other.onSuccessContainer, t)!,
           location: Color.lerp(location, other.location, t)!,
           onLocation: Color.lerp(onLocation, other.onLocation, t)!,
+          bus: Color.lerp(bus, other.bus, t)!,
           tram: Color.lerp(tram, other.tram, t)!,
           metroA: Color.lerp(metroA, other.metroA, t)!,
           metroB: Color.lerp(metroB, other.metroB, t)!,

@@ -1123,4 +1123,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String tripAtTime(String time) {
     return 'alle $time';
   }
+
+  @override
+  String get tripChannelName => 'Percorso in corso';
 }

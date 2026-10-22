@@ -23,18 +23,18 @@ class LineChip extends StatelessWidget {
     TransitKind.night => Icons.nightlight,
   };
 
-  /// The chip color of a line: the metro lines by their letter, the bus the scheme's primary.
+  /// The chip color of a line: the metro lines by their letter, the bus the brand color.
   static Color colorOf(BuildContext context, TransitKind kind, String name) {
     final colors = context.appColors;
     return switch (kind) {
-      TransitKind.bus => context.colors.primary,
+      TransitKind.bus => colors.bus,
       TransitKind.tram => colors.tram,
       TransitKind.night => colors.night,
       TransitKind.metro => switch (name.toUpperCase()) {
         final n when n.startsWith('A') => colors.metroA,
         final n when n.startsWith('B') => colors.metroB,
         final n when n.startsWith('C') => colors.metroC,
-        _ => context.colors.primary,
+        _ => colors.bus,
       },
     };
   }

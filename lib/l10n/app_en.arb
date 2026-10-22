@@ -843,5 +843,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "tripChannelName": "Journey in progress"
 }
