@@ -10,6 +10,7 @@ import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// One bar for lines and stops, searched on the phone while typing (RF-10, RF-11).
@@ -89,7 +90,7 @@ List<Widget> searchResults(
     if (r.lines.isNotEmpty) SectionHeader(l10n.lines),
     for (final line in r.lines)
       ListTile(
-        leading: LineBadge(line.name, withoutRealtime: noRealtime.contains(line.id)),
+        leading: LineBadge(line.name, kind: TransitKind.ofLine(line), withoutRealtime: noRealtime.contains(line.id)),
         title: Text(line.ends),
         subtitle: noRealtime.contains(line.id) ? Text(l10n.withoutRealtime) : null,
         trailing: const Icon(Icons.chevron_right),

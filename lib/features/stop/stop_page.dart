@@ -14,6 +14,7 @@ import 'package:veribus/features/stop/providers/stop_providers.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Stop panel (RF-20..29): arrivals of every line in the next 60 minutes, with status and reason.
@@ -141,6 +142,7 @@ class _StopPageState extends ConsumerState<StopPage> {
           ArrivalTile(
             arrival: a,
             lineName: network?.lines[a.lineId]?.name ?? a.lineId,
+            kind: TransitKind.ofLineOrBus(network?.lines[a.lineId]),
             lineWithoutRealtime: noRealtime.contains(a.lineId),
             onTap: () => context.push(LinePage.routeOf(a, widget.stopId)),
           ),

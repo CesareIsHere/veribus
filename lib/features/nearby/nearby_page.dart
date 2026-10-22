@@ -23,6 +23,7 @@ import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// Nearby stops on a map or in a list (RF-01..07).
@@ -293,6 +294,7 @@ class _StopCard extends StatelessWidget {
                     children: [
                       LineBadge(
                         network?.lines[a.lineId]?.name ?? a.lineId,
+                        kind: TransitKind.ofLineOrBus(network?.lines[a.lineId]),
                         withoutRealtime: noRealtime.contains(a.lineId),
                       ),
                       Expanded(child: Text('→ ${a.headsign}', maxLines: 2)),

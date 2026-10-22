@@ -11,6 +11,15 @@ abstract final class AppTheme {
 
   static ThemeData dark() => _build(Brightness.dark);
 
+  /// Corner radii (dp): chips and filters, extended FABs, cards, bottom sheets.
+  static const double _chip = 8;
+  static const double _fab = 16;
+  static const double _card = 24;
+  static const double _sheet = 28;
+
+  /// The corner radius of a sheet that is drawn by hand (the draggable ones), so it matches the bottom sheets.
+  static const double sheetRadius = _sheet;
+
   static ThemeData _build(Brightness brightness) {
     final colors = ColorScheme.fromSeed(seedColor: AppConfig.seedColor, brightness: brightness);
     final base = ThemeData(colorScheme: colors);
@@ -18,6 +27,17 @@ abstract final class AppTheme {
       // M3 has two text field styles, filled and outlined: pick one app-wide.
       inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
       snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      // Expressive shapes: cards and sheets are soft, chips are rounded squares (the line chips and the filters).
+      cardTheme: CardThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_card))),
+      bottomSheetTheme: const BottomSheetThemeData(
+        showDragHandle: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(_sheet))),
+      ),
+      chipTheme: ChipThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_chip))),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        extendedTextStyle: base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_fab)),
+      ),
       extensions: [AppColors.from(brightness)],
     );
   }
@@ -35,6 +55,12 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.onSuccessContainer,
     required this.location,
     required this.onLocation,
+    required this.tram,
+    required this.metroA,
+    required this.metroB,
+    required this.metroC,
+    required this.night,
+    required this.onTransit,
   });
 
   factory AppColors.from(Brightness brightness) {
@@ -48,6 +74,13 @@ class AppColors extends ThemeExtension<AppColors> {
       // The "you are here" blue every map app uses: it has to stand out from the route (primary) and the vehicles.
       location: const Color(0xFF1A73E8),
       onLocation: const Color(0xFFFFFFFF),
+      // Line colors are the same in light and dark: riders know them from the signs. Each has 4.5:1 with white.
+      tram: const Color(0xFF00796B),
+      metroA: const Color(0xFFB34700),
+      metroB: const Color(0xFF1E56A0),
+      metroC: const Color(0xFF2E7D32),
+      night: const Color(0xFF2B2A5E),
+      onTransit: const Color(0xFFFFFFFF),
     );
   }
 
@@ -60,6 +93,15 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color location;
   final Color onLocation;
 
+  /// The chips of the lines (the bus uses the scheme's primary): tram, the three metro lines and the night buses, with
+  /// the color of what is written on them.
+  final Color tram;
+  final Color metroA;
+  final Color metroB;
+  final Color metroC;
+  final Color night;
+  final Color onTransit;
+
   @override
   AppColors copyWith({
     Color? success,
@@ -68,6 +110,12 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? onSuccessContainer,
     Color? location,
     Color? onLocation,
+    Color? tram,
+    Color? metroA,
+    Color? metroB,
+    Color? metroC,
+    Color? night,
+    Color? onTransit,
   }) => AppColors(
     success: success ?? this.success,
     onSuccess: onSuccess ?? this.onSuccess,
@@ -75,6 +123,12 @@ class AppColors extends ThemeExtension<AppColors> {
     onSuccessContainer: onSuccessContainer ?? this.onSuccessContainer,
     location: location ?? this.location,
     onLocation: onLocation ?? this.onLocation,
+    tram: tram ?? this.tram,
+    metroA: metroA ?? this.metroA,
+    metroB: metroB ?? this.metroB,
+    metroC: metroC ?? this.metroC,
+    night: night ?? this.night,
+    onTransit: onTransit ?? this.onTransit,
   );
 
   @override
@@ -87,5 +141,11 @@ class AppColors extends ThemeExtension<AppColors> {
           onSuccessContainer: Color.lerp(onSuccessContainer, other.onSuccessContainer, t)!,
           location: Color.lerp(location, other.location, t)!,
           onLocation: Color.lerp(onLocation, other.onLocation, t)!,
+          tram: Color.lerp(tram, other.tram, t)!,
+          metroA: Color.lerp(metroA, other.metroA, t)!,
+          metroB: Color.lerp(metroB, other.metroB, t)!,
+          metroC: Color.lerp(metroC, other.metroC, t)!,
+          night: Color.lerp(night, other.night, t)!,
+          onTransit: Color.lerp(onTransit, other.onTransit, t)!,
         );
 }

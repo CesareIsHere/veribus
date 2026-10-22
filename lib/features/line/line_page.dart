@@ -24,6 +24,7 @@ import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/features/stop/timetable_page.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
+import 'package:veribus/models/transit/transit_kind.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
 /// How close the user must be to a stop of the line for the map to include them in the view.
@@ -102,7 +103,13 @@ class _LinePageState extends ConsumerState<LinePage> {
         leading: Navigator.canPop(context) ? null : BackButton(onPressed: () => context.go('/')),
         title: Row(
           spacing: Spacing.m,
-          children: [LineBadge(line?.name ?? widget.lineId, withoutRealtime: withoutRealtime)],
+          children: [
+            LineBadge(
+              line?.name ?? widget.lineId,
+              kind: TransitKind.ofLineOrBus(line),
+              withoutRealtime: withoutRealtime,
+            ),
+          ],
         ),
         actions: [
           IconButton(
