@@ -12,18 +12,19 @@ import 'package:veribus/features/journeys/components/journey_widgets.dart';
 import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
+import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/styles/app_spacing.dart';
 
-/// What the detail page shows: a journey of a plan, with its planner and the two places.
+/// What the detail page shows: a journey of a plan, with its planner, where the user was and where they go.
 class JourneyArgs {
   const JourneyArgs({required this.planner, required this.journey, required this.from, required this.to});
 
   final JourneyPlanner planner;
   final PlannedJourney journey;
   final LatLng from;
-  final LatLng to;
+  final Place to;
 }
 
 /// One journey leg by leg: where to walk, which bus to take and its state, where to get off, how a change went in the
@@ -67,7 +68,7 @@ class JourneyPage extends ConsumerWidget {
     ];
     final walks = [
       for (final w in legs.whereType<WalkLeg>())
-        if (w.end > w.start) [endOf(w.from, args.from), endOf(w.to, args.to)],
+        if (w.end > w.start) [endOf(w.from, args.from), endOf(w.to, args.to.point)],
     ];
 
     final steps = <Widget>[];
@@ -80,7 +81,7 @@ class JourneyPage extends ConsumerWidget {
             _Step(
               icon: Icons.directions_walk,
               title: to == null
-                  ? l10n.journeysWalkHome(minutes)
+                  ? (args.to.isHome ? l10n.journeysWalkHome(minutes) : l10n.journeysWalkToDestination(minutes))
                   : from == null
                   ? l10n.journeysWalkToStop(minutes, tt.stopNames[to])
                   : l10n.journeysWalkBetween(minutes, tt.stopNames[to]),
@@ -147,7 +148,16 @@ class JourneyPage extends ConsumerWidget {
           previous = leg;
       }
     }
-    steps.add(_Step(icon: Icons.home_outlined, title: l10n.journeysArriveHome(journeyClock(planner, journey.arrive))));
+    final arrive = journeyClock(planner, journey.arrive);
+    steps.add(
+      args.to.isHome
+          ? _Step(icon: Icons.home_outlined, title: l10n.journeysArriveHome(arrive))
+          : _Step(
+              icon: Icons.place_outlined,
+              title: l10n.journeysArriveDestination(arrive),
+              subtitle: Text(args.to.name),
+            ),
+    );
 
     final changes = journey.rides - 1;
     return Scaffold(
@@ -160,7 +170,7 @@ class JourneyPage extends ConsumerWidget {
             child: SizedBox(
               height: 220,
               child: TransitMap(
-                fit: [args.from, args.to, for (final r in rides) ...r],
+                fit: [args.from, args.to.point, for (final r in rides) ...r],
                 children: [
                   PolylineLayer(
                     polylines: [

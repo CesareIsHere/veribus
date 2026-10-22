@@ -551,6 +551,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get close => 'Chiudi';
 
   @override
+  String get clear => 'Cancella';
+
+  @override
   String get followedTrips => 'Corse seguite';
 
   @override
@@ -759,7 +762,34 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tripDayCanceled => 'cancellata';
 
   @override
-  String get journeysHome => 'Torna a casa';
+  String get journeysTitle => 'Percorsi';
+
+  @override
+  String get journeysHomePlace => 'Casa';
+
+  @override
+  String get journeysWhereTo => 'Dove vai?';
+
+  @override
+  String get journeysChangeDestination => 'Cambia';
+
+  @override
+  String get journeysAlreadyThere => 'Sei già arrivato';
+
+  @override
+  String get journeysSearchHint => 'Indirizzo o luogo';
+
+  @override
+  String get journeysSearchAddress => 'Cerca un indirizzo';
+
+  @override
+  String get journeysSearchEmpty => 'Scrivi un indirizzo o il nome di un luogo';
+
+  @override
+  String get journeysSearchNone => 'Nessun indirizzo trovato a Roma';
+
+  @override
+  String get journeysRecent => 'Recenti';
 
   @override
   String get journeysSetHome => 'Imposta casa';
@@ -772,7 +802,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get journeysHomeHint =>
-      'Sposta la mappa finché il segnaposto è su casa tua. Resta salvata solo su questo telefono.';
+      'Cerca l\'indirizzo, oppure sposta la mappa finché il segnaposto è su casa tua. Resta salvata solo su questo telefono.';
 
   @override
   String get journeysRemoveHome => 'Rimuovi casa';
@@ -785,20 +815,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get journeysNoHomeHint =>
-      'Impostala una volta e Veribus ti dice quale mezzo prendere per tornarci, da dove sei.';
+      'Impostala una volta e Veribus ti dice quale mezzo prendere per tornarci, da dove sei. Oppure cerca qui sopra una destinazione qualsiasi.';
 
   @override
-  String get journeysNeedPosition => 'Serve la tua posizione per trovare la strada di casa';
+  String get journeysNeedPosition => 'Serve la tua posizione per calcolare il percorso';
 
   @override
   String get journeysAtHome => 'Sei già a casa';
 
   @override
-  String get journeysNone => 'Nessun modo di tornare con al massimo due cambi';
+  String get journeysNone => 'Nessun percorso con al massimo due cambi';
 
   @override
   String get journeysNoneHint =>
-      'A quest\'ora la rete potrebbe non arrivare a casa tua. L\'ultimo percorso della notte, quando c\'è, è in cima.';
+      'A quest\'ora la rete potrebbe non arrivarci. L\'ultimo percorso della notte, quando c\'è, è in cima.';
 
   @override
   String get journeysUnavailable => 'I percorsi di oggi non sono disponibili';
@@ -848,6 +878,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String journeysWalkToDestination(int minutes) {
+    return 'A piedi $minutes min fino alla destinazione';
+  }
+
+  @override
   String journeysWalkBetween(int minutes, String stop) {
     return 'A piedi $minutes min fino a $stop';
   }
@@ -879,6 +914,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String journeysArriveDestination(String time) {
+    return 'Arrivo verso le $time';
+  }
+
+  @override
   String journeysIfMissed(String line, String time) {
     return 'Se lo perdi: il prossimo $line alle $time';
   }
@@ -890,11 +930,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String journeysLast(String time) {
-    return 'Ultimo modo per tornare: esci entro le $time';
+    return 'Ultimo percorso: esci entro le $time';
   }
 
   @override
-  String get journeysLastHint => 'Dopo non c\'è più un percorso per casa con al massimo due cambi.';
+  String get journeysLastHint => 'Dopo non c\'è più un percorso con al massimo due cambi.';
 
   @override
   String journeysChangeRecord(int made, int days) {
@@ -914,7 +954,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get journeysNote =>
-      'I tratti a piedi da te alla fermata e dalla fermata a casa sono stimati in linea d\'aria. Oltre la prossima ora gli orari sono quelli programmati.';
+      'I tratti a piedi da te alla prima fermata e dall\'ultima fermata alla destinazione sono stimati in linea d\'aria. Oltre la prossima ora gli orari sono quelli programmati.';
 
   @override
   String get journeysDetails => 'Percorso';

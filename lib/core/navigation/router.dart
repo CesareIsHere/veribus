@@ -20,6 +20,7 @@ import 'package:veribus/features/favorites/favorites_page.dart';
 import 'package:veribus/features/journeys/home_place_page.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
 import 'package:veribus/features/journeys/journeys_page.dart';
+import 'package:veribus/features/journeys/place_search_page.dart';
 import 'package:veribus/features/line/line_page.dart';
 import 'package:veribus/features/nearby/nearby_page.dart';
 import 'package:veribus/features/notifications/follow_page.dart'; // feature:push
@@ -178,6 +179,12 @@ GoRouter router(Ref ref) {
             path: HomePlacePage.route.substring(JourneysPage.route.length + 1),
             // A create/edit screen: full-screen dialog, close + Save.
             pageBuilder: (_, _) => const MaterialPage(fullscreenDialog: true, child: HomePlacePage()),
+          ),
+          GoRoute(
+            path: PlaceSearchPage.route.substring(JourneysPage.route.length + 1),
+            builder: (_, state) => PlaceSearchPage(
+              purpose: state.extra is PlaceSearchFor ? state.extra! as PlaceSearchFor : PlaceSearchFor.destination,
+            ),
           ),
           GoRoute(
             path: JourneyPage.route.substring(JourneysPage.route.length + 1),
