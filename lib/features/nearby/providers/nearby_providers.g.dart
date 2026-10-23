@@ -83,7 +83,7 @@ final class NearbyStopsProvider
   }
 }
 
-String _$nearbyStopsHash() => r'e8c5b51307d7659b86801109804f538b381e7b4e';
+String _$nearbyStopsHash() => r'08d62cdc2f5f6823fddda5772ce68be38ec25eb7';
 
 /// One call for the arrivals of the ten nearest stops (RF-03), refreshed while the list is open.
 

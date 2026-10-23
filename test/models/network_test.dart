@@ -51,6 +51,18 @@ void main() {
     expect(network.nearby(const LatLng(41.80, 12.30)), isEmpty);
   });
 
+  test('nearby: the favorites in range come first, even past the limit', () {
+    const termini = LatLng(41.9009, 12.5016);
+    // Both stops are in range; with room for one, the favorite is the one kept, then the closest other.
+    expect(network.nearby(const LatLng(41.9013, 12.4910), max: 1).map((s) => s.stop.id), ['05000']);
+    expect(network.nearby(const LatLng(41.9013, 12.4910), max: 1, favorites: {'70001'}).map((s) => s.stop.id), [
+      '70001',
+      '05000',
+    ]);
+    // A favorite out of range is not brought in.
+    expect(network.nearby(termini, favorites: {'71000'}).map((s) => s.stop.id), isNot(contains('71000')));
+  });
+
   test('min app version (RNF-08)', () {
     expect(isOlderVersion('1.0.0', '1.0.1'), isTrue);
     expect(isOlderVersion('1.10.0', '1.9.0'), isFalse);

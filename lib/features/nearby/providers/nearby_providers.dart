@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:veribus/core/providers/auto_refresh.dart';
+import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -40,7 +41,8 @@ Stream<LatLng?> nearbyOrigin(Ref ref) {
 Future<List<({Stop stop, double meters})>> nearbyStops(Ref ref) async {
   final at = await ref.watch(nearbyOriginProvider.future);
   if (at == null) return const [];
-  return (await ref.watch(networkProvider.future)).nearby(at);
+  final favorites = ref.watch(favoritesProvider).stops.toSet();
+  return (await ref.watch(networkProvider.future)).nearby(at, favorites: favorites);
 }
 
 /// One call for the arrivals of the ten nearest stops (RF-03), refreshed while the list is open.

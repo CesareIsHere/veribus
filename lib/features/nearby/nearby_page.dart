@@ -387,10 +387,8 @@ class _NearbySheetState extends ConsumerState<_NearbySheet> {
               ),
             ],
             AsyncValue(:final value?) => [
-              // Favorite stops first when they are nearby, then by distance (the sort is stable).
-              for (final (:stop, :meters) in [
-                ...value,
-              ]..sort((a, b) => (favorites.contains(b.stop.id) ? 1 : 0) - (favorites.contains(a.stop.id) ? 1 : 0)))
+              // The provider puts the favorite stops that are nearby first, then the rest by distance.
+              for (final (:stop, :meters) in value)
                 ..._card(context, stop, meters, favorites.contains(stop.id), arrivals, network, noRealtime),
               Padding(
                 padding: const EdgeInsets.only(top: Spacing.s),
