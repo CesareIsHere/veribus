@@ -321,11 +321,17 @@ class Raptor {
     return best;
   }
 
-  /// The search walks to the first stop as soon as possible; the traveller leaves just in time for the first ride.
+  /// The search walks to the first stop as soon as possible; the traveller leaves just in time for the first ride:
+  /// the walks before it (to a stop, then along a link to another one) are moved so that the last ends when it leaves.
   static List<JourneyLeg> _leaveLate(List<JourneyLeg> legs) {
-    if (legs case [final WalkLeg access, final RideLeg ride, ...]) {
-      final walk = access.end - access.start;
-      legs[0] = WalkLeg(from: access.from, to: access.to, start: ride.start - walk, end: ride.start);
+    final walks = legs.takeWhile((l) => l is WalkLeg).length;
+    if (walks == 0 || walks == legs.length || legs[walks] is! RideLeg) return legs;
+    var end = legs[walks].start;
+    for (var i = walks - 1; i >= 0; i--) {
+      final walk = legs[i] as WalkLeg;
+      final seconds = walk.end - walk.start;
+      legs[i] = WalkLeg(from: walk.from, to: walk.to, start: end - seconds, end: end);
+      end -= seconds;
     }
     return legs;
   }

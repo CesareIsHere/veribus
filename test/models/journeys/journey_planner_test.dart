@@ -125,6 +125,34 @@ void main() {
     expect(walked, lessThan(120));
   });
 
+  test('a journey that starts with two walks still has its other options: the next trip, not the same one again', () async {
+    // The traveller is 300 m south of A, a stop with no trip worth taking; B, 240 m north of A and beyond the 500 m of
+    // the origins, is reached through the link between the two stops, and the X leaves from there.
+    final tt = buildTimetable(
+      date: 20261020,
+      stops: [
+        (id: 'A', name: 'Stop A', lat: 41.9000, lon: 12.5),
+        (id: 'B', name: 'Stop B', lat: 41.9022, lon: 12.5),
+        (id: 'D', name: 'Stop D', lat: 41.9300, lon: 12.5),
+      ],
+      trips: [
+        _trip('9', ['A', 'D'], ['08:00', '08:30']),
+        _trip('X', ['B', 'D'], ['10:20', '10:40']),
+        _trip('X', ['B', 'D'], ['10:50', '11:10']),
+        _trip('X', ['B', 'D'], ['11:20', '11:40']),
+      ],
+    );
+    final planner = JourneyPlanner(tt, _realtime(const {}));
+    const from = LatLng(41.9000 - 300 / 110540, 12.5);
+    final journeys = await planner.plan(from: from, to: const LatLng(41.9300 + 10 / 110540, 12.5), at: _at('10:00'));
+    expect(journeys.first.journey.legs.take(2), everyElement(isA<WalkLeg>()));
+    expect([for (final j in journeys) j.rides.first.start], [_hm('10:20'), _hm('10:50'), _hm('11:20')]);
+    // The traveller leaves just in time for the first one: the two walks end when it leaves.
+    final first = journeys.first.journey.legs;
+    expect((first[1] as WalkLeg).end, _hm('10:20'));
+    expect(journeys.first.journey.depart, greaterThan(_hm('10:00')));
+  });
+
   test('a canceled trip is left out: the journey takes the next one, and keeps its status', () async {
     final tt = _timetable([
       _trip('64', ['A', 'B', 'C'], ['10:00', '10:10', '10:20']),

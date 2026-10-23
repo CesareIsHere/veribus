@@ -357,15 +357,25 @@ class LegsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parts = <Widget>[
-      for (final leg in journey.legs)
-        switch (leg) {
-          RideLeg() => RideChip(planner: planner, ride: leg, noRealtime: noRealtime),
-          // The number alone reads as minutes on foot next to its icon; screen readers get it in words.
-          WalkLeg() when leg.end - leg.start >= 60 => WalkChip(minutes: journeyMinutes(leg.end - leg.start)),
-          WalkLeg() => const SizedBox.shrink(),
-        },
-    ].where((w) => w is! SizedBox).toList();
+    // Two walks in a row (to a stop, then along a link to the next) are one walk for the traveller.
+    final parts = <Widget>[];
+    var walked = 0;
+    void flushWalk() {
+      // The number alone reads as minutes on foot next to its icon; screen readers get it in words.
+      if (walked >= 60) parts.add(WalkChip(minutes: journeyMinutes(walked)));
+      walked = 0;
+    }
+
+    for (final leg in journey.legs) {
+      switch (leg) {
+        case RideLeg():
+          flushWalk();
+          parts.add(RideChip(planner: planner, ride: leg, noRealtime: noRealtime));
+        case WalkLeg():
+          walked += leg.end - leg.start;
+      }
+    }
+    flushWalk();
     return Wrap(
       spacing: Spacing.xs,
       runSpacing: Spacing.xs,
