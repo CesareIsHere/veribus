@@ -27,6 +27,10 @@ abstract interface class IPushService {
   /// Asks the system (Android 13+, iOS); the answer is final once the user denied twice.
   Future<PushPermission> requestPermission();
 
+  /// Asks for the permission to show notifications on this phone (Android 13+), with no need of Firebase: the
+  /// persistent notification of a followed journey works in a build without push. True when they are allowed.
+  Future<bool> requestNotifications();
+
   /// This device's FCM token, null when unavailable.
   Future<String?> token();
 
@@ -135,6 +139,14 @@ class FirebasePushService implements IPushService {
       _of((await FirebaseMessaging.instance.requestPermission()).authorizationStatus);
 
   @override
+  Future<bool> requestNotifications() async {
+    final android = _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return false;
+    if (await android.areNotificationsEnabled() ?? false) return true;
+    return await android.requestNotificationsPermission() ?? false;
+  }
+
+  @override
   Future<String?> token() => FirebaseMessaging.instance.getToken();
 
   @override
@@ -183,6 +195,9 @@ class MockPushService implements IPushService {
 
   @override
   Future<PushPermission> requestPermission() async => PushPermission.granted;
+
+  @override
+  Future<bool> requestNotifications() async => true;
 
   @override
   Future<String?> token() async => 'mock-token';

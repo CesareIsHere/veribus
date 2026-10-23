@@ -13,6 +13,7 @@ class _FakeLocationService extends Fake implements LocationService {
   LocationAccess accessAfterRequest = LocationAccess.granted;
   int permissionRequests = 0;
   int fixesStarted = 0;
+  final notices = <FollowNotice?>[];
   int fixesCancelled = 0;
   LatLng? lastKnownFix;
   late StreamController<LatLng> fixController;
@@ -35,8 +36,9 @@ class _FakeLocationService extends Fake implements LocationService {
   Future<LatLng?> lastKnown() async => lastKnownFix;
 
   @override
-  Stream<LatLng> fixes() {
+  Stream<LatLng> fixes({FollowNotice? notice}) {
     fixesStarted++;
+    notices.add(notice);
     fixController = StreamController<LatLng>(onCancel: () => fixesCancelled++);
     return fixController.stream;
   }
@@ -174,6 +176,38 @@ void main() {
     tracker.start();
     await _settle();
     expect(service.fixesStarted, startedBefore + 1);
+  });
+
+  test('a followed journey restarts the fixes with its notice and keeps them in the background', () async {
+    const first = (title: 'Walk', text: 'to A', channelName: 'Trip');
+    const second = (title: 'Get on', text: 'the X', channelName: 'Trip');
+    tracker.start();
+    await _settle();
+    expect(service.notices, [null]);
+
+    await tracker.follow(first);
+    await _settle();
+    expect(service.notices, [null, first]);
+    await tracker.follow(first); // same notice: nothing to restart
+    expect(service.notices, hasLength(2));
+    await tracker.follow(second);
+    await _settle();
+    expect(service.notices, [null, first, second]);
+
+    // The app goes to the background: the service goes on, it is what keeps the journey alive.
+    final cancelled = service.fixesCancelled;
+    tracker.pause();
+    await _settle();
+    expect(service.fixesCancelled, cancelled);
+
+    // The journey ends in the background: the GPS is released instead of going back to plain fixes.
+    await tracker.follow(null);
+    await _settle();
+    expect(service.fixesCancelled, cancelled + 1);
+    expect(service.notices, [null, first, second]);
+    tracker.start();
+    await _settle();
+    expect(service.notices.last, isNull);
   });
 
   test('a late listener gets the current position first', () async {

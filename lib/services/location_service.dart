@@ -9,6 +9,9 @@ part 'location_service.g.dart';
 /// Whether the app can read the position right now, and if not why.
 enum LocationAccess { granted, serviceOff, denied, deniedForever }
 
+/// What the persistent notification of a followed journey says (Android).
+typedef FollowNotice = ({String title, String text, String channelName});
+
 /// The platform location APIs, nothing more (the position never leaves the phone: RNF-04). The logic that keeps a
 /// live position through GPS toggles and permission changes is in `LocationTracker`.
 class LocationService {
@@ -42,30 +45,13 @@ class LocationService {
   }
 
   /// Live fixes while someone listens. Errors (service switched off, GPS failure) end the stream: the caller looks again.
-  Stream<LatLng> fixes() =>
-      Geolocator.getPositionStream(locationSettings: _settings).map((p) => LatLng(p.latitude, p.longitude));
-
-  /// Live fixes for a journey followed step by step. On Android the GPS runs as a foreground service with a persistent
-  /// notification ([title], [text]) that keeps the app alive and the fixes coming with the screen off, until the
-  /// listener cancels. Changing the text means listening again. Elsewhere it is [fixes].
-  Stream<LatLng> followFixes({required String title, required String text, required String channelName}) {
-    if (mock case final fixed?) return Stream.value(fixed);
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return fixes();
-    return Geolocator.getPositionStream(
-      locationSettings: AndroidSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-        intervalDuration: const Duration(seconds: 3),
-        foregroundNotificationConfig: ForegroundNotificationConfig(
-          notificationTitle: title,
-          notificationText: text,
-          notificationChannelName: channelName,
-          enableWakeLock: true,
-          setOngoing: true,
-        ),
-      ),
-    ).map((p) => LatLng(p.latitude, p.longitude));
-  }
+  ///
+  /// With a [notice], on Android, the GPS runs as a foreground service with a persistent notification that keeps the
+  /// app alive and the fixes coming with the screen off. The plugin shares one stream among all listeners and takes its
+  /// settings from whoever opens it first, so the notice only counts when nobody is listening yet: the tracker, the
+  /// only listener, stops and starts the fixes again when it changes.
+  Stream<LatLng> fixes({FollowNotice? notice}) =>
+      Geolocator.getPositionStream(locationSettings: _settings(notice)).map((p) => LatLng(p.latitude, p.longitude));
 
   /// True / false each time the user turns the location service on / off. Never fires where the platform has no such
   /// event (web): the tracker also looks again by itself.
@@ -95,11 +81,20 @@ class LocationService {
   }
 
   /// Street-level accuracy: the dot has to sit on the right side of the road, not in the right district.
-  static LocationSettings get _settings => switch (defaultTargetPlatform) {
-    TargetPlatform.android => AndroidSettings(
+  static LocationSettings _settings(FollowNotice? notice) => switch (defaultTargetPlatform) {
+    TargetPlatform.android when !kIsWeb => AndroidSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 5,
       intervalDuration: const Duration(seconds: 3),
+      foregroundNotificationConfig: notice == null
+          ? null
+          : ForegroundNotificationConfig(
+              notificationTitle: notice.title,
+              notificationText: notice.text,
+              notificationChannelName: notice.channelName,
+              enableWakeLock: true,
+              setOngoing: true,
+            ),
     ),
     _ => const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
   };
