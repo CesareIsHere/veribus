@@ -1999,6 +1999,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show the stops'**
   String get tripShowList;
+
+  /// No description provided for @exploreMetro.
+  ///
+  /// In en, this message translates to:
+  /// **'Metro'**
+  String get exploreMetro;
+
+  /// No description provided for @metroEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {minutes} min or so now'**
+  String metroEvery(int minutes);
+
+  /// No description provided for @metroNoTrains.
+  ///
+  /// In en, this message translates to:
+  /// **'No trains in the next hour'**
+  String get metroNoTrains;
+
+  /// No description provided for @metroScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'From the timetable, not in real time.'**
+  String get metroScheduled;
+
+  /// No description provided for @metroNoneNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'No metro station nearby'**
+  String get metroNoneNearby;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

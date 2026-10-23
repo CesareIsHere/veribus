@@ -21,11 +21,13 @@ import 'package:veribus/features/journeys/providers/journeys_providers.dart';
 import 'package:veribus/features/journeys/save_place_page.dart';
 import 'package:veribus/features/line/components/vehicle_route_sheet.dart';
 import 'package:veribus/features/line/line_page.dart';
+import 'package:veribus/features/nearby/components/metro_station.dart';
 import 'package:veribus/features/nearby/providers/nearby_providers.dart';
 import 'package:veribus/features/settings/components/settings_button.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/features/stop/stop_page.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
+import 'package:veribus/models/journeys/metro_stations.dart';
 import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/models/transit/network.dart';
@@ -252,11 +254,31 @@ class _NearbyMapState extends ConsumerState<_NearbyMap> {
       locateButton: false,
       children: [
         if (network != null) _StopsLayer(network),
+        const _MetroLayer(),
         // The vehicles heading to the nearby stops, moving: the arrivals refresh every 15 s while the map is open.
         VehiclesLayer(
           vehiclesOfArrivals(arrivals?.byStop.values.expand((list) => list) ?? const [], network),
           onTap: (v) => unawaited(showVehicleRouteSheet(context, vehicle: v)),
         ),
+      ],
+    );
+  }
+}
+
+/// The metro stations in view, from a wider zoom than the stops: there are few of them and they are far apart.
+class _MetroLayer extends ConsumerWidget {
+  const _MetroLayer();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stations = ref.watch(metroStationsNowProvider).value;
+    final camera = MapCamera.of(context);
+    if (stations == null || camera.zoom < 13) return const SizedBox.shrink();
+    final bounds = camera.visibleBounds;
+    return MarkerLayer(
+      markers: [
+        for (final s in stations)
+          if (bounds.contains(s.point)) MetroMarker(station: s, onTap: () => unawaited(showMetroSheet(context, s))),
       ],
     );
   }
@@ -355,6 +377,7 @@ class _NearbySheetState extends ConsumerState<_NearbySheet> {
                 (null, l10n.exploreAll),
                 (TransitKind.bus, l10n.exploreBus),
                 (TransitKind.tram, l10n.exploreTram),
+                (TransitKind.metro, l10n.exploreMetro),
               ])
                 FilterChip(
                   label: Text(label),
@@ -376,41 +399,97 @@ class _NearbySheetState extends ConsumerState<_NearbySheet> {
             ),
           const SizedBox(height: Spacing.m),
           StaleBanner(arrivals?.feed),
-          ...switch (stops) {
-            AsyncValue(:final value?) when value.isEmpty => [
-              SizedBox(
-                height: 240,
-                child: MessageView(
-                  icon: position.value == null ? Icons.search : Icons.near_me_disabled,
-                  title: position.value == null ? l10n.locationDeniedList : l10n.noStopsNearby,
+          if (_kind == TransitKind.metro)
+            ..._metroStations(context, ref.watch(nearbyOriginProvider).value, ref.watch(metroStationsNowProvider).value)
+          else
+            ...switch (stops) {
+              AsyncValue(:final value?) when value.isEmpty => [
+                SizedBox(
+                  height: 240,
+                  child: MessageView(
+                    icon: position.value == null ? Icons.search : Icons.near_me_disabled,
+                    title: position.value == null ? l10n.locationDeniedList : l10n.noStopsNearby,
+                  ),
                 ),
-              ),
-            ],
-            AsyncValue(:final value?) => [
-              // The provider puts the favorite stops that are nearby first, then the rest by distance.
-              for (final (:stop, :meters) in value)
-                ..._card(context, stop, meters, favorites.contains(stop.id), arrivals, network, noRealtime),
-              Padding(
-                padding: const EdgeInsets.only(top: Spacing.s),
-                child: Text(l10n.nearbyNote, style: context.textTheme.bodySmall),
-              ),
-            ],
-            AsyncValue(:final error?) => [
-              SizedBox(
-                height: 240,
-                child: MessageView.error(context, error, onRetry: () => ref.invalidate(positionProvider)),
-              ),
-            ],
-            _ => [
-              const Padding(
-                padding: EdgeInsets.all(Spacing.xl),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ],
-          },
+              ],
+              AsyncValue(:final value?) => [
+                // The provider puts the favorite stops that are nearby first, then the rest by distance.
+                for (final (:stop, :meters) in value)
+                  ..._card(context, stop, meters, favorites.contains(stop.id), arrivals, network, noRealtime),
+                Padding(
+                  padding: const EdgeInsets.only(top: Spacing.s),
+                  child: Text(l10n.nearbyNote, style: context.textTheme.bodySmall),
+                ),
+              ],
+              AsyncValue(:final error?) => [
+                SizedBox(
+                  height: 240,
+                  child: MessageView.error(context, error, onRetry: () => ref.invalidate(positionProvider)),
+                ),
+              ],
+              _ => [
+                const Padding(
+                  padding: EdgeInsets.all(Spacing.xl),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+            },
         ],
       ),
     );
+  }
+
+  /// The metro stations around, nearest first: a card each with its lines and how often they pass.
+  List<Widget> _metroStations(BuildContext context, LatLng? at, List<MetroStation>? stations) {
+    const distance = Distance();
+    final near = at == null || stations == null
+        ? const <({MetroStation station, double meters})>[]
+        : ([
+            for (final s in stations)
+              if (distance(at, s.point) case final m when m <= 2000) (station: s, meters: m),
+          ]..sort((a, b) => a.meters.compareTo(b.meters))).take(6).toList();
+    if (near.isEmpty) {
+      return [
+        SizedBox(
+          height: 240,
+          child: MessageView(icon: Icons.subway, title: context.l10n.metroNoneNearby),
+        ),
+      ];
+    }
+    return [
+      for (final (:station, :meters) in near)
+        Padding(
+          padding: const EdgeInsets.only(bottom: Spacing.m),
+          child: Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => unawaited(showMetroSheet(context, station)),
+              child: Padding(
+                padding: const EdgeInsets.all(Spacing.l),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: Spacing.m,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            station.name,
+                            style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        Text(context.l10n.meters(meters.round()), style: context.textTheme.labelLarge),
+                      ],
+                    ),
+                    MetroLines(station),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+    ];
   }
 
   List<Widget> _card(

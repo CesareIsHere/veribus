@@ -846,5 +846,17 @@
   },
   "tripChannelName": "Journey in progress",
   "tripShowMap": "Show the map",
-  "tripShowList": "Show the stops"
+  "tripShowList": "Show the stops",
+  "exploreMetro": "Metro",
+  "metroEvery": "Every {minutes} min or so now",
+  "@metroEvery": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "metroNoTrains": "No trains in the next hour",
+  "metroScheduled": "From the timetable, not in real time.",
+  "metroNoneNearby": "No metro station nearby"
 }

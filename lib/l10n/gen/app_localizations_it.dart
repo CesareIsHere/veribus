@@ -1132,4 +1132,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tripShowList => 'Mostra le fermate';
+
+  @override
+  String get exploreMetro => 'Metro';
+
+  @override
+  String metroEvery(int minutes) {
+    return 'Ogni circa $minutes min adesso';
+  }
+
+  @override
+  String get metroNoTrains => 'Nessun treno nella prossima ora';
+
+  @override
+  String get metroScheduled => 'Dati da orario programmato, non in tempo reale.';
+
+  @override
+  String get metroNoneNearby => 'Nessuna stazione della metro vicina';
 }

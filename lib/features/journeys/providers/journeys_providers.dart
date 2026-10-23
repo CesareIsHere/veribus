@@ -8,6 +8,7 @@ import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/shared_preferences_provider.dart';
 import 'package:veribus/models/journeys/change_reliability.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
+import 'package:veribus/models/journeys/metro_stations.dart';
 import 'package:veribus/models/journeys/place.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/repositories/journeys/journeys_repository_provider.dart';
@@ -113,6 +114,17 @@ Future<JourneyPlanner?> journeyPlanner(Ref ref, int date) async {
   if (timetable == null) return null;
   final transit = ref.watch(transitRepositoryProvider);
   return JourneyPlanner(timetable, (stops, lines) => transit.arrivals(stops, lineIds: lines));
+}
+
+/// The metro stations and how often the lines pass now, from today's timetable (nothing without it). Looked at again
+/// every few minutes: the gaps change with the time of day.
+@riverpod
+Future<List<MetroStation>> metroStationsNow(Ref ref) async {
+  final now = DateTime.now();
+  final planner = await ref.watch(journeyPlannerProvider(now.year * 10000 + now.month * 100 + now.day).future);
+  if (planner == null) return const [];
+  ref.refreshEvery(const Duration(minutes: 5));
+  return metroStations(planner.timetable, now);
 }
 
 /// The journeys from one place to another, and the last one of the night when the service ends soon.
