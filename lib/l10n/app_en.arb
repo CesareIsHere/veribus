@@ -858,5 +858,39 @@
   },
   "metroNoTrains": "No trains in the next hour",
   "metroScheduled": "From the timetable, not in real time.",
-  "metroNoneNearby": "No metro station nearby"
+  "metroNoneNearby": "No metro station nearby",
+  "tripOngoingTitle": "Veribus · on your way",
+  "tripOngoingText": "Following you to {destination}",
+  "@tripOngoingText": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "tripMissed": "The {line} has gone: your next is the {next} at {time}",
+  "@tripMissed": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tripReplanned": "Plan updated: your next is the {next} at {time}",
+  "@tripReplanned": {
+    "placeholders": {
+      "next": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

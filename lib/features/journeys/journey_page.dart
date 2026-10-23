@@ -20,12 +20,24 @@ import 'package:veribus/styles/app_theme.dart';
 
 /// What the detail page shows: a journey of a plan, with its planner, where the user was and where they go.
 class JourneyArgs {
-  const JourneyArgs({required this.planner, required this.journey, required this.from, required this.to});
+  const JourneyArgs({
+    required this.planner,
+    required this.journey,
+    required this.from,
+    required this.to,
+    this.filter = allTransport,
+  });
 
   final JourneyPlanner planner;
   final PlannedJourney journey;
   final Place from;
   final Place to;
+
+  /// The kinds of transport the traveller left out of the search: kept when the journey is planned again on the way.
+  final JourneyFilter filter;
+
+  JourneyArgs withJourney(PlannedJourney journey) =>
+      JourneyArgs(planner: planner, journey: journey, from: from, to: to, filter: filter);
 }
 
 /// One journey on the map and, in a sheet that rises over it, leg by leg: where to walk, which bus to take and its

@@ -67,8 +67,12 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
   realtime network: its stations come from the journey timetable (`models/journeys/metro_stations.dart`, headways from the
   schedule, never shown as realtime).
 - Following a journey: `models/journeys/trip_progress.dart` (`followTrip`, pure and tested) decides the phase from the
-  position; `features/journeys/trip_page.dart` shows it and keeps the foreground service (`LocationTracker.follow`, the only listener of the GPS:
-  geolocator shares one stream and takes the notification from whoever opens it; the notification says the step). The alert one stop before uses `IPushService.showNow`. Walks along the streets:
-  `services/walking_route_service.dart`.
+  position; `features/journeys/trip_page.dart` shows it, plans the journey again every 30 s from where the traveller is
+  (the bus is kept with its new time, or replaced when it was missed) and keeps two notifications under one id:
+  `LocationTracker.follow` runs the GPS foreground service once with a plain "following you" notice (geolocator shares
+  one stream and takes the notification from whoever opens it), and `IPushService.showTrip` replaces it (same id, 75415)
+  with the ongoing one: step, bus status and reason (`ArrivalText`), distance, progress bar, countdown clock, end
+  action. It is updated as the traveller walks. The alert one stop before uses `IPushService.showNow`. Walks along the
+  streets: `services/walking_route_service.dart`.
 - Reference pattern for new data: `repositories/transit` (interface + mock + supabase + provider), `models/transit`,
   `features/stop`. Status/signal/time wording lives only in `features/stop/components/arrival_tile.dart`.

@@ -307,18 +307,21 @@ class _Journeys extends ConsumerWidget {
       ),
       AsyncValue(hasValue: true, :final value) => RefreshIndicator(
         onRefresh: () => ref.refresh(provider.future),
-        child: _List(trip: value!, from: from, to: to, google: google),
+        child: _List(trip: value!, from: from, to: to, filter: filter, google: google),
       ),
     };
   }
 }
 
 class _List extends ConsumerWidget {
-  const _List({required this.trip, required this.from, required this.to, required this.google});
+  const _List({required this.trip, required this.from, required this.to, required this.filter, required this.google});
 
   final PlannedTrip trip;
   final Place from;
   final Place to;
+
+  /// What the search left out: the journey followed is planned again with the same limits.
+  final JourneyFilter filter;
   final Widget google;
 
   @override
@@ -329,7 +332,7 @@ class _List extends ConsumerWidget {
     void open(PlannedJourney journey) => unawaited(
       context.push(
         JourneyPage.route,
-        extra: JourneyArgs(planner: planner, journey: journey, from: from, to: to),
+        extra: JourneyArgs(planner: planner, journey: journey, from: from, to: to, filter: filter),
       ),
     );
     return ListView(

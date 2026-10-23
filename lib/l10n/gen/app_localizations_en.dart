@@ -1148,4 +1148,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get metroNoneNearby => 'No metro station nearby';
+
+  @override
+  String get tripOngoingTitle => 'Veribus · on your way';
+
+  @override
+  String tripOngoingText(String destination) {
+    return 'Following you to $destination';
+  }
+
+  @override
+  String tripMissed(String line, String next, String time) {
+    return 'The $line has gone: your next is the $next at $time';
+  }
+
+  @override
+  String tripReplanned(String next, String time) {
+    return 'Plan updated: your next is the $next at $time';
+  }
 }

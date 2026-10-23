@@ -2029,6 +2029,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No metro station nearby'**
   String get metroNoneNearby;
+
+  /// No description provided for @tripOngoingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Veribus · on your way'**
+  String get tripOngoingTitle;
+
+  /// No description provided for @tripOngoingText.
+  ///
+  /// In en, this message translates to:
+  /// **'Following you to {destination}'**
+  String tripOngoingText(String destination);
+
+  /// No description provided for @tripMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'The {line} has gone: your next is the {next} at {time}'**
+  String tripMissed(String line, String next, String time);
+
+  /// No description provided for @tripReplanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan updated: your next is the {next} at {time}'**
+  String tripReplanned(String next, String time);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
