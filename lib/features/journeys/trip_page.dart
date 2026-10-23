@@ -24,7 +24,7 @@ import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/models/journeys/trip_progress.dart';
 import 'package:veribus/models/transit/live.dart';
-import 'package:veribus/services/location_service.dart';
+import 'package:veribus/services/location_tracker.dart';
 import 'package:veribus/services/push_notifications_service.dart'; // feature:push
 import 'package:veribus/styles/app_spacing.dart';
 import 'package:veribus/styles/app_theme.dart';
@@ -52,9 +52,8 @@ class _TripPageState extends ConsumerState<TripPage> {
   late TripView _view;
   final _alerted = <int>{};
 
-  /// The fixes of the foreground service, listened to for as long as the journey goes on. Cancelled when it ends, which
-  /// stops the service and takes the notification away.
-  StreamSubscription<LatLng>? _fixes;
+  /// The tracker that holds the foreground service while the journey goes on (kept to release it in [dispose]).
+  late final LocationTracker _tracker = ref.read(locationTrackerProvider);
 
   /// What the notification says changes with this: a new text means listening again.
   (TripPhase, int, int?)? _noticeKey;
@@ -81,16 +80,15 @@ class _TripPageState extends ConsumerState<TripPage> {
 
   @override
   void dispose() {
-    unawaited(_fixes?.cancel());
+    if (widget.args != null) unawaited(_tracker.follow(null));
     super.dispose();
   }
 
   // feature:push:start
   /// The notification of the journey needs the permission of the notices (Android 13+): asked once, when it starts.
   Future<void> _askNotifications() async {
-    final push = ref.read(pushServiceProvider);
     try {
-      if (await push.permission() == PushPermission.notDetermined) await push.requestPermission();
+      await ref.read(pushServiceProvider).requestNotifications();
     } on Object {
       // This build has no notices (no Firebase configuration): the journey goes on without the permission.
     }
@@ -127,25 +125,20 @@ class _TripPageState extends ConsumerState<TripPage> {
   }
 
   /// The ongoing notification says the next step, and the foreground service behind it keeps the position coming with
-  /// the screen off. When the step changes the service starts again with the new text; when the journey ends it stops.
+  /// the screen off. When the step changes the tracker starts the service again with the new text; when the journey ends
+  /// it lets it go.
   void _syncNotification() {
     final view = _view;
     final key = (view.phase, view.state.ride, view.stopsLeft);
     if (key == _noticeKey) return;
     _noticeKey = key;
-    unawaited(_fixes?.cancel());
     if (view.phase == TripPhase.arrived) {
-      _fixes = null;
+      unawaited(_tracker.follow(null));
       return;
     }
     final l10n = context.l10n;
     final notice = tripNotice(l10n, widget.args!, view);
-    _fixes = ref
-        .read(locationServiceProvider)
-        .followFixes(title: notice.title, text: notice.text, channelName: l10n.tripChannelName)
-        .listen((p) {
-          if (mounted) setState(() => _advance(p));
-        }, onError: (Object _) {});
+    unawaited(_tracker.follow((title: notice.title, text: notice.text, channelName: l10n.tripChannelName)));
   }
 
   @override

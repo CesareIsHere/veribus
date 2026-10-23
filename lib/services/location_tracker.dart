@@ -25,8 +25,11 @@ class LocationTracker {
   var _hasValue = false;
   var _askedPermission = false;
   var _checking = false;
+  var _again = false;
   var _paused = false;
   var _disposed = false;
+  FollowNotice? _notice;
+  var _inBackground = false;
 
   /// The latest position, or null while there is none (service off, permission denied). Replays the current value to
   /// each new listener, then follows the changes.
@@ -38,6 +41,7 @@ class LocationTracker {
   /// Starts tracking, or resumes it after [pause]. Safe to call again.
   void start() {
     if (_disposed) return;
+    _inBackground = false;
     _paused = false;
     if (_service.mock case final fixed?) {
       _emit(fixed);
@@ -50,16 +54,41 @@ class LocationTracker {
 
   /// Stops the GPS and the polling (app in the background); [start] brings them back.
   void pause() {
+    _inBackground = true;
+    // A followed journey goes on with the screen off: its foreground service is what keeps the app alive.
+    if (_notice == null) _suspend();
+  }
+
+  void _suspend() {
     _paused = true;
     _timer?.cancel();
     _timer = null;
     unawaited(_stopFixes());
   }
 
+  /// Keeps the GPS in a foreground service with this persistent notification, or back to the plain fixes when null.
+  /// The notification can only change by starting the fixes again, which is done here.
+  Future<void> follow(FollowNotice? notice) async {
+    if (_disposed || notice == _notice) return;
+    _notice = notice;
+    if (_service.mock != null) return;
+    if (notice == null && _inBackground) {
+      _suspend();
+      return;
+    }
+    await _stopFixes();
+    await check();
+  }
+
   /// Looks at the service and the permission, and starts or stops the live fixes accordingly. [askPermission]: show the
   /// system dialog again if the permission is still undecided (it is asked once on its own, then only on request).
   Future<void> check({bool askPermission = false}) async {
-    if (_disposed || _paused || _checking) return;
+    if (_disposed || _paused) return;
+    if (_checking) {
+      // A look is under way and may have decided before what changed: look once more when it ends.
+      _again = true;
+      return;
+    }
     _checking = true;
     try {
       var access = await _service.access();
@@ -78,6 +107,10 @@ class LocationTracker {
     } finally {
       _checking = false;
     }
+    if (_again) {
+      _again = false;
+      await check();
+    }
   }
 
   /// The "turn on location" button: fixes whatever is missing, then looks again.
@@ -91,11 +124,13 @@ class LocationTracker {
     final last = await _service.lastKnown();
     if (_disposed || _paused) return;
     if (last != null) _emit(last);
-    _fixes = _service.fixes().listen(
-      _emit,
-      // The platform gave up (service switched off between two events, GPS failure): the next look restarts it.
-      onError: (Object _) => unawaited(_stopFixes()),
-    );
+    _fixes = _service
+        .fixes(notice: _notice)
+        .listen(
+          _emit,
+          // The platform gave up (service switched off between two events, GPS failure): the next look restarts it.
+          onError: (Object _) => unawaited(_stopFixes()),
+        );
   }
 
   Future<void> _stopFixes() async {
