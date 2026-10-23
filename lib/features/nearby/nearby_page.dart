@@ -570,6 +570,12 @@ class _StopCard extends ConsumerWidget {
                           l10n.exploreWalk(math.max(1, (meters / _walkSpeed).ceil()), meters.round()),
                           style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                         ),
+                        // The same name on both sides of a street, or on two streets: the number on the pole tells
+                        // them apart.
+                        Text(
+                          l10n.stopCode(stop.id),
+                          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
                       ],
                     ),
                   ),
