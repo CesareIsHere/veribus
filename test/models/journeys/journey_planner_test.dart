@@ -94,6 +94,37 @@ void main() {
     expect(journey.journey.arrive, lessThan(_hm('10:34')));
   });
 
+  test('boards where the traveller stands even when the earlier stop of the trip is reached through a link', () async {
+    // Real data of the 769 on Via Ostiense: the trip calls at Matteucci, Mercati Generali and then Garbatella. The
+    // traveller stands at Garbatella; Matteucci is beyond the 500 m of the origins and only reached from Mercati
+    // Generali along a link between stops: boarding there is a walk back along the line for the same arrival.
+    final tt = buildTimetable(
+      date: 20261020,
+      stops: [
+        (id: 'MAT', name: 'OSTIENSE/MATTEUCCI', lat: 41.872955, lon: 12.480215),
+        (id: 'MER', name: 'OSTIENSE/MERCATI GENERALI', lat: 41.871443, lon: 12.479912),
+        (id: 'GAR', name: 'OSTIENSE/GARBATELLA', lat: 41.867993, lon: 12.479338),
+        (id: 'DST', name: 'GROTTA PERFETTA/P. MIRANDOLA', lat: 41.84707, lon: 12.488202),
+      ],
+      trips: [
+        _trip('769', ['MAT', 'MER', 'GAR', 'DST'], ['12:41', '12:42', '12:44', '12:55']),
+      ],
+    );
+    final planner = JourneyPlanner(tt, _realtime(const {}));
+    const from = LatLng(41.8680, 12.4794);
+    final journey = (await planner.plan(
+      from: from,
+      to: const LatLng(41.8475, 12.4880),
+      at: _at('12:29'),
+      options: 1,
+    )).first;
+    final ride = journey.rides.single;
+    expect(tt.stopNames[ride.fromStop], 'OSTIENSE/GARBATELLA');
+    expect(ride.start, _hm('12:44'));
+    final walked = journey.journey.legs.takeWhile((l) => l is WalkLeg).fold(0, (sum, l) => sum + l.end - l.start);
+    expect(walked, lessThan(120));
+  });
+
   test('a canceled trip is left out: the journey takes the next one, and keeps its status', () async {
     final tt = _timetable([
       _trip('64', ['A', 'B', 'C'], ['10:00', '10:10', '10:20']),
