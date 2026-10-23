@@ -89,9 +89,12 @@ String journeyDuration(AppLocalizations l10n, int seconds) {
 }
 
 /// The kind of vehicle of a ride: what its chip shows.
-TransitKind rideKind(JourneyPlanner planner, RideLeg ride) {
+TransitKind rideKind(JourneyPlanner planner, RideLeg ride) => routeKind(planner, ride.route);
+
+/// The kind of vehicle of a route of the timetable.
+TransitKind routeKind(JourneyPlanner planner, int route) {
   final tt = planner.timetable;
-  final line = tt.routeLine[ride.route];
+  final line = tt.routeLine[route];
   return TransitKind.ofTimetable(
     name: tt.lineNames[line],
     isTram: tt.lineTypes[line] == Timetable.tram,

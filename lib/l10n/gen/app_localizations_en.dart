@@ -1166,4 +1166,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String tripReplanned(String next, String time) {
     return 'Plan updated: your next is the $next at $time';
   }
+
+  @override
+  String tripOnBoardDetected(String line) {
+    return 'You are on the $line: following it from here';
+  }
+
+  @override
+  String get tripAlreadyOnBoard => 'Already on a bus?';
+
+  @override
+  String get tripPickBus => 'Which bus are you on?';
+
+  @override
+  String get tripNoBusNear => 'No bus near you right now';
 }

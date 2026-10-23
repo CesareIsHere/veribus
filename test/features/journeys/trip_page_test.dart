@@ -257,6 +257,39 @@ void main() {
     expect(find.text('Walk to STOP A'), findsOneWidget);
   });
 
+  testWidgets('started on a bus: the journey goes on with that bus instead of waiting for the next one', (
+    tester,
+  ) async {
+    // Planned at 9:50 to take the 10:00 from A. The traveller starts the navigation at 10:05, already on that bus,
+    // halfway between A and B, driving north.
+    var now = DateTime(2026, 10, 20, 10, 5);
+    final from = _at('A', metres: -300);
+    final to = _at('D', metres: 300);
+    final rig = await _open(
+      tester,
+      times: ['10:00', '10:20'],
+      now: DateTime(2026, 10, 20, 9, 50),
+      clock: () => now,
+      from: from,
+      to: to,
+    );
+    final start = LatLng(_at('A').latitude + 0.0045, 12.5);
+    for (var k = 0; k <= 12; k++) {
+      now = DateTime(2026, 10, 20, 10, 5).add(Duration(seconds: 4 * k));
+      rig.position.add(LatLng(start.latitude + k * 32 / 110540, 12.5));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('You are on the X: following it from here'), findsOneWidget);
+    // On board, with the 10:00 trip: no more waiting for the 10:20.
+    expect(find.textContaining('Get off in'), findsWidgets);
+    expect(find.textContaining('Walk to STOP A'), findsNothing);
+    expect(rig.push.shown.last.title, startsWith('Get off'));
+    expect(rig.push.shown.last.countdownTo, DateTime(2026, 10, 20, 10, 30));
+  });
+
   testWidgets('without its journey the page says to go back', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

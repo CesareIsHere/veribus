@@ -22,6 +22,7 @@ import 'package:veribus/features/nearby/nearby_page.dart';
 import 'package:veribus/features/stop/components/arrival_tile.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
 import 'package:veribus/models/journeys/raptor.dart';
+import 'package:veribus/models/journeys/ride_detector.dart';
 import 'package:veribus/models/journeys/trip_progress.dart';
 import 'package:veribus/models/transit/live.dart';
 import 'package:veribus/services/location_tracker.dart';
@@ -76,6 +77,13 @@ class _TripPageState extends ConsumerState<TripPage> {
   Timer? _replanTimer;
   Timer? _noticeTimer;
   var _planning = false;
+
+  /// Where the phone has been in the last minutes: it tells a traveller on a bus from one walking to its stop.
+  final _fixes = <Fix>[];
+  var _checkedAt = DateTime(0);
+
+  /// Trips the traveller was thought to be on, and planning from them found nothing: not tried again.
+  final _skipped = <int>{};
   var _started = false;
   var _following = false;
 
@@ -89,7 +97,11 @@ class _TripPageState extends ConsumerState<TripPage> {
   void initState() {
     super.initState();
     _args = widget.args;
-    if (_args != null) _advance(ref.read(positionProvider).value);
+    if (_args != null) {
+      final position = ref.read(positionProvider).value;
+      _record(position);
+      _advance(position);
+    }
   }
 
   @override
@@ -157,6 +169,106 @@ class _TripPageState extends ConsumerState<TripPage> {
     _state = view.state;
     _view = view;
     if (_started) _syncNotification();
+  }
+
+  void _record(LatLng? position) {
+    if (position == null) return;
+    final now = widget.clock();
+    _fixes
+      ..add((point: position, at: now))
+      ..removeWhere((f) => now.difference(f.at) > const Duration(seconds: 90));
+  }
+
+  /// Someone who starts the navigation on a bus, or boards it where the stop was not noticed, is on a trip the plan
+  /// does not know: the phone moves faster than anyone walks, along a trip that the timetable puts right there. The
+  /// journey goes on with that trip from its next stop.
+  void _checkBoard() {
+    final now = widget.clock();
+    if (_planning || !mounted || _view.phase == TripPhase.onBoard || _view.phase == TripPhase.arrived) return;
+    if (now.difference(_checkedAt) < const Duration(seconds: 5)) return;
+    _checkedAt = now;
+    final tt = _args!.planner.timetable;
+    final sure = sureTrip(tt, detectTrips(timetable: tt, fixes: _fixes, now: now));
+    if (sure != null && !_skipped.contains(sure.trip)) unawaited(_boardOn(sure));
+  }
+
+  /// The buses near the traveller, for them to say which one they are on (the phone did not see them move, or the
+  /// street has several lines).
+  Future<void> _pickBus() async {
+    final planner = _args!.planner;
+    final tt = planner.timetable;
+    final l10n = context.l10n;
+    final trips = detectTrips(
+      timetable: tt,
+      fixes: _fixes,
+      now: widget.clock(),
+      moving: false,
+      maxMeters: 300,
+      limit: 5,
+    );
+    if (trips.isEmpty) {
+      context.showSnackBar(l10n.tripNoBusNear);
+      return;
+    }
+    final chosen = await showModalBottomSheet<BoardedTrip>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(context.pageMargin, 0, context.pageMargin, Spacing.s),
+              child: Text(l10n.tripPickBus, style: context.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+            ),
+            for (final t in trips)
+              ListTile(
+                leading: LineChip(tt.lineNames[tt.routeLine[t.route]], kind: routeKind(planner, t.route)),
+                title: Text('→ ${tt.routeHeadsign[t.route]}'),
+                subtitle: Text(l10n.meters(t.meters.round())),
+                onTap: () => Navigator.of(context).pop(t),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null && mounted) {
+      _skipped.remove(chosen.trip);
+      await _boardOn(chosen);
+    }
+  }
+
+  Future<void> _boardOn(BoardedTrip boarded) async {
+    final args = _args!;
+    _planning = true;
+    try {
+      final position = ref.read(positionProvider).value;
+      final journey = await args.planner.planOnBoard(
+        boarded: boarded,
+        to: args.to.point,
+        at: widget.clock(),
+        filter: args.filter,
+      );
+      final ride = journey?.rides.firstOrNull;
+      if (!mounted) return;
+      if (journey == null || ride == null) {
+        _skipped.add(boarded.trip);
+        return;
+      }
+      final tt = args.planner.timetable;
+      setState(() {
+        _args = args.withJourney(journey);
+        _state = TripState(nearBoard: true, boarded: true, stopIndex: ride.board - 1);
+        _alerted.clear();
+        _advance(position);
+      });
+      context.showSnackBar(context.l10n.tripOnBoardDetected(tt.lineNames[tt.routeLine[ride.route]]));
+    } on Object {
+      _skipped.add(boarded.trip);
+    } finally {
+      _planning = false;
+    }
   }
 
   /// Plans the journey again from where the traveller is, now: the buses that were late or early, the realtime that
@@ -288,7 +400,11 @@ class _TripPageState extends ConsumerState<TripPage> {
       );
     }
     // Every new fix moves the journey on, from the foreground service or from the live position of the map.
-    ref.listen(positionProvider, (_, next) => setState(() => _advance(next.value)));
+    ref.listen(positionProvider, (_, next) {
+      _record(next.value);
+      setState(() => _advance(next.value));
+      _checkBoard();
+    });
     final position = ref.watch(positionProvider).value;
     final view = _view;
     final arrive = _arrive(view);
@@ -297,7 +413,14 @@ class _TripPageState extends ConsumerState<TripPage> {
       body: switch (view.phase) {
         TripPhase.onBoard => _OnBoard(args: args, view: view, arrive: arrive, noRealtime: noRealtime),
         TripPhase.arrived => _Arrived(args: args),
-        _ => _OnFoot(args: args, view: view, arrive: arrive, position: position, noRealtime: noRealtime),
+        _ => _OnFoot(
+          args: args,
+          view: view,
+          arrive: arrive,
+          position: position,
+          noRealtime: noRealtime,
+          onBoard: _pickBus,
+        ),
       },
     );
   }
@@ -511,7 +634,11 @@ class _OnFoot extends ConsumerStatefulWidget {
     required this.arrive,
     required this.position,
     required this.noRealtime,
+    required this.onBoard,
   });
+
+  /// Opens the choice of the bus the traveller is on, when they are already on one.
+  final VoidCallback onBoard;
 
   final JourneyArgs args;
   final TripView view;
@@ -626,6 +753,16 @@ class _OnFootState extends ConsumerState<_OnFoot> {
                       ? null
                       : _BusStatus(args: args, ride: ride, noRealtime: widget.noRealtime),
                 ),
+                // For the traveller who is already on a bus, and the phone did not notice.
+                if (ride != null && !toDestination)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ActionChip(
+                      avatar: const Icon(Icons.directions_bus),
+                      label: Text(l10n.tripAlreadyOnBoard),
+                      onPressed: widget.onBoard,
+                    ),
+                  ),
                 if (position == null)
                   Card(
                     margin: EdgeInsets.zero,

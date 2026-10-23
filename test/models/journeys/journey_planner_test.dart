@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/models/journeys/journey_planner.dart';
 import 'package:veribus/models/journeys/raptor.dart';
+import 'package:veribus/models/journeys/ride_detector.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/models/journeys/timetable_builder.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -151,6 +152,24 @@ void main() {
     final first = journeys.first.journey.legs;
     expect((first[1] as WalkLeg).end, _hm('10:20'));
     expect(journeys.first.journey.depart, greaterThan(_hm('10:00')));
+  });
+
+  test('a traveller already on a bus goes on with it from its next stop, not with the next bus', () async {
+    // The 64 of 10:00 is between A and B; the next one leaves A at 10:12. Someone who got on at A would follow the
+    // first one to C: it is the trip they are on, whatever the search would have proposed from here.
+    final tt = _timetable([
+      _trip('64', ['A', 'B', 'C', 'D'], ['10:00', '10:10', '10:20', '10:30']),
+      _trip('64', ['A', 'B', 'C', 'D'], ['10:12', '10:22', '10:32', '10:42']),
+    ]);
+    final planner = JourneyPlanner(tt, _realtime(const {}));
+    final boarded = BoardedTrip(trip: 0, route: tt.tripRoute[0], next: 1, meters: 20, lateSeconds: 0);
+    final journey = await planner.planOnBoard(boarded: boarded, to: _near('D'), at: _at('10:05'));
+    final ride = journey!.rides.single;
+    expect(ride.trip, 0);
+    expect(tt.stopNames[ride.fromStop], 'Stop B');
+    expect(ride.start, _hm('10:10'));
+    expect(journey.journey.legs.first, isA<RideLeg>());
+    expect(journey.journey.arrive, lessThan(_hm('10:33')));
   });
 
   test('a canceled trip is left out: the journey takes the next one, and keeps its status', () async {

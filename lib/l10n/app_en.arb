@@ -892,5 +892,16 @@
         "type": "String"
       }
     }
-  }
+  },
+  "tripOnBoardDetected": "You are on the {line}: following it from here",
+  "@tripOnBoardDetected": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "tripAlreadyOnBoard": "Already on a bus?",
+  "tripPickBus": "Which bus are you on?",
+  "tripNoBusNear": "No bus near you right now"
 }

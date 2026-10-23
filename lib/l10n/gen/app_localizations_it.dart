@@ -1167,4 +1167,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String tripReplanned(String next, String time) {
     return 'Percorso aggiornato: il prossimo è il $next alle $time';
   }
+
+  @override
+  String tripOnBoardDetected(String line) {
+    return 'Sei sul $line: ti seguo da qui';
+  }
+
+  @override
+  String get tripAlreadyOnBoard => 'Sei già su un autobus?';
+
+  @override
+  String get tripPickBus => 'Su quale autobus sei?';
+
+  @override
+  String get tripNoBusNear => 'Nessun autobus vicino a te in questo momento';
 }

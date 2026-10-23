@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/models/journeys/raptor.dart';
+import 'package:veribus/models/journeys/ride_detector.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/models/journeys/timetable_builder.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -115,6 +116,38 @@ class JourneyPlanner {
       departure = rides.map((j) => j.depart).reduce((a, b) => a < b ? a : b) + 60;
     }
     return found..sort((a, b) => a.journey.depart.compareTo(b.journey.depart));
+  }
+
+  /// The journey of a traveller who is already on [boarded]: it goes on from the next stop of the trip, and the rest of
+  /// the way (where to get off, the changes) is searched from there. Null when no journey from that stop to [to] goes on
+  /// with this trip.
+  Future<PlannedJourney?> planOnBoard({
+    required BoardedTrip boarded,
+    required LatLng to,
+    required DateTime at,
+    JourneyFilter filter = allTransport,
+  }) async {
+    final tt = timetable;
+    final stop = tt.routeStop(boarded.route, boarded.next);
+    final destinations = stopsAround(to, radius: 600);
+    if (destinations.isEmpty) return null;
+    final live = _Live();
+    final journeys = await _searchLive(
+      [(stop: stop, walk: 0)],
+      destinations,
+      // The scheduled time of the trip at that stop: it is the trip that the search boards, late or not.
+      tt.time(boarded.trip, boarded.next),
+      secondsOf(at),
+      live,
+      _blocked(filter),
+    );
+    for (final j in journeys) {
+      final legs = j.legs.skipWhile((l) => l is WalkLeg && l.end == l.start).toList();
+      if (legs.firstOrNull case RideLeg(:final trip) when trip == boarded.trip) {
+        return PlannedJourney(Journey(legs), live.arrivalsFor(Journey(legs)));
+      }
+    }
+    return null;
   }
 
   /// The last journey still leaving within [horizon] seconds of [at], when the service ends within it: "leave by
