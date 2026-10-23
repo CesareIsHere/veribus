@@ -1987,6 +1987,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Journey in progress'**
   String get tripChannelName;
+
+  /// No description provided for @tripShowMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the map'**
+  String get tripShowMap;
+
+  /// No description provided for @tripShowList.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the stops'**
+  String get tripShowList;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

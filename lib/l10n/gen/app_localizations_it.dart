@@ -1126,4 +1126,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tripChannelName => 'Percorso in corso';
+
+  @override
+  String get tripShowMap => 'Mostra la mappa';
+
+  @override
+  String get tripShowList => 'Mostra le fermate';
 }

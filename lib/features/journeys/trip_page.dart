@@ -510,7 +510,7 @@ class _Summary extends StatelessWidget {
 }
 
 /// On a vehicle: how many stops are left, the stops ahead with the one to get off at, and what comes next.
-class _OnBoard extends ConsumerWidget {
+class _OnBoard extends ConsumerStatefulWidget {
   const _OnBoard({required this.args, required this.view, required this.noRealtime});
 
   final JourneyArgs args;
@@ -518,7 +518,19 @@ class _OnBoard extends ConsumerWidget {
   final Set<String> noRealtime;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OnBoard> createState() => _OnBoardState();
+}
+
+class _OnBoardState extends ConsumerState<_OnBoard> {
+  /// The stops ahead on a map instead of the list, when the traveller asks for it.
+  var _map = false;
+
+  JourneyArgs get args => widget.args;
+  TripView get view => widget.view;
+  Set<String> get noRealtime => widget.noRealtime;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final scheme = context.colors;
     final planner = args.planner;
@@ -587,48 +599,50 @@ class _OnBoard extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.l),
-              children: [
-                for (var i = ride.board; i <= ride.alight; i++)
-                  TimelineRow(
-                    first: i == ride.board,
-                    last: i == ride.alight,
-                    railColor: color,
-                    node: i == index
-                        ? TimelineVehicle.node(context, null, color: color)
-                        : TimelineStop.node(context, terminus: i == ride.alight, color: color),
-                    child: Opacity(
-                      opacity: i < index ? 0.45 : 1,
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: Spacing.xxxl),
-                        padding: const EdgeInsets.only(right: Spacing.s),
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                tt.stopNames[tt.routeStop(ride.route, i)] +
-                                    (i == ride.alight ? ' · ${l10n.journeysGetOff}' : ''),
-                                style: i == ride.alight || i == index
-                                    ? context.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: i == ride.alight ? color : null,
-                                      )
-                                    : context.textTheme.bodyLarge,
+            child: _map
+                ? _RideMap(args: args, ride: ride, color: color, index: index)
+                : ListView(
+                    padding: EdgeInsets.fromLTRB(context.pageMargin, Spacing.s, context.pageMargin, Spacing.l),
+                    children: [
+                      for (var i = ride.board; i <= ride.alight; i++)
+                        TimelineRow(
+                          first: i == ride.board,
+                          last: i == ride.alight,
+                          railColor: color,
+                          node: i == index
+                              ? TimelineVehicle.node(context, null, color: color)
+                              : TimelineStop.node(context, terminus: i == ride.alight, color: color),
+                          child: Opacity(
+                            opacity: i < index ? 0.45 : 1,
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: Spacing.xxxl),
+                              padding: const EdgeInsets.only(right: Spacing.s),
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      tt.stopNames[tt.routeStop(ride.route, i)] +
+                                          (i == ride.alight ? ' · ${l10n.journeysGetOff}' : ''),
+                                      style: i == ride.alight || i == index
+                                          ? context.textTheme.titleMedium?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              color: i == ride.alight ? color : null,
+                                            )
+                                          : context.textTheme.bodyLarge,
+                                    ),
+                                  ),
+                                  Text(
+                                    journeyClock(planner, tt.time(ride.trip, i) + ride.delay),
+                                    style: context.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              journeyClock(planner, tt.time(ride.trip, i) + ride.delay),
-                              style: context.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                    ],
                   ),
-              ],
-            ),
           ),
           Material(
             color: scheme.surfaceContainer,
@@ -655,6 +669,11 @@ class _OnBoard extends ConsumerWidget {
                         style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
+                  IconButton.filledTonal(
+                    onPressed: () => setState(() => _map = !_map),
+                    tooltip: _map ? l10n.tripShowList : l10n.tripShowMap,
+                    icon: Icon(_map ? Icons.format_list_bulleted : Icons.map_outlined),
+                  ),
                   TextButton(onPressed: () => context.pop(), child: Text(l10n.tripAllSteps)),
                   TextButton(
                     onPressed: () => context.go(NearbyPage.route),
@@ -667,6 +686,67 @@ class _OnBoard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The ride on a map: the way ahead along the line, the stops left and the one to get off at, with the traveller.
+class _RideMap extends ConsumerWidget {
+  const _RideMap({required this.args, required this.ride, required this.color, required this.index});
+
+  final JourneyArgs args;
+  final RideLeg ride;
+  final Color color;
+
+  /// The stop of the ride the vehicle is at.
+  final int index;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = context.colors;
+    final planner = args.planner;
+    final tt = planner.timetable;
+    LatLng stop(int i) {
+      final s = tt.routeStop(ride.route, i);
+      return LatLng(tt.stopLat[s] / 1e6, tt.stopLon[s] / 1e6);
+    }
+
+    final position = ref.watch(positionProvider).value;
+    final route = rideRoute(ref, planner, ride);
+    final ahead = position == null || route.length < 2 ? route : splitRoute(route, position).ahead;
+    final off = stop(ride.alight);
+    return TransitMap(
+      fit: [?position, off],
+      fitPadding: const EdgeInsets.all(Spacing.xxxl),
+      locateButton: false,
+      children: [
+        PolylineLayer(
+          polylines: [if (ahead.length > 1) Polyline(points: ahead, strokeWidth: 6, color: color)],
+        ),
+        MarkerLayer(
+          markers: [
+            for (var i = math.max(index, ride.board) + 1; i < ride.alight; i++)
+              Marker(
+                point: stop(i),
+                width: Spacing.m,
+                height: Spacing.m,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: scheme.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 2),
+                  ),
+                ),
+              ),
+            Marker(
+              point: off,
+              width: Spacing.xxxl,
+              height: Spacing.xxxl,
+              child: Icon(Icons.location_on, size: Spacing.xxl, color: color),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

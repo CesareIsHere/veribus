@@ -844,5 +844,7 @@
       }
     }
   },
-  "tripChannelName": "Journey in progress"
+  "tripChannelName": "Journey in progress",
+  "tripShowMap": "Show the map",
+  "tripShowList": "Show the stops"
 }

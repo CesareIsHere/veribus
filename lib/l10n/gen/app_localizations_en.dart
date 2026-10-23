@@ -1125,4 +1125,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripChannelName => 'Journey in progress';
+
+  @override
+  String get tripShowMap => 'Show the map';
+
+  @override
+  String get tripShowList => 'Show the stops';
 }
