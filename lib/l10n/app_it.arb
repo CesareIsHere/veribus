@@ -322,5 +322,9 @@
   "metroEvery": "Ogni circa {minutes} min adesso",
   "metroNoTrains": "Nessun treno nella prossima ora",
   "metroScheduled": "Dati da orario programmato, non in tempo reale.",
-  "metroNoneNearby": "Nessuna stazione della metro vicina"
+  "metroNoneNearby": "Nessuna stazione della metro vicina",
+  "tripOngoingTitle": "Veribus · in viaggio",
+  "tripOngoingText": "Ti accompagno verso {destination}",
+  "tripMissed": "Il {line} è passato: il prossimo è il {next} alle {time}",
+  "tripReplanned": "Percorso aggiornato: il prossimo è il {next} alle {time}"
 }

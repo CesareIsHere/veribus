@@ -34,12 +34,23 @@ import 'package:veribus/styles/app_theme.dart';
 /// traveller is (`followTrip`); a stop before the one to get off the phone vibrates and, when the notices are on, shows
 /// one. Works with the screen on: the app asks the position only while it is in front.
 class TripPage extends ConsumerStatefulWidget {
-  const TripPage({required this.args, super.key});
+  const TripPage({
+    required this.args,
+    this.clock = DateTime.now,
+    this.replanEvery = const Duration(seconds: 30),
+    super.key,
+  });
 
   static const route = '/journeys/trip';
 
   /// Null when the page is opened without its journey (restored after the app was killed): back to the list.
   final JourneyArgs? args;
+
+  /// The time now: a test sets its own.
+  final DateTime Function() clock;
+
+  /// How often the journey is planned again from where the traveller is, to follow the buses that come and go.
+  final Duration replanEvery;
 
   @override
   ConsumerState<TripPage> createState() => _TripPageState();
@@ -48,39 +59,65 @@ class TripPage extends ConsumerStatefulWidget {
 class _TripPageState extends ConsumerState<TripPage> {
   static const _noticeId = 7001; // feature:push
 
+  /// The ongoing notification is shown again at least this often: the location service may put its own back.
+  static const _noticeRefresh = Duration(seconds: 20);
+
   var _state = const TripState();
   late TripView _view;
   final _alerted = <int>{};
 
+  /// The journey being followed: the one chosen, until the bus it was for is gone or the traveller cannot make it.
+  JourneyArgs? _args;
+
   /// The tracker that holds the foreground service while the journey goes on (kept to release it in [dispose]).
   late final LocationTracker _tracker = ref.read(locationTrackerProvider);
-
-  /// What the notification says changes with this: a new text means listening again.
-  (TripPhase, int, int?)? _noticeKey;
+  late final IPushService _push = ref.read(pushServiceProvider); // feature:push
+  StreamSubscription<void>? _ended; // feature:push
+  Timer? _replanTimer;
+  Timer? _noticeTimer;
+  var _planning = false;
   var _started = false;
+  var _following = false;
 
-  List<RideLeg> get _rides => widget.args!.journey.rides;
+  /// What the ongoing notification showed last, and when.
+  String? _shownKey; // feature:push
+  DateTime? _shownAt; // feature:push
+
+  List<RideLeg> get _rides => _args!.journey.rides;
 
   @override
   void initState() {
     super.initState();
-    if (widget.args != null) _advance(ref.read(positionProvider).value);
+    _args = widget.args;
+    if (_args != null) _advance(ref.read(positionProvider).value);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (widget.args == null || _started) return;
+    if (_args == null || _started) return;
     _started = true;
-    _syncNotification();
+    _replanTimer = Timer.periodic(widget.replanEvery, (_) => unawaited(_replan()));
     // feature:push:start
     unawaited(_askNotifications());
+    _ended = _push.tripEnded.listen((_) {
+      if (mounted) context.go(NearbyPage.route);
+    });
     // feature:push:end
+    _syncNotification();
   }
 
   @override
   void dispose() {
-    if (widget.args != null) unawaited(_tracker.follow(null));
+    _replanTimer?.cancel();
+    _noticeTimer?.cancel();
+    if (_args != null) {
+      unawaited(_tracker.follow(null));
+      // feature:push:start
+      unawaited(_ended?.cancel());
+      unawaited(_push.cancelTrip());
+      // feature:push:end
+    }
     super.dispose();
   }
 
@@ -88,7 +125,7 @@ class _TripPageState extends ConsumerState<TripPage> {
   /// The notification of the journey needs the permission of the notices (Android 13+): asked once, when it starts.
   Future<void> _askNotifications() async {
     try {
-      await ref.read(pushServiceProvider).requestNotifications();
+      await _push.requestNotifications();
     } on Object {
       // This build has no notices (no Firebase configuration): the journey goes on without the permission.
     }
@@ -96,7 +133,7 @@ class _TripPageState extends ConsumerState<TripPage> {
   // feature:push:end
 
   void _advance(LatLng? position) {
-    final args = widget.args!;
+    final args = _args!;
     final view = followTrip(
       timetable: args.planner.timetable,
       rides: _rides,
@@ -109,13 +146,11 @@ class _TripPageState extends ConsumerState<TripPage> {
       unawaited(HapticFeedback.heavyImpact());
       // feature:push:start
       unawaited(
-        ref
-            .read(pushServiceProvider)
-            .showNow(
-              id: _noticeId,
-              title: context.l10n.tripAlertTitle,
-              body: args.planner.timetable.stopNames[view.ride!.toStop],
-            ),
+        _push.showNow(
+          id: _noticeId,
+          title: context.l10n.tripAlertTitle,
+          body: args.planner.timetable.stopNames[view.ride!.toStop],
+        ),
       );
       // feature:push:end
     }
@@ -124,27 +159,128 @@ class _TripPageState extends ConsumerState<TripPage> {
     if (_started) _syncNotification();
   }
 
-  /// The ongoing notification says the next step, and the foreground service behind it keeps the position coming with
-  /// the screen off. When the step changes the tracker starts the service again with the new text; when the journey ends
-  /// it lets it go.
+  /// Plans the journey again from where the traveller is, now: the buses that were late or early, the realtime that
+  /// moved. The bus waited for is kept when it can still be made, with its new time; when it cannot (it left, or the
+  /// walk is too long for it) the journey becomes the best one from here and the traveller is told.
+  Future<void> _replan() async {
+    final args = _args!;
+    final target = _view.ride;
+    if (_planning || target == null || _view.phase == TripPhase.onBoard || _view.phase == TripPhase.arrived) return;
+    _planning = true;
+    try {
+      final position = ref.read(positionProvider).value;
+      final plans = await args.planner.plan(
+        from: position ?? args.from.point,
+        to: args.to.point,
+        at: widget.clock(),
+        filter: args.filter,
+      );
+      // The traveller may have boarded, or arrived, while the planner was asking for the realtime.
+      if (!mounted || plans.isEmpty || _view.phase == TripPhase.onBoard || _view.phase == TripPhase.arrived) return;
+      final same = plans.where((j) => j.rides.firstOrNull?.trip == target.trip).firstOrNull;
+      final next = same ?? plans.first;
+      final tt = args.planner.timetable;
+      setState(() {
+        _args = args.withJourney(next);
+        _state = TripState(nearBoard: same != null && _state.nearBoard);
+        _alerted.clear();
+        _advance(position);
+      });
+      final ride = next.rides.firstOrNull;
+      if (same == null && ride != null) {
+        final l10n = context.l10n;
+        context.showSnackBar(
+          l10n.tripMissed(
+            tt.lineNames[tt.routeLine[target.route]],
+            tt.lineNames[tt.routeLine[ride.route]],
+            journeyClock(args.planner, ride.start),
+          ),
+        );
+      }
+    } on Object {
+      // The realtime or the planner failed for now: the journey stays as it was, and is tried again.
+    } finally {
+      _planning = false;
+    }
+  }
+
+  /// The journey ends here: when it is walking to the destination the estimate follows the traveller, otherwise it is
+  /// the one of the plan, which the planning again keeps up to date.
+  int _arrive(TripView view) {
+    final args = _args!;
+    final meters = view.meters;
+    if (view.phase == TripPhase.toDestination && meters != null) {
+      return args.planner.secondsOf(widget.clock()) + (meters / _walkSpeed).ceil();
+    }
+    return args.journey.journey.arrive;
+  }
+
+  /// The location service runs as a plain "following you": the notification with the steps is the one below.
   void _syncNotification() {
     final view = _view;
-    final key = (view.phase, view.state.ride, view.stopsLeft);
-    if (key == _noticeKey) return;
-    _noticeKey = key;
     if (view.phase == TripPhase.arrived) {
+      _following = false;
       unawaited(_tracker.follow(null));
+      unawaited(_push.cancelTrip()); // feature:push
       return;
     }
-    final l10n = context.l10n;
-    final notice = tripNotice(l10n, widget.args!, view);
-    unawaited(_tracker.follow((title: notice.title, text: notice.text, channelName: l10n.tripChannelName)));
+    if (!_following) {
+      _following = true;
+      final l10n = context.l10n;
+      unawaited(
+        _tracker.follow((
+          title: l10n.tripOngoingTitle,
+          text: l10n.tripOngoingText(_args!.to.name),
+          channelName: l10n.tripChannelName,
+        )),
+      );
+      // The service puts its own notification a moment after it starts: ours goes again over it.
+      _noticeTimer?.cancel();
+      _noticeTimer = Timer(const Duration(seconds: 2), () => _showTrip(force: true)); // feature:push
+    }
+    _showTrip(); // feature:push
   }
+
+  // feature:push:start
+  /// The ongoing notification, as it is now: updated when what it says changes (the distance walked, the bus and its
+  /// state, the next step), and now and then anyway.
+  void _showTrip({bool force = false}) {
+    if (!mounted || _view.phase == TripPhase.arrived) return;
+    final view = _view;
+    final args = _args!;
+    final noRealtime = ref.read(networkInfoProvider).value?.noRealtime ?? const <String>{};
+    final planner = args.planner;
+    final ride = view.ride;
+    final color = ride == null
+        ? context.colors.primary
+        : LineChip.colorOf(
+            context,
+            rideKind(planner, ride),
+            planner.timetable.lineNames[planner.timetable.routeLine[ride.route]],
+          );
+    final now = widget.clock();
+    final notification = tripNotification(
+      context.l10n,
+      args,
+      view,
+      now: now,
+      arrive: _arrive(view),
+      color: color,
+      noRealtime: noRealtime,
+    );
+    final key = '${notification.title}|${notification.text}|${notification.details.join()}|${notification.progress}';
+    final last = _shownAt;
+    if (!force && key == _shownKey && last != null && now.difference(last) < _noticeRefresh) return;
+    _shownKey = key;
+    _shownAt = now;
+    unawaited(_push.showTrip(notification));
+  }
+  // feature:push:end
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final args = widget.args;
+    final args = _args;
     if (args == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.journeysDetails)),
@@ -155,43 +291,101 @@ class _TripPageState extends ConsumerState<TripPage> {
     ref.listen(positionProvider, (_, next) => setState(() => _advance(next.value)));
     final position = ref.watch(positionProvider).value;
     final view = _view;
+    final arrive = _arrive(view);
     final noRealtime = ref.watch(networkInfoProvider).value?.noRealtime ?? const {};
     return Scaffold(
       body: switch (view.phase) {
-        TripPhase.onBoard => _OnBoard(args: args, view: view, noRealtime: noRealtime),
+        TripPhase.onBoard => _OnBoard(args: args, view: view, arrive: arrive, noRealtime: noRealtime),
         TripPhase.arrived => _Arrived(args: args),
-        _ => _OnFoot(args: args, view: view, position: position, noRealtime: noRealtime),
+        _ => _OnFoot(args: args, view: view, arrive: arrive, position: position, noRealtime: noRealtime),
       },
     );
   }
 }
 
-/// What the ongoing notification says for [view]: the step and its stable details (the clock times, not the metres,
-/// which would be wrong a moment later: the text only changes with the step).
-({String title, String text}) tripNotice(AppLocalizations l10n, JourneyArgs args, TripView view) {
+/// Metres a minute on foot, the pace the planner uses.
+const double _walkSpeed = 1.2 * 60;
+
+// feature:push:start
+/// The ongoing notification for [view]: what to do now, the bus and how it is doing (the status and its reason, in the
+/// words of the stop page), the way left, and the clock of the bus or of the stop counting down in the header. The
+/// words are the app's; the layout is the push service's.
+TripNotification tripNotification(
+  AppLocalizations l10n,
+  JourneyArgs args,
+  TripView view, {
+  required DateTime now,
+  required int arrive,
+  required Color color,
+  Set<String> noRealtime = const {},
+}) {
   final planner = args.planner;
   final tt = planner.timetable;
   final ride = view.ride;
-  final arrive = journeyClock(planner, args.journey.journey.arrive);
-  final end = args.to.isHome ? l10n.journeysArriveHome(arrive) : l10n.journeysArriveDestination(arrive);
+  final arriveClock = journeyClock(planner, arrive);
+  final end = args.to.isHome ? l10n.journeysArriveHome(arriveClock) : l10n.journeysArriveDestination(arriveClock);
+  final journey = args.journey.journey;
+  final elapsed = planner.secondsOf(now) - journey.depart;
+  final progress = (100 * elapsed / math.max(1, arrive - journey.depart)).round().clamp(0, 100);
+  final meters = view.meters;
+  final distance = meters == null ? null : l10n.tripDistance(_round(meters), _walkMinutes(meters));
+  String bold(String text) => '<b>${_escape(text)}</b>';
+
+  TripNotification make(String title, String text, List<String> details, {DateTime? countdownTo}) => TripNotification(
+    title: title,
+    text: text,
+    details: details,
+    subText: end,
+    channelName: l10n.tripChannelName,
+    endLabel: l10n.tripEnd,
+    progress: progress,
+    countdownTo: countdownTo,
+    color: color,
+  );
+
   if (ride == null) {
-    return view.phase == TripPhase.arrived
-        ? (title: l10n.tripArrived, text: args.to.name)
-        : (title: l10n.tripWalkTo(args.to.name), text: end);
+    return make(l10n.tripWalkTo(args.to.name), distance ?? end, [
+      ?distance == null ? null : _escape(distance),
+      _escape(end),
+    ], countdownTo: planner.timeOf(arrive));
   }
   final line = tt.lineNames[tt.routeLine[ride.route]];
-  return switch (view.phase) {
-    TripPhase.atStop => (title: l10n.tripBoard(line), text: l10n.tripWaitHere(tt.routeHeadsign[ride.route])),
-    TripPhase.onBoard => (
-      title: (view.stopsLeft ?? 2) <= 1 ? l10n.tripGetOffNext : l10n.tripGetOffIn(view.stopsLeft!),
-      text: l10n.tripGetOffAt(tt.stopNames[ride.toStop], journeyClock(planner, ride.end)),
-    ),
-    _ => (
-      title: l10n.tripWalkTo(tt.stopNames[ride.fromStop]),
-      text: l10n.tripYourLine(line, l10n.tripAtTime(journeyClock(planner, ride.start))),
-    ),
-  };
+  if (view.phase == TripPhase.onBoard) {
+    final off = l10n.tripGetOffAt(tt.stopNames[ride.toStop], journeyClock(planner, ride.end));
+    return make((view.stopsLeft ?? 2) <= 1 ? l10n.tripGetOffNext : l10n.tripGetOffIn(view.stopsLeft!), off, [
+      bold(l10n.tripGetOffAt(tt.stopNames[ride.toStop], journeyClock(planner, ride.end))),
+      _escape('$line → ${tt.routeHeadsign[ride.route]}'),
+      _escape(end),
+    ], countdownTo: planner.timeOf(ride.end));
+  }
+  // Waiting for the bus, or walking to its stop: its time and its state, with the reason of the state.
+  final arrival = args.journey.realtimeOf(ride);
+  final status = arrival?.status ?? ArrivalStatus.scheduled;
+  final statusText = ArrivalText.status(l10n, status);
+  final reason = arrival == null
+      ? ArrivalText.noRealtime(l10n, lineWithoutRealtime: noRealtime.contains(tt.lineIds[tt.routeLine[ride.route]]))
+      : ArrivalText.reason(
+          l10n,
+          arrival,
+          lineWithoutRealtime: noRealtime.contains(tt.lineIds[tt.routeLine[ride.route]]),
+        );
+  final when = arrival?.minutes != null
+      ? l10n.journeysInMinutes(arrival!.minutes!)
+      : l10n.tripAtTime(journeyClock(planner, ride.start));
+  final bus = l10n.tripYourLine(line, when);
+  final atStop = view.phase == TripPhase.atStop;
+  // The bus counts down to its predicted time when there is one, to its scheduled time otherwise.
+  final live = arrival != null && (status == ArrivalStatus.confirmed || status == ArrivalStatus.uncertain);
+  return make(atStop ? l10n.tripBoard(line) : l10n.tripWalkTo(tt.stopNames[ride.fromStop]), '$bus · $statusText', [
+    _escape(bus),
+    if (reason.isEmpty) bold(statusText) else '${bold(statusText)} · ${_escape(reason)}',
+    if (!atStop && distance != null) _escape(distance),
+    _escape(end),
+  ], countdownTo: live && arrival.time != null ? arrival.time : planner.timeOf(ride.start));
 }
+
+String _escape(String text) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+// feature:push:end
 
 /// The instruction in a big card: what to do now, and the details under it.
 class _InstructionCard extends StatelessWidget {
@@ -279,18 +473,30 @@ class _BusStatus extends StatelessWidget {
     final when = arrival?.minutes != null
         ? l10n.journeysInMinutes(arrival!.minutes!)
         : l10n.tripAtTime(journeyClock(planner, ride.start));
-    return Row(
-      spacing: Spacing.s,
+    final lineWithoutRealtime = noRealtime.contains(tt.lineIds[tt.routeLine[ride.route]]);
+    final reason = arrival == null
+        ? ArrivalText.noRealtime(l10n, lineWithoutRealtime: lineWithoutRealtime)
+        : ArrivalText.reason(l10n, arrival, lineWithoutRealtime: lineWithoutRealtime);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: Spacing.xs,
       children: [
-        if (arrival?.status == ArrivalStatus.confirmed)
-          Icon(Icons.rss_feed, size: Spacing.l, color: scheme.inversePrimary),
-        Expanded(
-          child: Text(
-            l10n.tripYourLine(line, when),
-            style: context.textTheme.titleSmall?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w700),
-          ),
+        Row(
+          spacing: Spacing.s,
+          children: [
+            if (arrival?.status == ArrivalStatus.confirmed)
+              Icon(Icons.rss_feed, size: Spacing.l, color: scheme.inversePrimary),
+            Expanded(
+              child: Text(
+                l10n.tripYourLine(line, when),
+                style: context.textTheme.titleSmall?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w700),
+              ),
+            ),
+            StatusTag(arrival?.status ?? ArrivalStatus.scheduled),
+          ],
         ),
-        StatusTag(arrival?.status ?? ArrivalStatus.scheduled),
+        // What the state means, in the words of the stop page: the bus and how far it is, why it is doubtful.
+        if (reason.isNotEmpty) Text(reason, style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimary)),
       ],
     );
   }
@@ -299,10 +505,19 @@ class _BusStatus extends StatelessWidget {
 /// Walking to a stop (or home) and waiting at the stop: the map, the instruction on top and the journey in short at the
 /// bottom. The way is drawn along the streets, from where the walk began, and asked again if the traveller leaves it.
 class _OnFoot extends ConsumerStatefulWidget {
-  const _OnFoot({required this.args, required this.view, required this.position, required this.noRealtime});
+  const _OnFoot({
+    required this.args,
+    required this.view,
+    required this.arrive,
+    required this.position,
+    required this.noRealtime,
+  });
 
   final JourneyArgs args;
   final TripView view;
+
+  /// When the journey ends, in seconds from the midnight of the timetable.
+  final int arrive;
   final LatLng? position;
   final Set<String> noRealtime;
 
@@ -430,7 +645,7 @@ class _OnFootState extends ConsumerState<_OnFoot> {
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: _Summary(args: args),
+          child: _Summary(args: args, arrive: widget.arrive),
         ),
       ],
     );
@@ -439,9 +654,10 @@ class _OnFootState extends ConsumerState<_OnFoot> {
 
 /// The journey in short under the instruction: how far along it is, when it ends, and the way out.
 class _Summary extends StatelessWidget {
-  const _Summary({required this.args});
+  const _Summary({required this.args, required this.arrive});
 
   final JourneyArgs args;
+  final int arrive;
 
   @override
   Widget build(BuildContext context) {
@@ -450,8 +666,8 @@ class _Summary extends StatelessWidget {
     final planner = args.planner;
     final journey = args.journey.journey;
     final elapsed = DateTime.now().difference(planner.timeOf(journey.depart)).inSeconds;
-    final progress = (elapsed / math.max(1, journey.arrive - journey.depart)).clamp(0.0, 1.0);
-    final arrive = journeyClock(planner, journey.arrive);
+    final progress = (elapsed / math.max(1, arrive - journey.depart)).clamp(0.0, 1.0);
+    final arriveClock = journeyClock(planner, arrive);
     return Material(
       color: scheme.surface,
       elevation: 3,
@@ -476,12 +692,14 @@ class _Summary extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      args.to.isHome ? l10n.journeysArriveHome(arrive) : l10n.journeysArriveDestination(arrive),
+                      args.to.isHome
+                          ? l10n.journeysArriveHome(arriveClock)
+                          : l10n.journeysArriveDestination(arriveClock),
                       style: context.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                     ),
                   ),
                   Text(
-                    journeyDuration(l10n, journey.arrive - journey.depart),
+                    journeyDuration(l10n, arrive - journey.depart),
                     style: context.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ],
@@ -511,10 +729,11 @@ class _Summary extends StatelessWidget {
 
 /// On a vehicle: how many stops are left, the stops ahead with the one to get off at, and what comes next.
 class _OnBoard extends ConsumerStatefulWidget {
-  const _OnBoard({required this.args, required this.view, required this.noRealtime});
+  const _OnBoard({required this.args, required this.view, required this.arrive, required this.noRealtime});
 
   final JourneyArgs args;
   final TripView view;
+  final int arrive;
   final Set<String> noRealtime;
 
   @override
@@ -527,6 +746,7 @@ class _OnBoardState extends ConsumerState<_OnBoard> {
 
   JourneyArgs get args => widget.args;
   TripView get view => widget.view;
+  int get arrive => widget.arrive;
   Set<String> get noRealtime => widget.noRealtime;
 
   @override
@@ -664,8 +884,8 @@ class _OnBoardState extends ConsumerState<_OnBoard> {
                     Expanded(
                       child: Text(
                         args.to.isHome
-                            ? l10n.journeysArriveHome(journeyClock(planner, args.journey.journey.arrive))
-                            : l10n.journeysArriveDestination(journeyClock(planner, args.journey.journey.arrive)),
+                            ? l10n.journeysArriveHome(journeyClock(planner, arrive))
+                            : l10n.journeysArriveDestination(journeyClock(planner, arrive)),
                         style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),

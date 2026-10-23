@@ -23,6 +23,7 @@ import 'package:veribus/repositories/transit/transit_repository_provider.dart';
 import 'package:veribus/services/location_service.dart';
 import 'package:veribus/services/location_tracker.dart';
 import 'package:veribus/services/map_tile_service.dart';
+import 'package:veribus/services/push_notifications_service.dart';
 
 /// The foreground service of the journey: what the tracker was asked to show, each time (null: let it go).
 class _Tracker extends Fake implements LocationTracker {
@@ -30,6 +31,21 @@ class _Tracker extends Fake implements LocationTracker {
 
   @override
   Future<void> follow(FollowNotice? notice) async => notices.add(notice);
+}
+
+/// The ongoing notification of the journey: every version of it, and whether it was taken away.
+class _Push extends MockPushService {
+  final List<TripNotification> shown = <TripNotification>[];
+  int cancelled = 0;
+
+  @override
+  Future<bool> showTrip(TripNotification notification) async {
+    shown.add(notification);
+    return true;
+  }
+
+  @override
+  Future<void> cancelTrip() async => cancelled++;
 }
 
 int _hm(String hhmm) => int.parse(hhmm.substring(0, 2)) * 3600 + int.parse(hhmm.substring(3)) * 60;
@@ -43,70 +59,105 @@ LatLng _at(String stop, {double metres = 0}) {
   return LatLng(s.lat + metres / 110540, s.lon);
 }
 
-void main() {
-  testWidgets('walk to the stop, wait, ride and get off: one instruction at a time', (tester) async {
-    tester.view
-      ..physicalSize = const Size(800, 2400)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final tt = buildTimetable(
-      date: 20261020,
-      stops: _stops,
-      trips: [
+class _Rig {
+  _Rig({
+    required this.planner,
+    required this.journey,
+    required this.position,
+    required this.tracker,
+    required this.push,
+  });
+
+  final JourneyPlanner planner;
+  final PlannedJourney journey;
+  final StreamController<LatLng?> position;
+  final _Tracker tracker;
+  final _Push push;
+}
+
+/// A journey from [from] to [to] on the X line, whose trips leave stop A at [times], opened on the trip page.
+Future<_Rig> _open(
+  WidgetTester tester, {
+  required List<String> times,
+  required DateTime now,
+  required DateTime Function() clock,
+  required LatLng from,
+  required LatLng to,
+  Duration replanEvery = const Duration(seconds: 30),
+}) async {
+  tester.view
+    ..physicalSize = const Size(800, 2400)
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final tt = buildTimetable(
+    date: 20261020,
+    stops: _stops,
+    trips: [
+      for (final t in times)
         (
           line: 'X',
           direction: 0,
           headsign: 'To D',
           stops: ['A', 'B', 'C', 'D'],
-          times: [
-            for (final t in ['10:00', '10:10', '10:20', '10:30']) _hm(t),
-          ],
+          times: [for (var i = 0; i < 4; i++) _hm(t) + i * 600],
           previousDay: false,
         ),
-      ],
-    );
-    Future<Arrivals> none(List<String> stops, List<String> lines) async => Arrivals.fromJson({
-      'computed_at': DateTime(2026, 10, 20, 9, 50).toUtc().toIso8601String(),
-      'feed': {'status': 'ok'},
-      'stops': <Map<String, dynamic>>[],
-      'alerts': <Map<String, dynamic>>[],
-      'routes': <Map<String, dynamic>>[],
-    });
-    final planner = JourneyPlanner(tt, none);
-    final from = _at('A', metres: -300);
-    final to = _at('D', metres: 300);
-    final journey = (await planner.plan(from: from, to: to, at: DateTime(2026, 10, 20, 9, 50), options: 1)).first;
-    expect(journey.rides, hasLength(1));
+    ],
+  );
+  Future<Arrivals> none(List<String> stops, List<String> lines) async => Arrivals.fromJson({
+    'computed_at': now.toUtc().toIso8601String(),
+    'feed': {'status': 'ok'},
+    'stops': <Map<String, dynamic>>[],
+    'alerts': <Map<String, dynamic>>[],
+    'routes': <Map<String, dynamic>>[],
+  });
+  final planner = JourneyPlanner(tt, none);
+  final journey = (await planner.plan(from: from, to: to, at: now, options: 1)).first;
+  expect(journey.rides, hasLength(1));
 
-    final position = StreamController<LatLng?>();
-    addTearDown(position.close);
-    final transit = MockTransitRepository();
-    final tracker = _Tracker();
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          transitRepositoryProvider.overrideWithValue(transit),
-          networkInfoProvider.overrideWith((ref) => transit.networkInfo()),
-          localeProvider.overrideWithBuild((ref, notifier) => null),
-          mapTilesProvider.overrideWith((ref) => Completer<TileProviders>().future),
-          positionProvider.overrideWith((ref) => position.stream),
-          locationTrackerProvider.overrideWithValue(tracker),
-        ],
-        child: MaterialApp(
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: TripPage(
-            args: JourneyArgs(
-              planner: planner,
-              journey: journey,
-              from: Place(name: 'Your location', point: from),
-              to: Place(name: 'Home', point: to, type: PlaceType.home),
-            ),
+  final position = StreamController<LatLng?>();
+  addTearDown(position.close);
+  final transit = MockTransitRepository();
+  final tracker = _Tracker();
+  final push = _Push();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        transitRepositoryProvider.overrideWithValue(transit),
+        networkInfoProvider.overrideWith((ref) => transit.networkInfo()),
+        localeProvider.overrideWithBuild((ref, notifier) => null),
+        mapTilesProvider.overrideWith((ref) => Completer<TileProviders>().future),
+        positionProvider.overrideWith((ref) => position.stream),
+        locationTrackerProvider.overrideWithValue(tracker),
+        pushServiceProvider.overrideWithValue(push),
+      ],
+      child: MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: TripPage(
+          clock: clock,
+          replanEvery: replanEvery,
+          args: JourneyArgs(
+            planner: planner,
+            journey: journey,
+            from: Place(name: 'Your location', point: from),
+            to: Place(name: 'Home', point: to, type: PlaceType.home),
           ),
         ),
       ),
-    );
+    ),
+  );
+  return _Rig(planner: planner, journey: journey, position: position, tracker: tracker, push: push);
+}
+
+void main() {
+  testWidgets('walk to the stop, wait, ride and get off: one instruction at a time', (tester) async {
+    final now = DateTime(2026, 10, 20, 9, 50);
+    final from = _at('A', metres: -300);
+    final to = _at('D', metres: 300);
+    final rig = await _open(tester, times: ['10:00'], now: now, clock: () => now, from: from, to: to);
+    final (:tracker, :push, :position) = (tracker: rig.tracker, push: rig.push, position: rig.position);
     Future<void> move(LatLng p) async {
       position.add(p);
       await tester.pump(const Duration(milliseconds: 100));
@@ -114,25 +165,37 @@ void main() {
     }
 
     await move(from);
-    // The ongoing notification starts with the step: walk to the stop, which bus.
-    expect(tracker.notices.single?.title, 'Walk to STOP A');
-    expect(tracker.notices.single?.text, 'Your X comes at 10:00');
+    // The location service runs as a plain "following you", once; the steps are in the ongoing notification.
+    expect(tracker.notices.single?.title, 'Veribus · on your way');
+    expect(tracker.notices.single?.text, 'Following you to Home');
+    expect(push.shown.last.title, 'Walk to STOP A');
+    // The bus and its state, with the words of the stop page, and the way left.
+    expect(push.shown.last.text, 'Your X comes at 10:00 · Scheduled');
+    expect(push.shown.last.details, contains('<b>Scheduled</b> · no realtime data'));
+    expect(push.shown.last.details.any((d) => d.contains('m · ') && d.contains('min')), isTrue);
+    // The clock in the header counts down to the bus.
+    expect(push.shown.last.countdownTo, DateTime(2026, 10, 20, 10));
     expect(find.text('Walk to STOP A'), findsOneWidget);
     expect(find.textContaining('min'), findsWidgets);
     expect(find.text('Your X comes at 10:00'), findsOneWidget);
+    // The same words on the screen: the status and what it means.
+    expect(find.text('no realtime data'), findsOneWidget);
+
+    // Walking updates the notification: the distance changes, the service is not started again.
+    final before = push.shown.length;
+    await move(_at('A', metres: -150));
+    expect(push.shown.length, greaterThan(before));
+    expect(tracker.notices, hasLength(1));
 
     await move(_at('A', metres: 20));
     expect(find.text('Get on the X'), findsOneWidget);
-    expect(tracker.notices.last?.title, 'Get on the X');
-    // Moving along the same step does not restart the service: only a new step changes the notification.
-    final restarts = tracker.notices.length;
-    await move(_at('A', metres: 25));
-    expect(tracker.notices, hasLength(restarts));
+    expect(push.shown.last.title, 'Get on the X');
 
     await move(_at('B', metres: 10));
     expect(find.text('Get off in 2 stops'), findsOneWidget);
-    expect(tracker.notices.last?.title, 'Get off in 2 stops');
-    expect(tracker.notices.last?.text, 'at STOP D · 10:30');
+    expect(push.shown.last.title, 'Get off in 2 stops');
+    expect(push.shown.last.text, 'at STOP D · 10:30');
+    expect(push.shown.last.countdownTo, DateTime(2026, 10, 20, 10, 30));
     expect(find.text('STOP D · get off'), findsOneWidget);
 
     // On a vehicle the stops are a list; the map is one tap away, and back.
@@ -154,8 +217,44 @@ void main() {
 
     await move(to);
     expect(find.text('You have arrived'), findsOneWidget);
-    // Arrived: the tracker is told to let the service go, so the notification goes away.
+    // Arrived: the tracker is told to let the service go and the notification is taken away.
     expect(tracker.notices.last, isNull);
+    expect(push.cancelled, greaterThan(0));
+  });
+
+  testWidgets('a bus that was missed: the journey is planned again, with the next bus and the new arrival', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 10, 20, 9, 50);
+    final from = _at('A', metres: -300);
+    final to = _at('D', metres: 300);
+    final rig = await _open(
+      tester,
+      times: ['10:00', '10:20'],
+      now: now,
+      clock: () => now,
+      from: from,
+      to: to,
+      replanEvery: const Duration(seconds: 1),
+    );
+    expect(rig.journey.rides.single.start, _hm('10:00'));
+    expect(find.text('Home around 10:35'), findsOneWidget);
+
+    // The traveller is still far from the stop when the bus leaves.
+    rig.position.add(from);
+    await tester.pump(const Duration(milliseconds: 100));
+    now = DateTime(2026, 10, 20, 10, 5);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('The X has gone: your next is the X at 10:20'), findsOneWidget);
+    expect(find.text('Your X comes at 10:20'), findsOneWidget);
+    expect(find.text('Home around 10:55'), findsOneWidget);
+    expect(rig.push.shown.last.text, startsWith('Your X comes at 10:20'));
+    expect(rig.push.shown.last.subText, 'Home around 10:55');
+    // The traveller goes on from the first step of the new journey.
+    expect(find.text('Walk to STOP A'), findsOneWidget);
   });
 
   testWidgets('without its journey the page says to go back', (tester) async {
