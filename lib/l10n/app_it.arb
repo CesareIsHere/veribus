@@ -326,5 +326,9 @@
   "tripOngoingTitle": "Veribus · in viaggio",
   "tripOngoingText": "Ti accompagno verso {destination}",
   "tripMissed": "Il {line} è passato: il prossimo è il {next} alle {time}",
-  "tripReplanned": "Percorso aggiornato: il prossimo è il {next} alle {time}"
+  "tripReplanned": "Percorso aggiornato: il prossimo è il {next} alle {time}",
+  "tripOnBoardDetected": "Sei sul {line}: ti seguo da qui",
+  "tripAlreadyOnBoard": "Sei già su un autobus?",
+  "tripPickBus": "Su quale autobus sei?",
+  "tripNoBusNear": "Nessun autobus vicino a te in questo momento"
 }

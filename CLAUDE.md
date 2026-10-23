@@ -68,7 +68,9 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
   schedule, never shown as realtime).
 - Following a journey: `models/journeys/trip_progress.dart` (`followTrip`, pure and tested) decides the phase from the
   position; `features/journeys/trip_page.dart` shows it, plans the journey again every 30 s from where the traveller is
-  (the bus is kept with its new time, or replaced when it was missed) and keeps two notifications under one id:
+  (the bus is kept with its new time, or replaced when it was missed; a traveller already on a bus is found by their
+  speed and position against the timetable, `models/journeys/ride_detector.dart`, and followed on that trip, or says so
+  with "Already on a bus?") and keeps two notifications under one id:
   `LocationTracker.follow` runs the GPS foreground service once with a plain "following you" notice (geolocator shares
   one stream and takes the notification from whoever opens it), and `IPushService.showTrip` replaces it (same id, 75415)
   with the ongoing one: step, bus status and reason (`ArrivalText`), distance, progress bar, countdown clock, end

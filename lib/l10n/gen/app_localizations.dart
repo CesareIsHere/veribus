@@ -2053,6 +2053,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plan updated: your next is the {next} at {time}'**
   String tripReplanned(String next, String time);
+
+  /// No description provided for @tripOnBoardDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'You are on the {line}: following it from here'**
+  String tripOnBoardDetected(String line);
+
+  /// No description provided for @tripAlreadyOnBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Already on a bus?'**
+  String get tripAlreadyOnBoard;
+
+  /// No description provided for @tripPickBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Which bus are you on?'**
+  String get tripPickBus;
+
+  /// No description provided for @tripNoBusNear.
+  ///
+  /// In en, this message translates to:
+  /// **'No bus near you right now'**
+  String get tripNoBusNear;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

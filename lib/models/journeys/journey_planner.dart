@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 import 'package:veribus/models/journeys/raptor.dart';
+import 'package:veribus/models/journeys/ride_detector.dart';
 import 'package:veribus/models/journeys/timetable.dart';
 import 'package:veribus/models/journeys/timetable_builder.dart';
 import 'package:veribus/models/transit/live.dart';
@@ -115,6 +116,38 @@ class JourneyPlanner {
       departure = rides.map((j) => j.depart).reduce((a, b) => a < b ? a : b) + 60;
     }
     return found..sort((a, b) => a.journey.depart.compareTo(b.journey.depart));
+  }
+
+  /// The journey of a traveller who is already on [boarded]: it goes on from the next stop of the trip, and the rest of
+  /// the way (where to get off, the changes) is searched from there. Null when no journey from that stop to [to] goes on
+  /// with this trip.
+  Future<PlannedJourney?> planOnBoard({
+    required BoardedTrip boarded,
+    required LatLng to,
+    required DateTime at,
+    JourneyFilter filter = allTransport,
+  }) async {
+    final tt = timetable;
+    final stop = tt.routeStop(boarded.route, boarded.next);
+    final destinations = stopsAround(to, radius: 600);
+    if (destinations.isEmpty) return null;
+    final live = _Live();
+    final journeys = await _searchLive(
+      [(stop: stop, walk: 0)],
+      destinations,
+      // The scheduled time of the trip at that stop: it is the trip that the search boards, late or not.
+      tt.time(boarded.trip, boarded.next),
+      secondsOf(at),
+      live,
+      _blocked(filter),
+    );
+    for (final j in journeys) {
+      final legs = j.legs.skipWhile((l) => l is WalkLeg && l.end == l.start).toList();
+      if (legs.firstOrNull case RideLeg(:final trip) when trip == boarded.trip) {
+        return PlannedJourney(Journey(legs), live.arrivalsFor(Journey(legs)));
+      }
+    }
+    return null;
   }
 
   /// The last journey still leaving within [horizon] seconds of [at], when the service ends within it: "leave by
@@ -252,52 +285,81 @@ class JourneyPlanner {
     return changed;
   }
 
-  /// The search reaches a stop the soonest it can and keeps the first way it found: when the first trip calls at an
-  /// origin stop and, later, at another one that is nearer to the traveller, both give the same arrival, and the
-  /// farther one can come out (a walk back along the line to board the bus three minutes earlier, then ride it past the
-  /// stop the traveller started from). The traveller boards at the nearest stop of that trip they can still reach
-  /// before it leaves, [departure] being the earliest they can set off.
+  /// The search reaches a stop the soonest it can and keeps the first way it found: when the first trip calls at a stop
+  /// the traveller reaches only by a longer walk and, later, at one right next to them, both give the same arrival, and
+  /// the farther one can come out (a walk back along the line to board the bus three minutes earlier, then ride it
+  /// past the stop the traveller started from). The traveller boards at the stop of that trip they reach with the
+  /// shortest walk (straight from where they are, or through a link between stops) and still in time, [departure]
+  /// being the earliest they can set off.
   List<Journey> _boardHere(List<Journey> journeys, List<StopAccess> origins, int departure) {
     final tt = timetable;
-    return [
-      for (final j in journeys)
-        if (j.legs case [final WalkLeg access, final RideLeg ride, ...final rest] when access.from == null)
-          () {
-            var walk = access.end - access.start;
-            var position = ride.board;
-            var boards = ride.start;
-            for (var i = ride.board + 1; i < ride.alight; i++) {
-              final stop = tt.routeStop(ride.route, i);
-              for (final o in origins) {
-                final at = tt.time(ride.trip, i) + ride.delay;
-                if (o.stop == stop && o.walk < walk && at >= departure + o.walk) {
-                  walk = o.walk;
-                  position = i;
-                  boards = at;
-                }
-              }
-            }
-            if (position == ride.board) return j;
-            final stop = tt.routeStop(ride.route, position);
-            return Journey([
-              WalkLeg(from: null, to: stop, start: boards - walk, end: boards),
-              RideLeg(
-                route: ride.route,
-                trip: ride.trip,
-                board: position,
-                alight: ride.alight,
-                fromStop: stop,
-                toStop: ride.toStop,
-                start: boards,
-                end: ride.end,
-                delay: ride.delay,
-              ),
-              ...rest,
-            ]);
-          }()
-        else
-          j,
-    ];
+    // The walk to [stop] from the origin: straight to it, or to another stop and then along a link. Null when none.
+    ({StopAccess origin, int link, int seconds})? reach(int stop) {
+      ({StopAccess origin, int link, int seconds})? best;
+      for (final o in origins) {
+        var link = o.stop == stop ? 0 : null;
+        if (link == null) {
+          for (var j = tt.footStart[o.stop]; j < tt.footStart[o.stop + 1]; j++) {
+            if (tt.footTo[j] == stop) link = tt.footSeconds[j];
+          }
+        }
+        if (link != null && (best == null || o.walk + link < best.seconds)) {
+          best = (origin: o, link: link, seconds: o.walk + link);
+        }
+      }
+      return best;
+    }
+
+    return [for (final j in journeys) _boardHereOne(j, departure, reach)];
+  }
+
+  Journey _boardHereOne(
+    Journey j,
+    int departure,
+    ({StopAccess origin, int link, int seconds})? Function(int stop) reach,
+  ) {
+    final tt = timetable;
+    final lead = j.legs.takeWhile((l) => l is WalkLeg).cast<WalkLeg>().toList();
+    if (lead.isEmpty || lead.first.from != null || j.legs.length == lead.length) return j;
+    final ride = j.legs[lead.length];
+    if (ride is! RideLeg) return j;
+    var walk = lead.fold(0, (sum, l) => sum + l.end - l.start);
+    ({StopAccess origin, int link, int seconds})? best;
+    var position = ride.board;
+    var boards = ride.start;
+    for (var i = ride.board + 1; i < ride.alight; i++) {
+      final stop = tt.routeStop(ride.route, i);
+      final access = reach(stop);
+      final at = tt.time(ride.trip, i) + ride.delay;
+      if (access != null && access.seconds < walk && at >= departure + access.seconds) {
+        walk = access.seconds;
+        best = access;
+        position = i;
+        boards = at;
+      }
+    }
+    if (best == null) return j;
+    final stop = tt.routeStop(ride.route, position);
+    return Journey([
+      if (best.link == 0)
+        WalkLeg(from: null, to: stop, start: boards - best.seconds, end: boards)
+      else ...[
+        WalkLeg(from: null, to: best.origin.stop, start: boards - best.seconds, end: boards - best.link),
+        WalkLeg(from: best.origin.stop, to: stop, start: boards - best.link, end: boards),
+      ],
+      RideLeg(
+        route: ride.route,
+        trip: ride.trip,
+        board: position,
+        alight: ride.alight,
+        fromStop: stop,
+        toStop: ride.toStop,
+        start: boards,
+        end: ride.end,
+        delay: ride.delay,
+      ),
+      ...j.legs.skip(lead.length + 1),
+    ]);
   }
 
   /// Fewest rides first; a journey with more rides stays only if it arrives [minGainPerRide] earlier per extra ride.
