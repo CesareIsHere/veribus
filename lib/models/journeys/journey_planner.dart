@@ -131,12 +131,16 @@ class JourneyPlanner {
     final destinations = stopsAround(to, radius: 600);
     if (origins.isEmpty || destinations.isEmpty) return null;
     Journey? first(int departure) => _sensible(
-      _raptor.search(
-        origins: origins,
-        destinations: destinations,
-        departure: departure,
-        maxRides: maxRides,
-        blockedRoutes: _blocked(filter),
+      _boardHere(
+        _raptor.search(
+          origins: origins,
+          destinations: destinations,
+          departure: departure,
+          maxRides: maxRides,
+          blockedRoutes: _blocked(filter),
+        ),
+        origins,
+        departure,
       ),
     ).where((j) => j.rides > 0).firstOrNull;
     final now = secondsOf(at);
@@ -192,13 +196,17 @@ class JourneyPlanner {
     var journeys = <Journey>[];
     for (var round = 0; round < _realtimeRounds; round++) {
       journeys = _sensible(
-        _raptor.search(
-          origins: origins,
-          destinations: destinations,
-          departure: departure,
-          maxRides: maxRides,
-          realtime: live.realtime(),
-          blockedRoutes: blocked,
+        _boardHere(
+          _raptor.search(
+            origins: origins,
+            destinations: destinations,
+            departure: departure,
+            maxRides: maxRides,
+            realtime: live.realtime(),
+            blockedRoutes: blocked,
+          ),
+          origins,
+          departure,
         ),
       );
       final unknown = [
@@ -242,6 +250,54 @@ class JourneyPlanner {
       }
     }
     return changed;
+  }
+
+  /// The search reaches a stop the soonest it can and keeps the first way it found: when the first trip calls at an
+  /// origin stop and, later, at another one that is nearer to the traveller, both give the same arrival, and the
+  /// farther one can come out (a walk back along the line to board the bus three minutes earlier, then ride it past the
+  /// stop the traveller started from). The traveller boards at the nearest stop of that trip they can still reach
+  /// before it leaves, [departure] being the earliest they can set off.
+  List<Journey> _boardHere(List<Journey> journeys, List<StopAccess> origins, int departure) {
+    final tt = timetable;
+    return [
+      for (final j in journeys)
+        if (j.legs case [final WalkLeg access, final RideLeg ride, ...final rest] when access.from == null)
+          () {
+            var walk = access.end - access.start;
+            var position = ride.board;
+            var boards = ride.start;
+            for (var i = ride.board + 1; i < ride.alight; i++) {
+              final stop = tt.routeStop(ride.route, i);
+              for (final o in origins) {
+                final at = tt.time(ride.trip, i) + ride.delay;
+                if (o.stop == stop && o.walk < walk && at >= departure + o.walk) {
+                  walk = o.walk;
+                  position = i;
+                  boards = at;
+                }
+              }
+            }
+            if (position == ride.board) return j;
+            final stop = tt.routeStop(ride.route, position);
+            return Journey([
+              WalkLeg(from: null, to: stop, start: boards - walk, end: boards),
+              RideLeg(
+                route: ride.route,
+                trip: ride.trip,
+                board: position,
+                alight: ride.alight,
+                fromStop: stop,
+                toStop: ride.toStop,
+                start: boards,
+                end: ride.end,
+                delay: ride.delay,
+              ),
+              ...rest,
+            ]);
+          }()
+        else
+          j,
+    ];
   }
 
   /// Fewest rides first; a journey with more rides stays only if it arrives [minGainPerRide] earlier per extra ride.

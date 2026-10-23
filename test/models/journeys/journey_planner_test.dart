@@ -67,6 +67,33 @@ String _describe(Timetable tt, PlannedJourney p) => p.rides
     .join(' ');
 
 void main() {
+  test('boards where the traveller stands, not at an earlier stop of the same trip that calls here later', () async {
+    // The trip calls at M, then at G (400 m on), then at D. The traveller is at G: walking back to M to board the same
+    // bus three minutes earlier only to ride past G again gets there at the same time, with a walk for nothing.
+    final tt = buildTimetable(
+      date: 20261020,
+      stops: [
+        (id: 'M', name: 'Stop M', lat: 41.9000, lon: 12.5),
+        (id: 'G', name: 'Stop G', lat: 41.9036, lon: 12.5),
+        (id: 'D', name: 'Stop D', lat: 41.9200, lon: 12.5),
+      ],
+      trips: [
+        _trip('64', ['M', 'G', 'D'], ['10:10', '10:13', '10:30']),
+      ],
+    );
+    final planner = JourneyPlanner(tt, _realtime(const {}));
+    const from = LatLng(41.9036 + 10 / 110540, 12.5);
+    const to = LatLng(41.9200 + 10 / 110540, 12.5);
+    final journey = (await planner.plan(from: from, to: to, at: _at('10:00'), options: 1)).first;
+    final ride = journey.rides.single;
+    expect(tt.stopNames[ride.fromStop], 'Stop G');
+    expect(ride.start, _hm('10:13'));
+    final walk = journey.journey.legs.first as WalkLeg;
+    expect(walk.end - walk.start, lessThan(60));
+    // Same arrival as boarding earlier.
+    expect(journey.journey.arrive, lessThan(_hm('10:34')));
+  });
+
   test('a canceled trip is left out: the journey takes the next one, and keeps its status', () async {
     final tt = _timetable([
       _trip('64', ['A', 'B', 'C'], ['10:00', '10:10', '10:20']),
