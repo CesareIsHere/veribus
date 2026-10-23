@@ -1125,4 +1125,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripChannelName => 'Journey in progress';
+
+  @override
+  String get tripShowMap => 'Show the map';
+
+  @override
+  String get tripShowList => 'Show the stops';
+
+  @override
+  String get exploreMetro => 'Metro';
+
+  @override
+  String metroEvery(int minutes) {
+    return 'Every $minutes min or so now';
+  }
+
+  @override
+  String get metroNoTrains => 'No trains in the next hour';
+
+  @override
+  String get metroScheduled => 'From the timetable, not in real time.';
+
+  @override
+  String get metroNoneNearby => 'No metro station nearby';
 }

@@ -63,6 +63,9 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
 - Lines are told by `LineChip` (`core/widgets/line_chip.dart`): the color and icon of the `TransitKind` (bus, tram,
   metro A/B/C, night). Line colors live in `AppColors`, shapes (cards 24, sheets 28, chips 8) in `app_theme.dart`.
   Realtime status colors: green with the live icon when confirmed (`ArrivalTime`), tertiary when uncertain.
+- Explore (`features/nearby`) is the home: nearby favorite stops first, then by distance (`Network.nearby`). The metro is not in the
+  realtime network: its stations come from the journey timetable (`models/journeys/metro_stations.dart`, headways from the
+  schedule, never shown as realtime).
 - Following a journey: `models/journeys/trip_progress.dart` (`followTrip`, pure and tested) decides the phase from the
   position; `features/journeys/trip_page.dart` shows it and keeps the foreground service (`LocationTracker.follow`, the only listener of the GPS:
   geolocator shares one stream and takes the notification from whoever opens it; the notification says the step). The alert one stop before uses `IPushService.showNow`. Walks along the streets:

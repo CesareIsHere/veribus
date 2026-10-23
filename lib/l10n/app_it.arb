@@ -315,5 +315,12 @@
   "tripAlertTitle": "Scendi alla prossima",
   "tripNeedPosition": "Serve la posizione per seguirti passo per passo",
   "tripAtTime": "alle {time}",
-  "tripChannelName": "Percorso in corso"
+  "tripChannelName": "Percorso in corso",
+  "tripShowMap": "Mostra la mappa",
+  "tripShowList": "Mostra le fermate",
+  "exploreMetro": "Metro",
+  "metroEvery": "Ogni circa {minutes} min adesso",
+  "metroNoTrains": "Nessun treno nella prossima ora",
+  "metroScheduled": "Dati da orario programmato, non in tempo reale.",
+  "metroNoneNearby": "Nessuna stazione della metro vicina"
 }

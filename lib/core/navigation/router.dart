@@ -8,7 +8,6 @@ import 'package:veribus/core/navigation/app_shell.dart';
 import 'package:veribus/core/navigation/pages/not_found_page.dart';
 import 'package:veribus/core/navigation/pages/splash_page.dart';
 import 'package:veribus/core/providers/auth_notifier.dart';
-import 'package:veribus/core/providers/favorites_notifier.dart';
 import 'package:veribus/core/utils/logger.dart';
 import 'package:veribus/extensions/build_context_extensions.dart';
 import 'package:veribus/features/alerts/alerts_page.dart';
@@ -55,7 +54,7 @@ const Set<String> _transitRoutes = {SplashPage.route, '/onboarding'};
 /// - onboarding not done → onboarding
 /// - signed out on a private page → `login?from=<page>`
 /// - signed in on a public/transit page → `from` or [home]
-/// - `/` → [home]: favorites when there are some, otherwise nearby (RF-42)
+/// - `/` → [home]: always Explore (the favorites that are near come first there)
 String? appRedirect({
   required AsyncValue<UserModel?> auth,
   required Uri uri,
@@ -123,17 +122,13 @@ GoRouter router(Ref ref) {
     ),
   ];
 
-  String home() => ref.read(favoritesProvider).stops.isEmpty && ref.read(favoritesProvider).lines.isEmpty
-      ? NearbyPage.route
-      : FavoritesPage.route;
-
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: refresh,
     debugLogDiagnostics: !AppConfig.isProd,
     observers: [if (AppConfig.sentryDsn.isNotEmpty) SentryNavigatorObserver()],
-    redirect: (_, state) => appRedirect(auth: ref.read(authProvider), uri: state.uri, home: home()),
+    redirect: (_, state) => appRedirect(auth: ref.read(authProvider), uri: state.uri),
     errorBuilder: (_, _) => const NotFoundPage(),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const SplashPage()),

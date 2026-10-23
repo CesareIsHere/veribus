@@ -300,6 +300,47 @@ final class JourneyPlannerFamily extends $Family with $FunctionalFamilyOverride<
   String toString() => r'journeyPlannerProvider';
 }
 
+/// The metro stations and how often the lines pass now, from today's timetable (nothing without it). Looked at again
+/// every few minutes: the gaps change with the time of day.
+
+@ProviderFor(metroStationsNow)
+final metroStationsNowProvider = MetroStationsNowProvider._();
+
+/// The metro stations and how often the lines pass now, from today's timetable (nothing without it). Looked at again
+/// every few minutes: the gaps change with the time of day.
+
+final class MetroStationsNowProvider
+    extends $FunctionalProvider<AsyncValue<List<MetroStation>>, List<MetroStation>, FutureOr<List<MetroStation>>>
+    with $FutureModifier<List<MetroStation>>, $FutureProvider<List<MetroStation>> {
+  /// The metro stations and how often the lines pass now, from today's timetable (nothing without it). Looked at again
+  /// every few minutes: the gaps change with the time of day.
+  MetroStationsNowProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'metroStationsNowProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$metroStationsNowHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<MetroStation>> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<MetroStation>> create(Ref ref) {
+    return metroStationsNow(ref);
+  }
+}
+
+String _$metroStationsNowHash() => r'9d4234c7f7e59aa1165ab47c1a2b46890e083f14';
+
 /// Leaving at [at], now when null: recomputed every minute while the page is open, because departures pass and the
 /// realtime changes. Null when the timetable of that day is not available.
 

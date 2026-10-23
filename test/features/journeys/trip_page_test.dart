@@ -10,6 +10,7 @@ import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:veribus/core/providers/locale_notifier.dart';
 import 'package:veribus/core/providers/network_provider.dart';
 import 'package:veribus/core/providers/position_provider.dart';
+import 'package:veribus/core/widgets/transit_map.dart';
 import 'package:veribus/features/journeys/journey_page.dart';
 import 'package:veribus/features/journeys/trip_page.dart';
 import 'package:veribus/l10n/gen/app_localizations.dart';
@@ -132,6 +133,17 @@ void main() {
     expect(find.text('Get off in 2 stops'), findsOneWidget);
     expect(tracker.notices.last?.title, 'Get off in 2 stops');
     expect(tracker.notices.last?.text, 'at STOP D · 10:30');
+    expect(find.text('STOP D · get off'), findsOneWidget);
+
+    // On a vehicle the stops are a list; the map is one tap away, and back.
+    expect(find.byType(TransitMap), findsNothing);
+    await tester.tap(find.byTooltip('Show the map'));
+    await tester.pump();
+    expect(find.byType(TransitMap), findsOneWidget);
+    expect(find.text('STOP D · get off'), findsNothing);
+    await tester.tap(find.byTooltip('Show the stops'));
+    await tester.pump();
+    expect(find.byType(TransitMap), findsNothing);
     expect(find.text('STOP D · get off'), findsOneWidget);
 
     await move(_at('C', metres: 10));

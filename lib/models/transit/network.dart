@@ -17,14 +17,17 @@ class Network {
 
   static const _distance = Distance();
 
-  /// Stops within 500 m sorted by distance, widened to 1 km when there are none (RF-03).
-  List<({Stop stop, double meters})> nearby(LatLng from, {int max = 10}) {
+  /// Stops within 500 m sorted by distance, widened to 1 km when there are none (RF-03). The [favorites] that are in
+  /// range come first, by distance, whatever their rank; up to [max] others follow.
+  List<({Stop stop, double meters})> nearby(LatLng from, {int max = 10, Set<String> favorites = const {}}) {
     for (final radius in [500, 1000]) {
       final found = [
         for (final s in stops)
           if (_distance(from, s.position) case final m when m <= radius) (stop: s, meters: m),
       ]..sort((a, b) => a.meters.compareTo(b.meters));
-      if (found.isNotEmpty) return found.take(max).toList();
+      if (found.isEmpty) continue;
+      final liked = found.where((s) => favorites.contains(s.stop.id));
+      return [...liked, ...found.where((s) => !favorites.contains(s.stop.id)).take(max)];
     }
     return const [];
   }
