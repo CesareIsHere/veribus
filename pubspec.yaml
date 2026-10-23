@@ -1,7 +1,7 @@
 name: veribus
 description: "Veribus: Rome bus and tram arrivals, live."
 publish_to: "none"
-version: 0.9.2+16
+version: 0.9.3+17
 
 environment:
   sdk: ^3.13.0
