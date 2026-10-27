@@ -30,8 +30,13 @@ const _offPathMeters = 100.0;
 /// are all the stops of the trip from its first, matched in order along the path, so a loop line that passes twice
 /// on the same street is cut on the right pass. The stops joined straight when the line has no path or a stop is
 /// not on it (a variant), so the map never draws a street the bus does not take.
-List<LatLng> alongShape(List<LatLng> shape, List<LatLng> stops, int board, int alight) {
-  final straight = stops.sublist(board, alight + 1);
+List<LatLng> alongShape(List<LatLng> shape, List<LatLng> stops, int board, int alight) =>
+    alongShapeOrNull(shape, stops, board, alight) ?? stops.sublist(board, alight + 1);
+
+/// [alongShape], or null where it would join the stops straight: the line has no path, or a stop is not on it.
+List<LatLng>? alongShapeOrNull(List<LatLng> shape, List<LatLng> stops, int board, int alight) {
+  const List<LatLng>? straight = null;
+  final joined = stops.sublist(board, alight + 1);
   if (shape.length < 2) return straight;
   final scale = math.cos(stops.first.latitudeInRad);
   // Where a stop falls on segment [i] of the path, not before the fraction [after]: the fraction along it and the
@@ -79,7 +84,7 @@ List<LatLng> alongShape(List<LatLng> shape, List<LatLng> stops, int board, int a
   // Matched on the wrong pass of a loop (a trip starting halfway, after midnight): far longer than the stops.
   double length(List<LatLng> line) =>
       [for (var i = 1; i < line.length; i++) const Distance()(line[i - 1], line[i])].fold(0, (a, b) => a + b);
-  return length(piece) > 2 * length(straight) + 500 ? straight : piece;
+  return length(piece) > 2 * length(joined) + 500 ? straight : piece;
 }
 
 /// "1 h 5 min" from 60 minutes up, "42 min" below: the big number of a journey.
@@ -108,9 +113,15 @@ List<LatLng> rideRoute(WidgetRef ref, JourneyPlanner planner, RideLeg ride) {
   final tt = planner.timetable;
   LatLng stop(int s) => LatLng(tt.stopLat[s] / 1e6, tt.stopLon[s] / 1e6);
   final stops = [for (var i = 0; i <= ride.alight; i++) stop(tt.routeStop(ride.route, i))];
-  if (rideKind(planner, ride) == TransitKind.metro) return stops.sublist(ride.board);
+  final joined = stops.sublist(ride.board);
+  if (rideKind(planner, ride) == TransitKind.metro) return joined;
   final shape = ref.watch(lineShapeProvider(tt.lineIds[tt.routeLine[ride.route]], tt.routeDirection[ride.route]));
-  return alongShape(shape.value ?? const [], stops, ride.board, ride.alight);
+  final along = alongShapeOrNull(shape.value ?? const [], stops, ride.board, ride.alight);
+  if (along != null || !shape.hasValue) return along ?? joined;
+  // A variant of the line, which the path does not follow: the streets between its stops, by road, rather than the
+  // stops joined by straight lines across the blocks.
+  final road = ref.watch(roadRouteProvider(waypointsOf(joined))).value;
+  return road == null || road.length < 2 ? joined : road;
 }
 
 /// The line of a ride: its chip with the color and the icon of its kind (the metro and the tram are told apart from

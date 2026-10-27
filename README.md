@@ -469,8 +469,9 @@ with a throwaway debug key that changes on every build (it installs, but it cann
   the tiles. `vector_map_tiles` is on its 9.x beta line, the one compatible with flutter_map 8.
 - Address search (journeys): the public [Photon](https://photon.komoot.io) instance, free and keyless but with fair
   use and no guarantee (`lib/services/place_search_service.dart`). For real traffic host Photon or move to a paid
-  geocoder: only that service changes. The same goes for the walking routes drawn on the map: the foot profile of the
-  FOSSGIS OSRM server (`lib/services/walking_route_service.dart`).
+  geocoder: only that service changes. The same goes for the paths drawn on the map: the foot profile of the FOSSGIS
+  OSRM server for the walks, the car profile through the stops of a ride on a variant of a line that has no path
+  of its own (`lib/services/street_route_service.dart`; one request a second, a failed one is asked again).
 - Terms for the RSM data and the attribution text. Privacy policy and terms are `web/privacy.html` and
   `web/terms.html`, published with the web app (`PRIVACY_URL`, `TERMS_URL` in `env/prod.json`).
 - A per-client rate limit on the API.

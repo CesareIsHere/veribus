@@ -14,7 +14,7 @@ import 'package:veribus/models/journeys/raptor.dart';
 import 'package:veribus/repositories/journeys/journeys_repository_provider.dart';
 import 'package:veribus/repositories/transit/transit_repository_provider.dart';
 import 'package:veribus/services/place_search_service.dart';
-import 'package:veribus/services/walking_route_service.dart';
+import 'package:veribus/services/street_route_service.dart';
 
 part 'journeys_providers.g.dart';
 
@@ -146,11 +146,27 @@ Future<PlannedTrip?> plannedTrip(Ref ref, LatLng from, LatLng to, DateTime? at, 
   );
 }
 
-/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
-/// the session: a journey is looked at again and again.
-@Riverpod(keepAlive: true)
+/// A request for a path along the streets that got no answer is tried again, a few times, seconds apart (the app has
+/// no automatic retries of its own: an error would stay, and the map would keep the straight line).
+Duration? _retryStreets(int retryCount, Object error) =>
+    retryCount >= 3 ? null : Duration(seconds: 2 * (retryCount + 1));
+
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when there is none. Kept for the session:
+/// a journey is looked at again and again. A request that got no answer (the service busy, no network) is an error and
+/// is tried again ([_retryStreets]): it is not kept as "no way", which would draw a straight line until the app is closed.
+@Riverpod(keepAlive: true, retry: _retryStreets)
 Future<List<LatLng>> walkRoute(Ref ref, LatLng from, LatLng to) =>
-    ref.watch(walkingRouteServiceProvider).route(from, to);
+    ref.watch(streetRouteServiceProvider).route(from, to);
+
+/// The way by road through the stops of a ride whose path the app does not have (a variant of the line), for the map.
+/// [waypoints] is `lon,lat;lon,lat` (see [waypointsOf]): a plain key, so that the same ride is asked once.
+@Riverpod(keepAlive: true, retry: _retryStreets)
+Future<List<LatLng>> roadRoute(Ref ref, String waypoints) => ref.watch(streetRouteServiceProvider).drive([
+  for (final pair in waypoints.split(';')) LatLng(double.parse(pair.split(',')[1]), double.parse(pair.split(',')[0])),
+]);
+
+/// The key of [roadRoute] for [stops].
+String waypointsOf(List<LatLng> stops) => stops.map(StreetRouteService.pair).join(';');
 
 /// The line of a walk: the streets with the exact start and end drawn at both ends, or the straight line when there
 /// is no route.

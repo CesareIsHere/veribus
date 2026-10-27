@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:veribus/core/providers/locale_notifier.dart';
@@ -24,6 +26,7 @@ import 'package:veribus/services/location_service.dart';
 import 'package:veribus/services/location_tracker.dart';
 import 'package:veribus/services/map_tile_service.dart';
 import 'package:veribus/services/push_notifications_service.dart';
+import 'package:veribus/services/street_route_service.dart';
 
 /// The foreground service of the journey: what the tracker was asked to show, each time (null: let it go).
 class _Tracker extends Fake implements LocationTracker {
@@ -130,6 +133,10 @@ Future<_Rig> _open(
         positionProvider.overrideWith((ref) => position.stream),
         locationTrackerProvider.overrideWithValue(tracker),
         pushServiceProvider.overrideWithValue(push),
+        // No walking route from the street service: the walk is the straight line, with no request or pause.
+        streetRouteServiceProvider.overrideWithValue(
+          StreetRouteService(MockClient((_) async => http.Response('{"code":"NoRoute"}', 200)), Duration.zero),
+        ),
       ],
       child: MaterialApp(
         locale: const Locale('en'),

@@ -24,6 +24,10 @@ void main() {
     final variant = [_at(0, 0), _at(2, 3), _at(5, 4)];
     expect(alongShape(shape, variant, 0, 2), variant);
     expect(alongShape(const [], variant, 1, 2), variant.sublist(1));
+    // The caller can tell: it asks the streets from a routing service instead of joining the stops.
+    expect(alongShapeOrNull(shape, variant, 0, 2), isNull);
+    expect(alongShapeOrNull(const [], variant, 1, 2), isNull);
+    expect(alongShapeOrNull(shape, [_at(-2, 0), _at(0, 0), _at(5, 1), _at(5, 4)], 1, 3), isNotNull);
   });
 
   test('a line out and back on the same street (the 40 on Via Nazionale) is cut on the right pass', () {
