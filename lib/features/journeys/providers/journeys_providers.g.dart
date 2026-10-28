@@ -423,23 +423,26 @@ final class PlannedTripFamily extends $Family
   String toString() => r'plannedTripProvider';
 }
 
-/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
-/// the session: a journey is looked at again and again.
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when there is none. Kept for the session:
+/// a journey is looked at again and again. A request that got no answer (the service busy, no network) is an error and
+/// is tried again ([_retryStreets]): it is not kept as "no way", which would draw a straight line until the app is closed.
 
 @ProviderFor(walkRoute)
 final walkRouteProvider = WalkRouteFamily._();
 
-/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
-/// the session: a journey is looked at again and again.
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when there is none. Kept for the session:
+/// a journey is looked at again and again. A request that got no answer (the service busy, no network) is an error and
+/// is tried again ([_retryStreets]): it is not kept as "no way", which would draw a straight line until the app is closed.
 
 final class WalkRouteProvider
     extends $FunctionalProvider<AsyncValue<List<LatLng>>, List<LatLng>, FutureOr<List<LatLng>>>
     with $FutureModifier<List<LatLng>>, $FutureProvider<List<LatLng>> {
-  /// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
-  /// the session: a journey is looked at again and again.
+  /// The way on foot from [from] to [to] along the streets, for the map. Empty when there is none. Kept for the session:
+  /// a journey is looked at again and again. A request that got no answer (the service busy, no network) is an error and
+  /// is tried again ([_retryStreets]): it is not kept as "no way", which would draw a straight line until the app is closed.
   WalkRouteProvider._({required WalkRouteFamily super.from, required (LatLng, LatLng) super.argument})
     : super(
-        retry: null,
+        retry: _retryStreets,
         name: r'walkRouteProvider',
         isAutoDispose: false,
         dependencies: null,
@@ -477,28 +480,108 @@ final class WalkRouteProvider
   }
 }
 
-String _$walkRouteHash() => r'a0fbb130e7db4ecfd467206b7ca12c7eb5a24bc5';
+String _$walkRouteHash() => r'ce2c641efe7db8d8694d0c1fd8437a3967702b9a';
 
-/// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
-/// the session: a journey is looked at again and again.
+/// The way on foot from [from] to [to] along the streets, for the map. Empty when there is none. Kept for the session:
+/// a journey is looked at again and again. A request that got no answer (the service busy, no network) is an error and
+/// is tried again ([_retryStreets]): it is not kept as "no way", which would draw a straight line until the app is closed.
 
 final class WalkRouteFamily extends $Family with $FunctionalFamilyOverride<FutureOr<List<LatLng>>, (LatLng, LatLng)> {
   WalkRouteFamily._()
     : super(
-        retry: null,
+        retry: _retryStreets,
         name: r'walkRouteProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: false,
       );
 
-  /// The way on foot from [from] to [to] along the streets, for the map. Empty when the service does not answer. Kept for
-  /// the session: a journey is looked at again and again.
+  /// The way on foot from [from] to [to] along the streets, for the map. Empty when there is none. Kept for the session:
+  /// a journey is looked at again and again. A request that got no answer (the service busy, no network) is an error and
+  /// is tried again ([_retryStreets]): it is not kept as "no way", which would draw a straight line until the app is closed.
 
   WalkRouteProvider call(LatLng from, LatLng to) => WalkRouteProvider._(argument: (from, to), from: this);
 
   @override
   String toString() => r'walkRouteProvider';
+}
+
+/// The way by road through the stops of a ride whose path the app does not have (a variant of the line), for the map.
+/// [waypoints] is `lon,lat;lon,lat` (see [waypointsOf]): a plain key, so that the same ride is asked once.
+
+@ProviderFor(roadRoute)
+final roadRouteProvider = RoadRouteFamily._();
+
+/// The way by road through the stops of a ride whose path the app does not have (a variant of the line), for the map.
+/// [waypoints] is `lon,lat;lon,lat` (see [waypointsOf]): a plain key, so that the same ride is asked once.
+
+final class RoadRouteProvider
+    extends $FunctionalProvider<AsyncValue<List<LatLng>>, List<LatLng>, FutureOr<List<LatLng>>>
+    with $FutureModifier<List<LatLng>>, $FutureProvider<List<LatLng>> {
+  /// The way by road through the stops of a ride whose path the app does not have (a variant of the line), for the map.
+  /// [waypoints] is `lon,lat;lon,lat` (see [waypointsOf]): a plain key, so that the same ride is asked once.
+  RoadRouteProvider._({required RoadRouteFamily super.from, required String super.argument})
+    : super(
+        retry: _retryStreets,
+        name: r'roadRouteProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$roadRouteHash();
+
+  @override
+  String toString() {
+    return r'roadRouteProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<LatLng>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<LatLng>> create(Ref ref) {
+    final argument = this.argument as String;
+    return roadRoute(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is RoadRouteProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$roadRouteHash() => r'54f83df8abc69c4c7e0916f1b7c79edd7caee059';
+
+/// The way by road through the stops of a ride whose path the app does not have (a variant of the line), for the map.
+/// [waypoints] is `lon,lat;lon,lat` (see [waypointsOf]): a plain key, so that the same ride is asked once.
+
+final class RoadRouteFamily extends $Family with $FunctionalFamilyOverride<FutureOr<List<LatLng>>, String> {
+  RoadRouteFamily._()
+    : super(
+        retry: _retryStreets,
+        name: r'roadRouteProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
+
+  /// The way by road through the stops of a ride whose path the app does not have (a variant of the line), for the map.
+  /// [waypoints] is `lon,lat;lon,lat` (see [waypointsOf]): a plain key, so that the same ride is asked once.
+
+  RoadRouteProvider call(String waypoints) => RoadRouteProvider._(argument: waypoints, from: this);
+
+  @override
+  String toString() => r'roadRouteProvider';
 }
 
 /// The streets a line runs along in one direction (its main path), for the journey map. Asked once: it does not move.

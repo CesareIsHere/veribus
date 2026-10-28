@@ -75,6 +75,7 @@ English; user-facing strings in the ARB files. Login is mandatory (product decis
   one stream and takes the notification from whoever opens it), and `IPushService.showTrip` replaces it (same id, 75415)
   with the ongoing one: step, bus status and reason (`ArrivalText`), distance, progress bar, countdown clock, end
   action. It is updated as the traveller walks. The alert one stop before uses `IPushService.showNow`. Walks along the
-  streets: `services/walking_route_service.dart`.
+  streets, and rides on a variant of a line with no path of its own by road through their stops:
+  `services/street_route_service.dart` (a request with no answer throws and is asked again, never kept as "no way").
 - Reference pattern for new data: `repositories/transit` (interface + mock + supabase + provider), `models/transit`,
   `features/stop`. Status/signal/time wording lives only in `features/stop/components/arrival_tile.dart`.
