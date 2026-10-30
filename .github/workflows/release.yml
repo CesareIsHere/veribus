@@ -43,7 +43,7 @@ jobs:
       version: ${{ steps.bump.outputs.version }}
       tag: ${{ steps.bump.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
@@ -106,7 +106,7 @@ jobs:
       TAG: ${{ inputs.tag || needs.release.outputs.tag }}
     steps:
       # The tag is the bumped commit: the APK carries the version of the release it is attached to.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
 
