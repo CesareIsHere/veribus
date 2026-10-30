@@ -39,7 +39,7 @@ dependencies:
   connectivity_plus: ^7.3.1
   # Feature: app review
   # Feature: profile (avatar)
-  image_picker: ^1.2.3
+  image_picker: ^1.2.4
   # Feature: biometric lock
   # Feature: payments
   # Feature: social login
