@@ -439,7 +439,8 @@ Notices travel through Firebase Cloud Messaging; the Spark (free) plan is enough
 | `release.yml` | every push to `main` | bumps the semver from the commits, tags it, creates the GitHub Release and attaches the release APK. Run by hand with a tag to rebuild only the APK of an existing release |
 | `static_import.yml` | every night and by hand | imports the GTFS when its md5 changed (`vars.IN_PLACE=1` on the free plan), and builds the journey timetables |
 | `walking.yml` | every Monday and by hand | measures on foot (OpenStreetMap + OSRM) the pairs of nearby stops, for the journey timetables |
-| `deploy_android.yml` · `deploy_ios.yml` · `deploy_web.yml` | after a release, if `vars.DEPLOY_ANDROID` / `DEPLOY_IOS` / `DEPLOY_WEB` is `true` | Play Store (internal track) · TestFlight · Firebase Hosting |
+| `deploy_web.yml` | after every release and revert, and by hand | builds the web app with `env/prod.json` and publishes it on Firebase Hosting |
+| `deploy_android.yml` · `deploy_ios.yml` | after a release, if `vars.DEPLOY_ANDROID` / `DEPLOY_IOS` is `true` | Play Store (internal track) · TestFlight |
 | `revert_release.yml` | a merged PR titled `Revert …` | reverts the last version bump and deletes its release |
 
 The secrets and variables each workflow needs are listed at the top of its file.

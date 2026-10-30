@@ -1,5 +1,5 @@
-# Web -> Firebase Hosting. Runs after every release/revert when the repo
-# variable DEPLOY_WEB is "true", or manually.
+# Web -> Firebase Hosting. Runs after every release and every revert, or manually.
+# Not after a hand-run Release (it only rebuilds the APK of an existing tag).
 # Needs: vars.FIREBASE_PROJECT_ID, secrets.FIREBASE_SERVICE_ACCOUNT
 name: Deploy web
 
@@ -9,11 +9,16 @@ on:
     types: [completed]
   workflow_dispatch:
 
+# The newest main wins: an older deploy still running is dropped.
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
 jobs:
   deploy:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (vars.DEPLOY_WEB == 'true' && github.event.workflow_run.conclusion == 'success')
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
